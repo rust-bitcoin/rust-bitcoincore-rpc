@@ -1,0 +1,38 @@
+
+[package]
+name = "bitcoindrpc"
+version = "0.0.0"
+authors = ["Steven Roose <steven@stevenroose.org>"]
+license = "MIT"
+homepage = "https://github.com/stevenroose/rust-bitcoindrpc/"
+repository = "https://github.com/stevenroose/rust-bitcoindrpc/"
+documentation = "https://docs.rs/bitcoindrpc/"
+description = "RPC client library for the Bitcoin Core JSON-RPC API."
+keywords = [ "crypto", "bitcoin", "bitcoin core", "rpc" ]
+readme = "README.md"
+
+[lib]
+name = "bitcoindrpc"
+path = "src/lib.rs"
+
+[dependencies]
+jsonrpc = "0.9.0"
+
+# Used for deserialization of JSON.
+serde = "1"
+serde_derive = "1"
+serde_json = "1"
+strason = "0.4"
+hex = "0.3"
+
+# Used to parse difficulty values.
+num-bigint = { version = "0.2", features = [ "serde" ] }
+
+# Used for Bitcoin-specific types.
+bitcoin-amount = { version = "0.1", features = [ ] } #"serde" ] }
+[dependencies.bitcoin]
+version = "0.14.0"
+#TODO(stevenroose) change back to Cargo or Git when Address::deserialize is 
+# implemented
+path = "/home/steven/code/rust/rust-bitcoin"
+features = [ "serde-decimal" ]
