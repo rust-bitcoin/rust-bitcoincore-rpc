@@ -28,6 +28,7 @@ use bitcoin::util::hash::Sha256dHash;
 use bitcoin::util::privkey::Privkey;
 use bitcoin_amount::Amount;
 use num_bigint::BigUint;
+use serde::de::Error as SerdeError;
 use serde::Deserialize;
 
 /// The error type for errors produced in this library.
@@ -54,7 +55,6 @@ impl fmt::Display for Error {
 		match *self {
 			Error::JsonRpc(ref e) => write!(f, "JSON-RPC error: {}", e),
 			Error::FromHex(ref e) => write!(f, "hex decode error: {}", e),
-			_ => f.write_str(error::Error::description(self)),
 		}
 	}
 }
@@ -71,7 +71,6 @@ impl error::Error for Error {
 		match *self {
 			Error::JsonRpc(ref e) => Some(e),
 			Error::FromHex(ref e) => Some(e),
-			_ => None,
 		}
 	}
 }
@@ -118,6 +117,16 @@ pub struct ListUnspentResult {
 	pub safe: bool,
 }
 
+#[derive(Deserialize, Clone, PartialEq, Eq, Debug)]
+#[serde(rename_all = "camelCase")]
+pub struct SignRawTransactionResult {
+	#[serde(deserialize_with = "deserialize_hex")]
+	pub hex: Vec<u8>,
+	pub complete: bool,
+}
+
+// Custom types for input arguments.
+
 // Used for signrawtransaction argument.
 #[derive(Serialize, Clone, PartialEq, Eq, Debug)]
 #[serde(rename_all = "camelCase")]
@@ -146,11 +155,10 @@ impl Client {
 	pub fn getblock_info(&mut self, hash: Sha256dHash) -> Result<GetBlockResult, Error> {
 		let args: Vec<strason::Json> = vec![hash.to_string().into(), 1.into()];
 		let req = self.client.build_request("getblock".to_string(), args);
-		convert_result(
-			self.client
-				.send_request(&req)
-				.and_then(|res| res.into_result::<GetBlockResult>()),
-		)
+		self.client
+			.send_request(&req)
+			.and_then(|res| res.into_result::<GetBlockResult>())
+			.map_err(Error::from)
 	}
 	//TODO(stevenroose) getblock_raw (should be serialized to
 	// bitcoin::blockdata::Block) and getblock_txs
@@ -159,11 +167,10 @@ impl Client {
 		let req = self
 			.client
 			.build_request("getblockclount".to_string(), vec![]);
-		convert_result(
-			self.client
-				.send_request(&req)
-				.and_then(|res| res.into_result::<usize>()),
-		)
+		self.client
+			.send_request(&req)
+			.and_then(|res| res.into_result::<usize>())
+			.map_err(Error::from)
 	}
 
 	//TODO(stevenroose) missing
@@ -217,21 +224,20 @@ impl Client {
 		}
 
 		let req = self.client.build_request("listunspent".to_string(), args);
-		convert_result(
-			self.client
-				.send_request(&req)
-				.and_then(|res| res.into_result::<Vec<ListUnspentResult>>())
-				.into(),
-		)
+		self.client
+			.send_request(&req)
+			.and_then(|res| res.into_result::<Vec<ListUnspentResult>>())
+			.map_err(Error::from)
+			.into()
 	}
 
 	pub fn signrawtransaction(
 		&mut self,
-		tx: Vec<u8>,
+		tx: &[u8],
 		utxos: Option<Vec<UTXO>>,
 		private_keys: Option<Vec<Vec<u8>>>,
 		sighash_type: Option<SigHashType>,
-	) -> Result<Vec<u8>, Error> {
+	) -> Result<SignRawTransactionResult, Error> {
 		let mut args: Vec<strason::Json> = Vec::new();
 		args.push(hex::encode(tx).into());
 
@@ -256,23 +262,11 @@ impl Client {
 		let req = self
 			.client
 			.build_request("signrawtransaction".to_string(), args);
-		match self.client.send_request(&req) {
-			Err(e) => Err(e.into()),
-			Ok(r) => convert_result(hex::decode(
-				r.result
-					.expect("no result in return")
-					.string()
-					.expect("response is not a string"),
-			)),
-		}
-	}
-}
-
-/// Converts the Result from the package into a Result with our error type.
-fn convert_result<T, E: Into<Error>>(r: Result<T, E>) -> Result<T, Error> {
-	match r {
-		Ok(t) => Ok(t),
-		Err(e) => Err(e.into()),
+		self.client
+			.send_request(&req)
+			.and_then(|res| res.into_result::<SignRawTransactionResult>())
+			.map_err(Error::from)
+			.into()
 	}
 }
 
@@ -294,7 +288,15 @@ fn deserialize_amount<'de, D>(deserializer: D) -> Result<Amount, D::Error>
 where
 	D: serde::Deserializer<'de>,
 {
-	let btc = f64::deserialize(deserializer)
-		.expect("error casting bitcoin amount value from JSON to float");
+	let btc = f64::deserialize(deserializer)?;
 	Ok(Amount::from_btc(btc))
+}
+
+/// Deserializes a hex-encoded byte array.
+fn deserialize_hex<'de, D>(deserializer: D) -> Result<Vec<u8>, D::Error>
+where
+	D: serde::Deserializer<'de>,
+{
+	let h = String::deserialize(deserializer)?;
+	hex::decode(h).map_err(D::Error::custom)
 }
