@@ -29,6 +29,7 @@ use bitcoin::util::privkey::Privkey;
 use bitcoin_amount::Amount;
 use num_bigint::BigUint;
 use serde::de::Error as SerdeError;
+use serde::ser::Serialize;
 use serde::Deserialize;
 
 /// The error type for errors produced in this library.
@@ -36,6 +37,7 @@ use serde::Deserialize;
 pub enum Error {
 	JsonRpc(jsonrpc::error::Error),
 	FromHex(hex::FromHexError),
+	Strason(strason::Error),
 }
 
 impl From<jsonrpc::error::Error> for Error {
@@ -50,11 +52,18 @@ impl From<hex::FromHexError> for Error {
 	}
 }
 
+impl From<strason::Error> for Error {
+	fn from(e: strason::Error) -> Error {
+		Error::Strason(e)
+	}
+}
+
 impl fmt::Display for Error {
 	fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
 		match *self {
 			Error::JsonRpc(ref e) => write!(f, "JSON-RPC error: {}", e),
 			Error::FromHex(ref e) => write!(f, "hex decode error: {}", e),
+			Error::Strason(ref e) => write!(f, "JSON error: {}", e),
 		}
 	}
 }
@@ -64,6 +73,7 @@ impl error::Error for Error {
 		match *self {
 			Error::JsonRpc(_) => "JSON-RPC error",
 			Error::FromHex(_) => "hex decode error",
+			Error::Strason(_) => "JSON error",
 		}
 	}
 
@@ -71,6 +81,7 @@ impl error::Error for Error {
 		match *self {
 			Error::JsonRpc(ref e) => Some(e),
 			Error::FromHex(ref e) => Some(e),
+			Error::Strason(ref e) => Some(e),
 		}
 	}
 }
@@ -99,7 +110,28 @@ pub struct GetBlockResult {
 	pub nextblockhash: Option<Sha256dHash>,
 }
 
-//TODO(stevenroose) missing
+#[derive(Deserialize, Clone, PartialEq, Eq, Debug)]
+#[serde(rename_all = "camelCase")]
+pub struct GetTxOutResultScriptPubKey {
+	pub asm: String,
+	#[serde(deserialize_with = "deserialize_hex")]
+	pub hex: Vec<u8>,
+	pub req_sigs: usize,
+	#[serde(rename = "type")]
+	pub type_: String, //TODO(stevenroose) consider enum
+	pub addresses: Vec<Address>,
+}
+
+#[derive(Deserialize, Clone, PartialEq, Eq, Debug)]
+#[serde(rename_all = "camelCase")]
+pub struct GetTxOutResult {
+	pub bestblock: Sha256dHash,
+	pub confirmations: usize,
+	#[serde(deserialize_with = "deserialize_amount")]
+	pub value: Amount,
+	pub script_pub_key: GetTxOutResultScriptPubKey,
+	pub coinbase: bool,
+}
 
 #[derive(Deserialize, Clone, PartialEq, Eq, Debug)]
 #[serde(rename_all = "camelCase")]
@@ -119,10 +151,22 @@ pub struct ListUnspentResult {
 
 #[derive(Deserialize, Clone, PartialEq, Eq, Debug)]
 #[serde(rename_all = "camelCase")]
+pub struct SignRawTransactionResultError {
+	pub txid: Sha256dHash,
+	pub vout: u32,
+	pub script_sig: Script,
+	pub sequence: u32,
+	pub error: String,
+}
+
+#[derive(Deserialize, Clone, PartialEq, Eq, Debug)]
+#[serde(rename_all = "camelCase")]
 pub struct SignRawTransactionResult {
 	#[serde(deserialize_with = "deserialize_hex")]
 	pub hex: Vec<u8>,
 	pub complete: bool,
+	#[serde(default)]
+	pub errors: Vec<SignRawTransactionResultError>,
 }
 
 // Custom types for input arguments.
@@ -173,7 +217,24 @@ impl Client {
 			.map_err(Error::from)
 	}
 
-	//TODO(stevenroose) missing
+	pub fn gettxout(
+		&mut self,
+		txid: Sha256dHash,
+		vout: u32,
+		include_mempool: Option<bool>,
+	) -> Result<GetTxOutResult, Error> {
+		let mut args: Vec<strason::Json> = vec![txid.to_string().into(), vout.into()];
+		if let Some(b) = include_mempool {
+			args.push(b.into());
+		}
+
+		let req = self.client.build_request("gettxout".to_string(), args);
+		self.client
+			.send_request(&req)
+			.and_then(|res| res.into_result::<GetTxOutResult>())
+			.map_err(Error::from)
+			.into()
+	}
 
 	pub fn listunspent(
 		&mut self,
@@ -181,7 +242,7 @@ impl Client {
 		maxconf: Option<usize>,
 		addresses: Option<Vec<Address>>,
 		include_unsafe: Option<bool>,
-		query_options: Option<strason::Json>,
+		query_options: Option<HashMap<String, String>>,
 	) -> Result<Vec<ListUnspentResult>, Error> {
 		// Only provide the minimum required arguments. Provide defaults if
 		// later arguments are provided.
@@ -220,7 +281,7 @@ impl Client {
 		}
 
 		if let Some(opts) = query_options {
-			args.push(opts);
+			args.push(strason::Json::from_serialize(opts)?);
 		}
 
 		let req = self.client.build_request("listunspent".to_string(), args);
@@ -242,8 +303,11 @@ impl Client {
 		args.push(hex::encode(tx).into());
 
 		if let Some(utxos_val) = utxos {
-			args.push("".into());
-		//TODO(stevenroose) implement
+			let mut utxos_json: Vec<strason::Json> = vec![];
+			for u in utxos_val.iter() {
+				utxos_json.push(strason::Json::from_serialize(u)?);
+			}
+			args.push(utxos_json.into());
 		} else if private_keys != None || sighash_type != None {
 			args.push("".into())
 		}
