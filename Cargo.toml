@@ -30,9 +30,9 @@ num-bigint = { version = "0.2", features = [ "serde" ] }
 
 # Used for Bitcoin-specific types.
 bitcoin-amount = { version = "0.1", features = [ ] } #"serde" ] }
+
 [dependencies.bitcoin]
 version = "0.14.0"
-#TODO(stevenroose) change back to Cargo or Git when Address::deserialize is 
-# implemented
-path = "/home/steven/code/rust/rust-bitcoin"
+git = "https://github.com/stevenroose/rust-bitcoin.git"
+branch = "address-serde"
 features = [ "serde-decimal" ]
