@@ -29,10 +29,12 @@ hex = "0.3"
 num-bigint = { version = "0.2", features = [ "serde" ] }
 
 # Used for Bitcoin-specific types.
-bitcoin-amount = { version = "0.1", features = [ ] } #"serde" ] }
+[dependencies.bitcoin-amount] # 0.1.4
+version = "0.1.4"
+#git = "https://github.com/jeandudey/rust-bitcoin-amount.git"
+#rev = "7882b6a57762be61e8743ba7e61b6607a9e602d7"
+features = [ "serde" ]
 
 [dependencies.bitcoin]
-version = "0.14.0"
-git = "https://github.com/stevenroose/rust-bitcoin.git"
-branch = "address-serde"
+version = "0.14.2"
 features = [ "serde-decimal" ]

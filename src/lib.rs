@@ -29,7 +29,6 @@ use bitcoin::util::privkey::Privkey;
 use bitcoin_amount::Amount;
 use num_bigint::BigUint;
 use serde::de::Error as SerdeError;
-use serde::ser::Serialize;
 use serde::Deserialize;
 
 /// The error type for errors produced in this library.
