@@ -221,7 +221,7 @@ impl Client {
 		txid: Sha256dHash,
 		vout: u32,
 		include_mempool: Option<bool>,
-	) -> Result<GetTxOutResult, Error> {
+	) -> Result<Option<GetTxOutResult>, Error> {
 		let mut args: Vec<strason::Json> = vec![txid.to_string().into(), vout.into()];
 		if let Some(b) = include_mempool {
 			args.push(b.into());
@@ -230,7 +230,7 @@ impl Client {
 		let req = self.client.build_request("gettxout".to_string(), args);
 		self.client
 			.send_request(&req)
-			.and_then(|res| res.into_result::<GetTxOutResult>())
+			.and_then(|res| res.into_result::<Option<GetTxOutResult>>())
 			.map_err(Error::from)
 			.into()
 	}
