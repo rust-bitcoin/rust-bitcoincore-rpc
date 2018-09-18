@@ -111,6 +111,26 @@ pub struct GetBlockResult {
 
 #[derive(Deserialize, Clone, PartialEq, Eq, Debug)]
 #[serde(rename_all = "camelCase")]
+pub struct GetBlockHeaderResult {
+	pub hash: Sha256dHash,
+	pub confirmations: usize,
+	pub height: usize,
+	pub version: u32,
+	pub version_hex: Option<String>,
+	pub merkleroot: Sha256dHash,
+	pub time: usize,
+	pub mediantime: Option<usize>,
+	pub nonce: u32,
+	pub bits: String,
+	pub difficulty: BigUint,
+	pub chainwork: String,
+	pub n_tx: usize,
+	pub previousblockhash: Option<Sha256dHash>,
+	pub nextblockhash: Option<Sha256dHash>,
+}
+
+#[derive(Deserialize, Clone, PartialEq, Eq, Debug)]
+#[serde(rename_all = "camelCase")]
 pub struct GetTxOutResultScriptPubKey {
 	pub asm: String,
 	#[serde(deserialize_with = "deserialize_hex")]
@@ -205,6 +225,17 @@ impl Client {
 	}
 	//TODO(stevenroose) getblock_raw (should be serialized to
 	// bitcoin::blockdata::Block) and getblock_txs
+
+	pub fn getblockheader(&mut self, hash: Sha256dHash) -> Result<GetBlockHeaderResult, Error> {
+		let args: Vec<strason::Json> = vec![hash.to_string().into(), 1.into()];
+		let req = self
+			.client
+			.build_request("getblockheader".to_string(), args);
+		self.client
+			.send_request(&req)
+			.and_then(|res| res.into_result::<GetBlockHeaderResult>())
+			.map_err(Error::from)
+	}
 
 	pub fn getblockcount(&mut self) -> Result<usize, Error> {
 		let req = self
