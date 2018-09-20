@@ -156,8 +156,9 @@ pub struct GetRawTransactionResultVin {
 	pub vout: u32,
 	pub script_sig: GetRawTransactionResultVinScriptSig,
 	pub sequence: u32,
-	#[serde(deserialize_with = "deserialize_hex_array")]
-	pub txinwitness: Vec<Vec<u8>>,
+	#[serde(default)]
+	#[serde(deserialize_with = "deserialize_hex_array_opt")]
+	pub txinwitness: Option<Vec<Vec<u8>>>,
 }
 
 #[derive(Deserialize, Clone, PartialEq, Eq, Debug)]
@@ -530,14 +531,17 @@ where
 }
 
 /// Deserializes a vector of hex-encoded byte arrays.
-fn deserialize_hex_array<'de, D>(deserializer: D) -> Result<Vec<Vec<u8>>, D::Error>
+fn deserialize_hex_array_opt<'de, D>(deserializer: D) -> Result<Option<Vec<Vec<u8>>>, D::Error>
 where
 	D: serde::Deserializer<'de>,
 {
+	// Revisit when issue is fixed:
+	// https://github.com/serde-rs/serde/issues/723
+	
 	let v: Vec<String> = Vec::deserialize(deserializer)?;
 	let mut res = Vec::new();
 	for h in v.into_iter() {
 		res.push(hex::decode(h).map_err(D::Error::custom)?);
 	}
-	Ok(res)
+	Ok(Some(res))
 }
