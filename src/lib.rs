@@ -21,8 +21,11 @@ use std::collections::HashMap;
 use std::error;
 use std::fmt;
 
+use bitcoin::blockdata::block::Block;
 use bitcoin::blockdata::script::Script;
-use bitcoin::blockdata::transaction::SigHashType;
+use bitcoin::blockdata::transaction::{Transaction, SigHashType};
+use bitcoin::network::encodable::ConsensusDecodable;
+use bitcoin::network::serialize::{RawDecoder};
 use bitcoin::util::address::Address;
 use bitcoin::util::hash::Sha256dHash;
 use bitcoin::util::privkey::Privkey;
@@ -37,6 +40,7 @@ pub enum Error {
 	JsonRpc(jsonrpc::error::Error),
 	FromHex(hex::FromHexError),
 	Strason(strason::Error),
+	BitcoinSerialization(bitcoin::network::serialize::Error),
 }
 
 impl From<jsonrpc::error::Error> for Error {
@@ -57,12 +61,19 @@ impl From<strason::Error> for Error {
 	}
 }
 
+impl From<bitcoin::network::serialize::Error> for Error {
+	fn from(e: bitcoin::network::serialize::Error) -> Error {
+		Error::BitcoinSerialization(e)
+	}
+}
+
 impl fmt::Display for Error {
 	fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
 		match *self {
 			Error::JsonRpc(ref e) => write!(f, "JSON-RPC error: {}", e),
 			Error::FromHex(ref e) => write!(f, "hex decode error: {}", e),
 			Error::Strason(ref e) => write!(f, "JSON error: {}", e),
+			Error::BitcoinSerialization(ref e) => write!(f, "Bitcoin serialization error: {}", e),
 		}
 	}
 }
@@ -73,6 +84,7 @@ impl error::Error for Error {
 			Error::JsonRpc(_) => "JSON-RPC error",
 			Error::FromHex(_) => "hex decode error",
 			Error::Strason(_) => "JSON error",
+			Error::BitcoinSerialization(_) => "Bitcoin serialization error",
 		}
 	}
 
@@ -81,6 +93,7 @@ impl error::Error for Error {
 			Error::JsonRpc(ref e) => Some(e),
 			Error::FromHex(ref e) => Some(e),
 			Error::Strason(ref e) => Some(e),
+			Error::BitcoinSerialization(ref e) => Some(e),
 		}
 	}
 }
@@ -131,10 +144,67 @@ pub struct GetBlockHeaderResult {
 
 #[derive(Deserialize, Clone, PartialEq, Eq, Debug)]
 #[serde(rename_all = "camelCase")]
-pub struct GetTxOutResultScriptPubKey {
+pub struct GetRawTransactionResultVinScriptSig {
 	pub asm: String,
+	pub hex: Script,
+}
+
+#[derive(Deserialize, Clone, PartialEq, Eq, Debug)]
+#[serde(rename_all = "camelCase")]
+pub struct GetRawTransactionResultVin {
+	pub txid: Sha256dHash,
+	pub vout: u32,
+	pub script_sig: GetRawTransactionResultVinScriptSig,
+	pub sequence: u32,
+	#[serde(deserialize_with = "deserialize_hex_array")]
+	pub txinwitness: Vec<Vec<u8>>,
+}
+
+#[derive(Deserialize, Clone, PartialEq, Eq, Debug)]
+#[serde(rename_all = "camelCase")]
+pub struct GetRawTransactionResultVoutScriptPubKey {
+	pub asm: String,
+	pub hex: Script,
+	pub req_sigs: usize,
+	#[serde(rename = "type")]
+	pub type_: String, //TODO(stevenroose) consider enum
+	pub addresses: Vec<Address>,
+}
+
+#[derive(Deserialize, Clone, PartialEq, Eq, Debug)]
+#[serde(rename_all = "camelCase")]
+pub struct GetRawTransactionResultVout {
+	pub value: Amount,
+	pub n: u32,
+	pub script_pub_key: GetRawTransactionResultVoutScriptPubKey,
+}
+
+#[derive(Deserialize, Clone, PartialEq, Eq, Debug)]
+#[serde(rename_all = "camelCase")]
+pub struct GetRawTransactionResult {
+	#[serde(rename = "in_active_chain")]
+	pub in_active_chain: bool,
 	#[serde(deserialize_with = "deserialize_hex")]
 	pub hex: Vec<u8>,
+	pub txid: Sha256dHash,
+	pub hash: Sha256dHash,
+	pub size: usize,
+	pub vsize: usize,
+	pub version: u32,
+	pub locktime: u32,
+	pub vin: Vec<GetRawTransactionResultVin>,
+	pub vout: Vec<GetRawTransactionResultVoutScriptPubKey>,
+	pub blockhash: Sha256dHash,
+	pub confirmations: usize,
+	pub time: usize,
+	pub blocktime: usize,
+}
+
+#[derive(Deserialize, Clone, PartialEq, Eq, Debug)]
+#[serde(rename_all = "camelCase")]
+pub struct GetRawTransactionResultScriptPubKey {
+	pub asm: String,
+	pub hex: Script,
 	pub req_sigs: usize,
 	#[serde(rename = "type")]
 	pub type_: String, //TODO(stevenroose) consider enum
@@ -148,7 +218,7 @@ pub struct GetTxOutResult {
 	pub confirmations: usize,
 	#[serde(deserialize_with = "deserialize_amount")]
 	pub value: Amount,
-	pub script_pub_key: GetTxOutResultScriptPubKey,
+	pub script_pub_key: GetRawTransactionResultVoutScriptPubKey,
 	pub coinbase: bool,
 }
 
@@ -215,6 +285,19 @@ impl Client {
 	// Methods have identical casing to API methods on purpose.
 	// Variants of API methods are formed using an underscore.
 
+	pub fn getblock_raw(&mut self, hash: Sha256dHash) -> Result<bitcoin::Block, Error> {
+		let args: Vec<strason::Json> = vec![hash.to_string().into(), 0.into()];
+		let req = self.client.build_request("getblock".to_string(), args);
+		self.client
+			.send_request(&req)
+			.map_err(Error::from)
+			.and_then(|res| res.into_result::<String>().map_err(Error::from))
+			.and_then(|raw| hex::decode(raw).map_err(Error::from))
+			.and_then(|byt| {
+				Block::consensus_decode(&mut RawDecoder::new(&byt[..])).map_err(Error::from)
+			})
+	}
+
 	pub fn getblock_info(&mut self, hash: Sha256dHash) -> Result<GetBlockResult, Error> {
 		let args: Vec<strason::Json> = vec![hash.to_string().into(), 1.into()];
 		let req = self.client.build_request("getblock".to_string(), args);
@@ -225,6 +308,25 @@ impl Client {
 	}
 	//TODO(stevenroose) getblock_raw (should be serialized to
 	// bitcoin::blockdata::Block) and getblock_txs
+
+	pub fn getblockcount(&mut self) -> Result<usize, Error> {
+		let req = self
+			.client
+			.build_request("getblockclount".to_string(), vec![]);
+		self.client
+			.send_request(&req)
+			.and_then(|res| res.into_result::<usize>())
+			.map_err(Error::from)
+	}
+
+	pub fn getblockhash(&mut self, height: u32) -> Result<Sha256dHash, Error> {
+		let args: Vec<strason::Json> = vec![height.into()];
+		let req = self.client.build_request("getblockhash".to_string(), args);
+		self.client
+			.send_request(&req)
+			.and_then(|res| res.into_result::<Sha256dHash>())
+			.map_err(Error::from)
+	}
 
 	pub fn getblockheader(&mut self, hash: Sha256dHash) -> Result<GetBlockHeaderResult, Error> {
 		let args: Vec<strason::Json> = vec![hash.to_string().into(), 1.into()];
@@ -237,13 +339,45 @@ impl Client {
 			.map_err(Error::from)
 	}
 
-	pub fn getblockcount(&mut self) -> Result<usize, Error> {
-		let req = self
-			.client
-			.build_request("getblockclount".to_string(), vec![]);
+	pub fn getrawtransaction(
+		&mut self,
+		txid: Sha256dHash,
+		block_hash: Option<Sha256dHash>,
+	) -> Result<Option<Transaction>, Error> {
+		let mut args: Vec<strason::Json> = vec![txid.to_string().into(), false.into()];
+		if let Some(hash) = block_hash {
+			args.push(hash.to_string().into());
+		}
+
+		let req = self.client.build_request("getrawtransaction".to_string(), args);
+		let raw_opt = self.client
+			.send_request(&req)
+			.and_then(|res| res.into_result::<Option<Vec<u8>>>())
+			.map_err(Error::from)?;
+		if let Some(raw) = raw_opt {
+			match Transaction::consensus_decode(&mut RawDecoder::new(raw.as_slice())) {
+				Ok(tx) => Ok(Some(tx)),
+				Err(e) => Err(e.into()),
+			}
+		} else {
+			Ok(None)
+		}
+	}
+
+	pub fn getrawtransaction_verbose(
+		&mut self,
+		txid: Sha256dHash,
+		block_hash: Option<Sha256dHash>,
+	) -> Result<Option<GetRawTransactionResult>, Error> {
+		let mut args: Vec<strason::Json> = vec![txid.to_string().into(), true.into()];
+		if let Some(hash) = block_hash {
+			args.push(hash.to_string().into());
+		}
+
+		let req = self.client.build_request("getrawtransaction".to_string(), args);
 		self.client
 			.send_request(&req)
-			.and_then(|res| res.into_result::<usize>())
+			.and_then(|res| res.into_result::<Option<GetRawTransactionResult>>())
 			.map_err(Error::from)
 	}
 
@@ -393,4 +527,17 @@ where
 {
 	let h = String::deserialize(deserializer)?;
 	hex::decode(h).map_err(D::Error::custom)
+}
+
+/// Deserializes a vector of hex-encoded byte arrays.
+fn deserialize_hex_array<'de, D>(deserializer: D) -> Result<Vec<Vec<u8>>, D::Error>
+where
+	D: serde::Deserializer<'de>,
+{
+	let v: Vec<String> = Vec::deserialize(deserializer)?;
+	let mut res = Vec::new();
+	for h in v.into_iter() {
+		res.push(hex::decode(h).map_err(D::Error::custom)?);
+	}
+	Ok(res)
 }
