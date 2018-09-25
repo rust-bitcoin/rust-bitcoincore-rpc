@@ -3,7 +3,6 @@ use jsonrpc;
 use serde_json;
 
 use std::collections::HashMap;
-
 use bitcoin::blockdata::block::{Block, BlockHeader};
 use bitcoin::blockdata::transaction::{Transaction, SigHashType};
 use bitcoin::network::encodable::ConsensusDecodable;

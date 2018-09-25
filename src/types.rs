@@ -1,7 +1,8 @@
 
+use std::str::FromStr;
+
 use hex;
 use serde;
-
 use bitcoin::blockdata::script::Script;
 use bitcoin::util::address::Address;
 use bitcoin::util::hash::Sha256dHash;
@@ -28,6 +29,7 @@ pub struct GetBlockResult {
 	pub mediantime: Option<usize>,
 	pub nonce: u32,
 	pub bits: String,
+	#[serde(deserialize_with = "deserialize_difficulty")]
 	pub difficulty: BigUint,
 	pub chainwork: String,
 	pub n_tx: usize,
@@ -48,6 +50,7 @@ pub struct GetBlockHeaderResult {
 	pub mediantime: Option<usize>,
 	pub nonce: u32,
 	pub bits: String,
+	#[serde(deserialize_with = "deserialize_difficulty")]
 	pub difficulty: BigUint,
 	pub chainwork: String,
 	pub n_tx: usize,
@@ -173,6 +176,7 @@ pub struct SignRawTransactionResult {
 	pub errors: Vec<SignRawTransactionResultError>,
 }
 
+
 // Custom types for input arguments.
 
 // Used for signrawtransaction argument.
@@ -185,6 +189,9 @@ pub struct UTXO {
 	pub redeem_script: Script,
 }
 
+
+// Custom deserializer functions.
+
 /// deserialize_amount deserializes a BTC-denominated floating point Bitcoin amount into the 
 /// Amount type.
 fn deserialize_amount<'de, D>(deserializer: D) -> Result<Amount, D::Error>
@@ -195,13 +202,26 @@ where
 	Ok(Amount::from_btc(btc))
 }
 
+fn deserialize_difficulty<'de, D>(deserializer: D) -> Result<BigUint, D::Error>
+where
+	D: serde::Deserializer<'de>,
+{
+	let s = String::deserialize(deserializer)?;
+	let real = match s.split('.').nth(0) {
+		Some(r) => r,
+		None => return Err(D::Error::custom(&format!("error parsing difficulty: {}", s))),
+	};
+	BigUint::from_str(real)
+		.map_err(|_| D::Error::custom(&format!("error parsing difficulty: {}", s)))
+}
+
 /// deserialize_hex deserializes a hex-encoded byte array.
 fn deserialize_hex<'de, D>(deserializer: D) -> Result<Vec<u8>, D::Error>
 where
 	D: serde::Deserializer<'de>,
 {
 	let h = String::deserialize(deserializer)?;
-	hex::decode(h).map_err(D::Error::custom)
+	hex::decode(&h).map_err(|_| D::Error::custom(&format!("error parsing hex: {}", h)))
 }
 
 /// deserialize_hex_array_opt deserializes a vector of hex-encoded byte arrays.
