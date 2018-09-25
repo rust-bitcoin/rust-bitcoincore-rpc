@@ -16,13 +16,12 @@ name = "bitcoindrpc"
 path = "src/lib.rs"
 
 [dependencies]
-jsonrpc = "0.9.0"
+jsonrpc = "0.10"
 
 # Used for deserialization of JSON.
 serde = "1"
 serde_derive = "1"
 serde_json = "1"
-strason = "0.4"
 hex = "0.3"
 
 # Used to parse difficulty values.
