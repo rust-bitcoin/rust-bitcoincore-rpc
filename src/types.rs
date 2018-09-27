@@ -4,12 +4,25 @@ use std::str::FromStr;
 use hex;
 use serde;
 use bitcoin::blockdata::script::Script;
+use bitcoin::blockdata::transaction::Transaction;
 use bitcoin::util::address::Address;
+use bitcoin::network::serialize::{RawDecoder};
+use bitcoin::network::encodable::ConsensusDecodable;
 use bitcoin::util::hash::Sha256dHash;
 use bitcoin_amount::Amount;
 use num_bigint::BigUint;
 use serde::de::Error as SerdeError;
 use serde::Deserialize;
+
+use error::Error;
+
+macro_rules! bitcoin_hex {
+	($raw_type:ty, $hex:expr) => {
+		<$raw_type>::consensus_decode(
+			&mut RawDecoder::new(hex::decode($hex)?.as_slice())
+		).map_err(Error::from)
+	};
+}
 
 
 #[derive(Deserialize, Clone, PartialEq, Eq, Debug)]
@@ -62,7 +75,13 @@ pub struct GetBlockHeaderResult {
 #[serde(rename_all = "camelCase")]
 pub struct GetRawTransactionResultVinScriptSig {
 	pub asm: String,
-	pub hex: Script,
+	pub hex: String,
+}
+
+impl GetRawTransactionResultVinScriptSig {
+	pub fn script(&self) -> Result<Script, Error> {
+		bitcoin_hex!(Script, &self.hex)
+	}
 }
 
 #[derive(Deserialize, Clone, PartialEq, Eq, Debug)]
@@ -72,8 +91,7 @@ pub struct GetRawTransactionResultVin {
 	pub vout: u32,
 	pub script_sig: GetRawTransactionResultVinScriptSig,
 	pub sequence: u32,
-	#[serde(default)]
-	#[serde(deserialize_with = "deserialize_hex_array_opt")]
+	#[serde(default, deserialize_with = "deserialize_hex_array_opt")]
 	pub txinwitness: Option<Vec<Vec<u8>>>,
 }
 
@@ -81,11 +99,17 @@ pub struct GetRawTransactionResultVin {
 #[serde(rename_all = "camelCase")]
 pub struct GetRawTransactionResultVoutScriptPubKey {
 	pub asm: String,
-	pub hex: Script,
+	pub hex: String,
 	pub req_sigs: usize,
 	#[serde(rename = "type")]
 	pub type_: String, //TODO(stevenroose) consider enum
 	pub addresses: Vec<Address>,
+}
+
+impl GetRawTransactionResultVoutScriptPubKey {
+	pub fn script(&self) -> Result<Script, Error> {
+		bitcoin_hex!(Script, &self.hex)
+	}
 }
 
 #[derive(Deserialize, Clone, PartialEq, Eq, Debug)]
@@ -102,8 +126,7 @@ pub struct GetRawTransactionResultVout {
 pub struct GetRawTransactionResult {
 	#[serde(rename = "in_active_chain")]
 	pub in_active_chain: Option<bool>,
-	#[serde(deserialize_with = "deserialize_hex")]
-	pub hex: Vec<u8>,
+	pub hex: String,
 	pub txid: Sha256dHash,
 	pub hash: Sha256dHash,
 	pub size: usize,
@@ -118,15 +141,10 @@ pub struct GetRawTransactionResult {
 	pub blocktime: usize,
 }
 
-#[derive(Deserialize, Clone, PartialEq, Eq, Debug)]
-#[serde(rename_all = "camelCase")]
-pub struct GetRawTransactionResultScriptPubKey {
-	pub asm: String,
-	pub hex: Script,
-	pub req_sigs: usize,
-	#[serde(rename = "type")]
-	pub type_: String, //TODO(stevenroose) consider enum
-	pub addresses: Vec<Address>,
+impl GetRawTransactionResult {
+	pub fn transaction(&self) -> Result<Transaction, Error> {
+		bitcoin_hex!(Transaction, &self.hex)
+	}
 }
 
 #[derive(Deserialize, Clone, PartialEq, Eq, Debug)]
@@ -169,11 +187,16 @@ pub struct SignRawTransactionResultError {
 #[derive(Deserialize, Clone, PartialEq, Eq, Debug)]
 #[serde(rename_all = "camelCase")]
 pub struct SignRawTransactionResult {
-	#[serde(deserialize_with = "deserialize_hex")]
-	pub hex: Vec<u8>,
+	pub hex: String,
 	pub complete: bool,
 	#[serde(default)]
 	pub errors: Vec<SignRawTransactionResultError>,
+}
+
+impl SignRawTransactionResult {
+	pub fn transaction(&self) -> Result<Transaction, Error> {
+		bitcoin_hex!(Transaction, &self.hex)
+	}
 }
 
 
@@ -195,18 +218,13 @@ pub struct UTXO {
 /// deserialize_amount deserializes a BTC-denominated floating point Bitcoin amount into the 
 /// Amount type.
 fn deserialize_amount<'de, D>(deserializer: D) -> Result<Amount, D::Error>
-where
-	D: serde::Deserializer<'de>,
-{
-	let btc = f64::deserialize(deserializer)?;
-	Ok(Amount::from_btc(btc))
+		where D: serde::Deserializer<'de> {
+	Ok(Amount::from_btc(f64::deserialize(deserializer)?))
 }
 
 fn deserialize_difficulty<'de, D>(deserializer: D) -> Result<BigUint, D::Error>
-where
-	D: serde::Deserializer<'de>,
-{
-	let s = String::deserialize(deserializer)?;
+		where D: serde::Deserializer<'de> {
+	let s = f64::deserialize(deserializer)?.to_string();
 	let real = match s.split('.').nth(0) {
 		Some(r) => r,
 		None => return Err(D::Error::custom(&format!("error parsing difficulty: {}", s))),
@@ -217,18 +235,14 @@ where
 
 /// deserialize_hex deserializes a hex-encoded byte array.
 fn deserialize_hex<'de, D>(deserializer: D) -> Result<Vec<u8>, D::Error>
-where
-	D: serde::Deserializer<'de>,
-{
+		where D: serde::Deserializer<'de> {
 	let h = String::deserialize(deserializer)?;
 	hex::decode(&h).map_err(|_| D::Error::custom(&format!("error parsing hex: {}", h)))
 }
 
 /// deserialize_hex_array_opt deserializes a vector of hex-encoded byte arrays.
 fn deserialize_hex_array_opt<'de, D>(deserializer: D) -> Result<Option<Vec<Vec<u8>>>, D::Error>
-where
-	D: serde::Deserializer<'de>,
-{
+		where D: serde::Deserializer<'de> {
 	//TODO(stevenroose) Revisit when issue is fixed:
 	// https://github.com/serde-rs/serde/issues/723
 	
