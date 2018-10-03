@@ -5,19 +5,13 @@ use serde_json;
 use std::collections::HashMap;
 use bitcoin::blockdata::block::{Block, BlockHeader};
 use bitcoin::blockdata::transaction::{Transaction, SigHashType};
-use bitcoin::network::encodable::ConsensusDecodable;
-use bitcoin::network::serialize::{RawDecoder};
+use bitcoin::consensus::encode as btc_encode;
 use bitcoin::util::address::Address;
 use bitcoin::util::hash::Sha256dHash;
 
 use error::*;
 use types::*;
 
-
-/// Client implements a JSON-RPC client for the Bitcoin Core daemon or compatible APIs.
-pub struct Client {
-	client: jsonrpc::client::Client,
-}
 
 /// Arg is a simple enum to represent an argument value and its context.
 enum Arg {
@@ -49,9 +43,7 @@ macro_rules! empty {
 	() => { { let v: Vec<serde_json::Value> = vec![]; v } }
 }
 
-/// make_call does two things: 
-/// 1. build the argument list by dropping unnecessary default values and
-/// 2. make a request to the underlying jsonrpc client.
+/// make_call processes the argument list and makes the RPC call to the server.
 /// It returns the response object.
 macro_rules! make_call {
 	($self:ident, $method:expr) => { make_call!($self, $method,) };
@@ -84,7 +76,7 @@ macro_rules! result_json {
 }
 
 /// result_raw converts a hex response into a Bitcoin data type.
-/// This works both for Option types and regular types, however the implementation differs.
+/// This works both for Option types and regular types.
 macro_rules! result_raw {
 	($resp:ident, Option<$raw_type:ty>) => {
 		{
@@ -93,7 +85,7 @@ macro_rules! result_raw {
 			match hex_opt {
 				Some(hex) => {
 					let raw = hex::decode(hex)?;
-					match <$raw_type>::consensus_decode(&mut RawDecoder::new(raw.as_slice())) {
+					match btc_encode::deserialize(raw.as_slice()) {
 						Ok(val) => Ok(Some(val)),
 						Err(e) => Err(e.into()),
 					}
@@ -105,21 +97,29 @@ macro_rules! result_raw {
 	($resp:ident, $raw_type:ty) => {
 		$resp.and_then(|r| r.into_result::<String>().map_err(Error::from))
 			 .and_then(|h| hex::decode(h).map_err(Error::from))
-			 .and_then(|r| <$raw_type>::consensus_decode(&mut RawDecoder::new(r.as_slice()))
-					.map_err(Error::from))
+			 .and_then(|r| {
+				 let t: Result<$raw_type, Error> = btc_encode::deserialize(r.as_slice())
+					.map_err(Error::from);
+				 t
+			 })
 	};
+}
+
+/// Client implements a JSON-RPC client for the Bitcoin Core daemon or compatible APIs.
+pub struct Client {
+	client: jsonrpc::client::Client,
 }
 
 impl Client {
 	/// Create a new Client.
+	///
+	/// Methods have identical casing to API methods on purpose.
+	/// Variants of API methods are formed using an underscore.
 	pub fn new(uri: String, user: Option<String>, pass: Option<String>) -> Client {
 		Client {
 			client: jsonrpc::client::Client::new(uri, user, pass),
 		}
 	}
-
-	// Methods have identical casing to API methods on purpose.
-	// Variants of API methods are formed using an underscore.
 
 	pub fn getblock_raw(&mut self, hash: Sha256dHash) -> Result<Block, Error> {
 		let resp = make_call!(self, "getblock", arg!(hash), arg!(0));
@@ -130,9 +130,8 @@ impl Client {
 		let resp = make_call!(self, "getblock", arg!(hash), arg!(1));
 		result_json!(resp, GetBlockResult)
 	}
-	//TODO(stevenroose) getblock_raw (should be serialized to
-	// bitcoin::blockdata::Block) and getblock_txs
-
+	//TODO(stevenroose) add getblock_txs
+	
 	pub fn getblockcount(&mut self) -> Result<usize, Error> {
 		let resp = make_call!(self, "getblockcount");
 		result_json!(resp, usize)
@@ -194,6 +193,7 @@ impl Client {
 		result_json!(resp, Vec<ListUnspentResult>)
 	}
 
+	/// private_keys are not yet implemented.
 	pub fn signrawtransaction(
 		&mut self,
 		tx: &[u8],
@@ -201,10 +201,26 @@ impl Client {
 		private_keys: Option<Vec<Vec<u8>>>,
 		sighash_type: Option<SigHashType>,
 	) -> Result<SignRawTransactionResult, Error> {
+		if private_keys.is_some() {
+			unimplemented!();
+		}
 		let sighash = sighash_string(sighash_type);
 		let resp = make_call!(self, "signrawtransaction", arg!(hex::encode(tx)),
 			arg!(utxos, empty!()), arg!(Some(empty!()), empty!()),//TODO(stevenroose) impl privkeys
 			arg!(sighash,));
+		result_json!(resp, SignRawTransactionResult)
+	}
+
+	/// private_keys are not yet implemented.
+	pub fn signrawtransactionwithwallet(
+		&mut self,
+		tx: &[u8],
+		utxos: Option<Vec<UTXO>>,
+		sighash_type: Option<SigHashType>,
+	) -> Result<SignRawTransactionResult, Error> {
+		let sighash = sighash_string(sighash_type);
+		let resp = make_call!(self, "signrawtransactionwithwallet", arg!(hex::encode(tx)),
+			arg!(utxos, empty!()), arg!(sighash,));
 		result_json!(resp, SignRawTransactionResult)
 	}
 }

@@ -6,8 +6,7 @@ use serde;
 use bitcoin::blockdata::script::Script;
 use bitcoin::blockdata::transaction::Transaction;
 use bitcoin::util::address::Address;
-use bitcoin::network::serialize::{RawDecoder};
-use bitcoin::network::encodable::ConsensusDecodable;
+use bitcoin::consensus::encode as btc_encode;
 use bitcoin::util::hash::Sha256dHash;
 use bitcoin_amount::Amount;
 use num_bigint::BigUint;
@@ -18,9 +17,7 @@ use error::Error;
 
 macro_rules! bitcoin_hex {
 	($raw_type:ty, $hex:expr) => {
-		<$raw_type>::consensus_decode(
-			&mut RawDecoder::new(hex::decode($hex)?.as_slice())
-		).map_err(Error::from)
+		btc_encode::deserialize(hex::decode($hex)?.as_slice()).map_err(Error::from)
 	};
 }
 
@@ -233,12 +230,12 @@ fn deserialize_difficulty<'de, D>(deserializer: D) -> Result<BigUint, D::Error>
 		.map_err(|_| D::Error::custom(&format!("error parsing difficulty: {}", s)))
 }
 
-/// deserialize_hex deserializes a hex-encoded byte array.
-fn deserialize_hex<'de, D>(deserializer: D) -> Result<Vec<u8>, D::Error>
-		where D: serde::Deserializer<'de> {
-	let h = String::deserialize(deserializer)?;
-	hex::decode(&h).map_err(|_| D::Error::custom(&format!("error parsing hex: {}", h)))
-}
+///// deserialize_hex deserializes a hex-encoded byte array.
+//fn deserialize_hex<'de, D>(deserializer: D) -> Result<Vec<u8>, D::Error>
+//		where D: serde::Deserializer<'de> {
+//	let h = String::deserialize(deserializer)?;
+//	hex::decode(&h).map_err(|_| D::Error::custom(&format!("error parsing hex: {}", h)))
+//}
 
 /// deserialize_hex_array_opt deserializes a vector of hex-encoded byte arrays.
 fn deserialize_hex_array_opt<'de, D>(deserializer: D) -> Result<Option<Vec<Vec<u8>>>, D::Error>
