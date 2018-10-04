@@ -12,7 +12,7 @@ pub enum Error {
 	JsonRpc(jsonrpc::error::Error),
 	FromHex(hex::FromHexError),
 	Json(serde_json::error::Error),
-	BitcoinSerialization(bitcoin::network::serialize::Error),
+	BitcoinSerialization(bitcoin::consensus::encode::Error),
 }
 
 impl From<jsonrpc::error::Error> for Error {
@@ -33,8 +33,8 @@ impl From<serde_json::error::Error> for Error {
 	}
 }
 
-impl From<bitcoin::network::serialize::Error> for Error {
-	fn from(e: bitcoin::network::serialize::Error) -> Error {
+impl From<bitcoin::consensus::encode::Error> for Error {
+	fn from(e: bitcoin::consensus::encode::Error) -> Error {
 		Error::BitcoinSerialization(e)
 	}
 }
