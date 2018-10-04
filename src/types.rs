@@ -390,11 +390,11 @@ mod tests {
 			blocks: 1415011,
 			currentblockweight: 0,
 			currentblocktx: 0,
-			difficulty: 1,
+			difficulty: 1u32.into(),
 			networkhashps: 11970022568515.56,
 			pooledtx: 110,
-			chain: "test",
-			warnings:"Warning: unknown new rules activated (versionbit 28)",
+			chain: "test".into(),
+			warnings:"Warning: unknown new rules activated (versionbit 28)".into(),
 		};
 		let json = r#"
 			{

@@ -71,9 +71,9 @@ macro_rules! make_call {
 
 /// result_json converts a JSON response into the provided type.
 macro_rules! result_json {
-	($resp:ident, $json_type:ty) => {
-		$resp.and_then(|r| r.into_result::<$json_type>().map_err(Error::from))
-	}
+	($resp:ident) => {
+		$resp.and_then(|r| r.into_result().map_err(Error::from))
+	};
 }
 
 /// result_raw converts a hex response into a Bitcoin data type.
@@ -129,18 +129,18 @@ impl Client {
 
 	pub fn getblock_info(&mut self, hash: Sha256dHash) -> Result<GetBlockResult, Error> {
 		let resp = make_call!(self, "getblock", arg!(hash), arg!(1));
-		result_json!(resp, GetBlockResult)
+		result_json!(resp)
 	}
 	//TODO(stevenroose) add getblock_txs
 	
 	pub fn getblockcount(&mut self) -> Result<usize, Error> {
 		let resp = make_call!(self, "getblockcount");
-		result_json!(resp, usize)
+		result_json!(resp)
 	}
 
 	pub fn getblockhash(&mut self, height: u32) -> Result<Sha256dHash, Error> {
 		let resp = make_call!(self, "getblockhash", arg!(height));
-		result_json!(resp, Sha256dHash)
+		result_json!(resp)
 	}
 
 	pub fn getblockheader(&mut self, hash: Sha256dHash) -> Result<BlockHeader, Error> {
@@ -150,23 +150,23 @@ impl Client {
 
 	pub fn getblockheader_verbose(&mut self, hash: Sha256dHash) -> Result<GetBlockHeaderResult, Error> {
 		let resp = make_call!(self, "getblockheader", arg!(hash), arg!(true));
-		result_json!(resp, GetBlockHeaderResult)
+		result_json!(resp)
 	}
 
 	//TODO(stevenroose) verify if return type works
 	pub fn getdifficulty(&mut self) -> Result<BigUint, Error> {
 		let resp = make_call!(self, "getdifficulty");
-		result_json!(resp, BigUint)
+		result_json!(resp)
 	}
 
 	pub fn getconnectioncount(&mut self) -> Result<usize, Error> {
 		let resp = make_call!(self, "getconnectioncount");
-		result_json!(resp, usize)
+		result_json!(resp)
 	}
 
 	pub fn getmininginfo(&mut self) -> Result<GetMiningInfoResult, Error> {
 		let resp = make_call!(self, "getmininginfo");
-		result_json!(resp, GetMiningInfoResult)
+		result_json!(resp)
 	}
 
 	pub fn getrawtransaction(
@@ -182,9 +182,9 @@ impl Client {
 		&mut self,
 		txid: Sha256dHash,
 		block_hash: Option<Sha256dHash>,
-	) -> Result<Option<GetRawTransactionResult>, Error> {
+	) -> Result<GetRawTransactionResult, Error> {
 		let resp = make_call!(self, "getrawtransaction", arg!(txid), arg!(true), arg!(block_hash));
-		result_json!(resp, Option<GetRawTransactionResult>)
+		result_json!(resp)
 	}
 
 	pub fn gettxout(
@@ -194,7 +194,7 @@ impl Client {
 		include_mempool: Option<bool>,
 	) -> Result<Option<GetTxOutResult>, Error> {
 		let resp = make_call!(self, "gettxout", arg!(txid), arg!(vout), arg!(include_mempool,));
-		result_json!(resp, Option<GetTxOutResult>)
+		result_json!(resp)
 	}
 
 	pub fn listunspent(
@@ -207,7 +207,7 @@ impl Client {
 	) -> Result<Vec<ListUnspentResult>, Error> {
 		let resp = make_call!(self, "listunspent", arg!(minconf, 0), arg!(maxconf, 9999999),
 			arg!(addresses, empty!()), arg!(include_unsafe, true), arg!(query_options,));
-		result_json!(resp, Vec<ListUnspentResult>)
+		result_json!(resp)
 	}
 
 	/// private_keys are not yet implemented.
@@ -225,7 +225,7 @@ impl Client {
 		let resp = make_call!(self, "signrawtransaction", arg!(hex::encode(tx)),
 			arg!(utxos, empty!()), arg!(Some(empty!()), empty!()),//TODO(stevenroose) impl privkeys
 			arg!(sighash,));
-		result_json!(resp, SignRawTransactionResult)
+		result_json!(resp)
 	}
 
 	/// private_keys are not yet implemented.
@@ -238,12 +238,12 @@ impl Client {
 		let sighash = sighash_string(sighash_type);
 		let resp = make_call!(self, "signrawtransactionwithwallet", arg!(hex::encode(tx)),
 			arg!(utxos, empty!()), arg!(sighash,));
-		result_json!(resp, SignRawTransactionResult)
+		result_json!(resp)
 	}
 
 	pub fn stop(&mut self) -> Result<(), Error> {
 		let resp = make_call!(self, "stop");
-		result_json!(resp, ())
+		result_json!(resp)
 	}
 }
 
