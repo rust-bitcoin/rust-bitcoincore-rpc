@@ -8,6 +8,7 @@ use bitcoin::blockdata::transaction::{Transaction, SigHashType};
 use bitcoin::consensus::encode as btc_encode;
 use bitcoin::util::address::Address;
 use bitcoin::util::hash::Sha256dHash;
+use num_bigint::BigUint;
 
 use error::*;
 use types::*;
@@ -152,6 +153,22 @@ impl Client {
 		result_json!(resp, GetBlockHeaderResult)
 	}
 
+	//TODO(stevenroose) verify if return type works
+	pub fn getdifficulty(&mut self) -> Result<BigUint, Error> {
+		let resp = make_call!(self, "getdifficulty");
+		result_json!(resp, BigUint)
+	}
+
+	pub fn getconnectioncount(&mut self) -> Result<usize, Error> {
+		let resp = make_call!(self, "getconnectioncount");
+		result_json!(resp, usize)
+	}
+
+	pub fn getmininginfo(&mut self) -> Result<GetMiningInfoResult, Error> {
+		let resp = make_call!(self, "getmininginfo");
+		result_json!(resp, GetMiningInfoResult)
+	}
+
 	pub fn getrawtransaction(
 		&mut self,
 		txid: Sha256dHash,
@@ -222,6 +239,11 @@ impl Client {
 		let resp = make_call!(self, "signrawtransactionwithwallet", arg!(hex::encode(tx)),
 			arg!(utxos, empty!()), arg!(sighash,));
 		result_json!(resp, SignRawTransactionResult)
+	}
+
+	pub fn stop(&mut self) -> Result<(), Error> {
+		let resp = make_call!(self, "stop");
+		result_json!(resp, ())
 	}
 }
 

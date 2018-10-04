@@ -71,6 +71,20 @@ pub struct GetBlockHeaderResult {
 	pub nextblockhash: Option<Sha256dHash>,
 }
 
+#[derive(Deserialize, Clone, PartialEq, Debug)]
+#[serde(rename_all = "camelCase")]
+pub struct GetMiningInfoResult {
+	pub blocks: u32,
+	pub currentblockweight: u64,
+	pub currentblocktx: usize,
+	#[serde(deserialize_with = "deserialize_difficulty")]
+	pub difficulty: BigUint,
+	pub networkhashps: f64,
+	pub pooledtx: usize,
+	pub chain: String,
+	pub warnings: String,
+}
+
 #[derive(Deserialize, Clone, PartialEq, Eq, Debug)]
 #[serde(rename_all = "camelCase")]
 pub struct GetRawTransactionResultVinScriptSig {
@@ -371,6 +385,33 @@ mod tests {
 	}
 
 	#[test]
+	fn test_GetMiningInfoResult() {
+		let expected = GetMiningInfoResult {
+			blocks: 1415011,
+			currentblockweight: 0,
+			currentblocktx: 0,
+			difficulty: 1,
+			networkhashps: 11970022568515.56,
+			pooledtx: 110,
+			chain: "test",
+			warnings:"Warning: unknown new rules activated (versionbit 28)",
+		};
+		let json = r#"
+			{
+			  "blocks": 1415011,
+			  "currentblockweight": 0,
+			  "currentblocktx": 0,
+			  "difficulty": 1,
+			  "networkhashps": 11970022568515.56,
+			  "pooledtx": 110,
+			  "chain": "test",
+			  "warnings": "Warning: unknown new rules activated (versionbit 28)"
+			}
+		"#;
+		assert_eq!(expected, serde_json::from_str(json).unwrap());
+	}
+
+	#[test]
 	fn test_GetRawTransactionResult() {
 		let expected = GetRawTransactionResult {
 			in_active_chain: None,
@@ -475,6 +516,8 @@ mod tests {
 		"#;
 		assert_eq!(expected, serde_json::from_str(json).unwrap());
 		assert!(expected.transaction().is_ok());
+		assert_eq!(expected.transaction().unwrap().input[0].previous_output.txid, 
+				   "f04a336cb0fac5611e625827bd89e0be5dd2504e6a98ecbfaa5fcf1528d06b58".parse().unwrap());
 		assert!(expected.vin[0].script_sig.script().is_ok());
 		assert!(expected.vout[0].script_pub_key.script().is_ok());
 	}
