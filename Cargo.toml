@@ -37,3 +37,7 @@ features = [ "serde" ]
 [dependencies.bitcoin]
 version = "0.14.2"
 features = [ "serde-decimal" ]
+
+
+[patch.crates-io]
+bitcoin = { path = "/home/steven/code/rust/bitcoin" }

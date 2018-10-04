@@ -1,15 +1,14 @@
-
 use std::str::FromStr;
 
-use hex;
-use serde;
 use bitcoin::blockdata::script::Script;
 use bitcoin::blockdata::transaction::Transaction;
-use bitcoin::util::address::Address;
 use bitcoin::consensus::encode as btc_encode;
+use bitcoin::util::address::Address;
 use bitcoin::util::hash::Sha256dHash;
 use bitcoin_amount::Amount;
+use hex;
 use num_bigint::BigUint;
+use serde;
 use serde::de::Error as SerdeError;
 use serde::Deserialize;
 
@@ -23,7 +22,6 @@ macro_rules! bitcoin_hex {
 		btc_encode::deserialize(hex::decode($hex)?.as_slice()).map_err(Error::from)
 	};
 }
-
 
 #[derive(Deserialize, Clone, PartialEq, Eq, Debug)]
 #[serde(rename_all = "camelCase")]
@@ -213,7 +211,6 @@ impl SignRawTransactionResult {
 	}
 }
 
-
 // Custom types for input arguments.
 
 // Used for signrawtransaction argument.
@@ -226,22 +223,30 @@ pub struct UTXO {
 	pub redeem_script: Script,
 }
 
-
 // Custom deserializer functions.
 
-/// deserialize_amount deserializes a BTC-denominated floating point Bitcoin amount into the 
+/// deserialize_amount deserializes a BTC-denominated floating point Bitcoin amount into the
 /// Amount type.
 fn deserialize_amount<'de, D>(deserializer: D) -> Result<Amount, D::Error>
-		where D: serde::Deserializer<'de> {
+where
+	D: serde::Deserializer<'de>,
+{
 	Ok(Amount::from_btc(f64::deserialize(deserializer)?))
 }
 
 fn deserialize_difficulty<'de, D>(deserializer: D) -> Result<BigUint, D::Error>
-		where D: serde::Deserializer<'de> {
+where
+	D: serde::Deserializer<'de>,
+{
 	let s = f64::deserialize(deserializer)?.to_string();
 	let real = match s.split('.').nth(0) {
 		Some(r) => r,
-		None => return Err(D::Error::custom(&format!("error parsing difficulty: {}", s))),
+		None => {
+			return Err(D::Error::custom(&format!(
+				"error parsing difficulty: {}",
+				s
+			)))
+		}
 	};
 	BigUint::from_str(real)
 		.map_err(|_| D::Error::custom(&format!("error parsing difficulty: {}", s)))
@@ -256,10 +261,12 @@ fn deserialize_difficulty<'de, D>(deserializer: D) -> Result<BigUint, D::Error>
 
 /// deserialize_hex_array_opt deserializes a vector of hex-encoded byte arrays.
 fn deserialize_hex_array_opt<'de, D>(deserializer: D) -> Result<Option<Vec<Vec<u8>>>, D::Error>
-		where D: serde::Deserializer<'de> {
+where
+	D: serde::Deserializer<'de>,
+{
 	//TODO(stevenroose) Revisit when issue is fixed:
 	// https://github.com/serde-rs/serde/issues/723
-	
+
 	let v: Vec<String> = Vec::deserialize(deserializer)?;
 	let mut res = Vec::new();
 	for h in v.into_iter() {
@@ -277,19 +284,25 @@ mod tests {
 	macro_rules! deserializer {
 		($j:expr) => {
 			&mut serde_json::Deserializer::from_str($j)
-		}
+		};
 	}
 
 	macro_rules! hash {
-		($h:expr) => { Sha256dHash::from_hex($h).unwrap() };
+		($h:expr) => {
+			Sha256dHash::from_hex($h).unwrap()
+		};
 	}
 
 	macro_rules! addr {
-		($a:expr) => { Address::from_str($a).unwrap() };
+		($a:expr) => {
+			Address::from_str($a).unwrap()
+		};
 	}
 
 	macro_rules! script {
-		($s:expr) => { serde_json::from_str(&format!(r#""{}""#, $s)).unwrap() };
+		($s:expr) => {
+			serde_json::from_str(&format!(r#""{}""#, $s)).unwrap()
+		};
 	}
 
 	#[test]
@@ -304,7 +317,9 @@ mod tests {
 			version: 1,
 			version_hex: Some("00000001".into()),
 			merkleroot: hash!("20222eb90f5895556926c112bb5aa0df4ab5abc3107e21a6950aec3b2e3541e2"),
-			tx: vec![hash!("20222eb90f5895556926c112bb5aa0df4ab5abc3107e21a6950aec3b2e3541e2")],
+			tx: vec![hash!(
+				"20222eb90f5895556926c112bb5aa0df4ab5abc3107e21a6950aec3b2e3541e2"
+			)],
 			time: 1296688946,
 			mediantime: Some(1296688928),
 			nonce: 875942400,
@@ -312,8 +327,12 @@ mod tests {
 			difficulty: 1u64.into(),
 			chainwork: "0000000000000000000000000000000000000000000000000000000300030003".into(),
 			n_tx: 1,
-			previousblockhash: Some(hash!("00000000b873e79784647a6c82962c70d228557d24a747ea4d1b8bbe878e1206")),
-			nextblockhash: Some(hash!("000000008b896e272758da5297bcd98fdc6d97c9b765ecec401e286dc1fdbe10")),
+			previousblockhash: Some(hash!(
+				"00000000b873e79784647a6c82962c70d228557d24a747ea4d1b8bbe878e1206"
+			)),
+			nextblockhash: Some(hash!(
+				"000000008b896e272758da5297bcd98fdc6d97c9b765ecec401e286dc1fdbe10"
+			)),
 		};
 		let json = r#"
 			{
@@ -345,13 +364,13 @@ mod tests {
 
 	#[test]
 	fn test_GetBlockHeaderResult() {
-		let expected =  GetBlockHeaderResult {
-			hash:  hash!("00000000000000039dc06adbd7666a8d1df9acf9d0329d73651b764167d63765"),
+		let expected = GetBlockHeaderResult {
+			hash: hash!("00000000000000039dc06adbd7666a8d1df9acf9d0329d73651b764167d63765"),
 			confirmations: 29341,
 			height: 1384958,
 			version: 536870912,
 			version_hex: Some("20000000".into()),
-			merkleroot:  hash!("33d8a6f622182a4e844022bbc8aa51c63f6476708ad5cc5c451f2933753440d7"),
+			merkleroot: hash!("33d8a6f622182a4e844022bbc8aa51c63f6476708ad5cc5c451f2933753440d7"),
 			time: 1534935138,
 			mediantime: Some(1534932055),
 			nonce: 871182973,
@@ -359,8 +378,12 @@ mod tests {
 			difficulty: 48174374u64.into(),
 			chainwork: "0000000000000000000000000000000000000000000000a3c78921878ecbafd4".into(),
 			n_tx: 2647,
-			previousblockhash: Some(hash!("000000000000002937dcaffd8367cfb05cd9ef2e3bd7a081de82696f70e719d9")),
-			nextblockhash: Some(hash!("00000000000000331dddb553312687a4be62635ad950cde36ebc977c702d2791")),
+			previousblockhash: Some(hash!(
+				"000000000000002937dcaffd8367cfb05cd9ef2e3bd7a081de82696f70e719d9"
+			)),
+			nextblockhash: Some(hash!(
+				"00000000000000331dddb553312687a4be62635ad950cde36ebc977c702d2791"
+			)),
 		};
 		let json = r#"
 			{
@@ -394,7 +417,7 @@ mod tests {
 			networkhashps: 11970022568515.56,
 			pooledtx: 110,
 			chain: "test".into(),
-			warnings:"Warning: unknown new rules activated (versionbit 28)".into(),
+			warnings: "Warning: unknown new rules activated (versionbit 28)".into(),
 		};
 		let json = r#"
 			{
@@ -516,8 +539,14 @@ mod tests {
 		"#;
 		assert_eq!(expected, serde_json::from_str(json).unwrap());
 		assert!(expected.transaction().is_ok());
-		assert_eq!(expected.transaction().unwrap().input[0].previous_output.txid, 
-				   "f04a336cb0fac5611e625827bd89e0be5dd2504e6a98ecbfaa5fcf1528d06b58".parse().unwrap());
+		assert_eq!(
+			expected.transaction().unwrap().input[0]
+				.previous_output
+				.txid,
+			"f04a336cb0fac5611e625827bd89e0be5dd2504e6a98ecbfaa5fcf1528d06b58"
+				.parse()
+				.unwrap()
+		);
 		assert!(expected.vin[0].script_sig.script().is_ok());
 		assert!(expected.vout[0].script_pub_key.script().is_ok());
 	}
@@ -592,7 +621,7 @@ mod tests {
 	}
 
 	//TODO(stevenroose) test SignRawTransactionResult
-	
+
 	//TODO(stevenroose) test UTXO
 
 	#[test]
@@ -627,7 +656,7 @@ mod tests {
 	//fn test_deserialize_hex() {
 	//	let vectors = vec![
 	//		(r#""01020304a1ff""#, vec![1,2,3,4,161,255]),
-	//		(r#""5df6e0e2761359d30a8275058e299fcc0381534545f55cf43e41983f5d4c9456""#, 
+	//		(r#""5df6e0e2761359d30a8275058e299fcc0381534545f55cf43e41983f5d4c9456""#,
 	//			Sha256dHash::from_data(&[]).as_bytes()[..].into()),
 	//	];
 	//	for vector in vectors.into_iter() {
@@ -638,9 +667,7 @@ mod tests {
 
 	#[test]
 	fn test_deserialize_hex_array_opt() {
-		let vectors = vec![
-			(r#"["0102","a1ff"]"#, Some(vec![vec![1,2],vec![161,255]])),
-		];
+		let vectors = vec![(r#"["0102","a1ff"]"#, Some(vec![vec![1, 2], vec![161, 255]]))];
 		for vector in vectors.into_iter() {
 			let d = deserialize_hex_array_opt(deserializer!(vector.0)).unwrap();
 			assert_eq!(d, vector.1);

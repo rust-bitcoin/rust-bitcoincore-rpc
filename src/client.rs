@@ -2,17 +2,16 @@ use hex;
 use jsonrpc;
 use serde_json;
 
-use std::collections::HashMap;
 use bitcoin::blockdata::block::{Block, BlockHeader};
-use bitcoin::blockdata::transaction::{Transaction, SigHashType};
+use bitcoin::blockdata::transaction::{SigHashType, Transaction};
 use bitcoin::consensus::encode as btc_encode;
 use bitcoin::util::address::Address;
 use bitcoin::util::hash::Sha256dHash;
 use num_bigint::BigUint;
+use std::collections::HashMap;
 
 use error::*;
 use types::*;
-
 
 /// Arg is a simple enum to represent an argument value and its context.
 enum Arg {
@@ -23,7 +22,7 @@ enum Arg {
 
 /// arg is used to quickly generate Arg instances.  For optional argument a default value can be
 /// provided that will be used if the actual value was None.  If the default value doesn't matter
-/// (f.e. for the last optional argument), it can be left empty, but a comma should still be 
+/// (f.e. for the last optional argument), it can be left empty, but a comma should still be
 /// present.
 macro_rules! arg {
 	($val:expr) => {
@@ -33,15 +32,20 @@ macro_rules! arg {
 		match $val {
 			Some(v) => Arg::OptionalSet(serde_json::to_value(v)?),
 			None => Arg::OptionalDefault(serde_json::to_value($def)?),
-		}
+			}
 	};
-	($val:expr,) => { arg!($val, "") };
+	($val:expr,) => {
+		arg!($val, "")
+	};
 }
 
 /// empty quickly creates an empty Vec<serde_json::Value>.
 /// Used because using vec![] as default value lacks type annotation.
 macro_rules! empty {
-	() => { { let v: Vec<serde_json::Value> = vec![]; v } }
+	() => {{
+		let v: Vec<serde_json::Value> = vec![];
+			v
+		}};
 }
 
 /// make_call processes the argument list and makes the RPC call to the server.
@@ -51,7 +55,7 @@ macro_rules! make_call {
 	($self:ident, $method:expr, $($arg:expr),*) => {
 		{
 			// We want to truncate the argument to remove the trailing non-set optional arguments.
-			// This makes sure we don't send default values if we don't really need to and this 
+			// This makes sure we don't send default values if we don't really need to and this
 			// can prevent unexpected behaviour if the server changes its default values.
 			let mut args = Vec::new();
 			$( args.push($arg); )*
@@ -79,30 +83,28 @@ macro_rules! result_json {
 /// result_raw converts a hex response into a Bitcoin data type.
 /// This works both for Option types and regular types.
 macro_rules! result_raw {
-	($resp:ident, Option<$raw_type:ty>) => {
-		{
-			let hex_opt = $resp.and_then(|r| r.into_result::<Option<String>>()
-					.map_err(Error::from))?;
-			match hex_opt {
-				Some(hex) => {
-					let raw = hex::decode(hex)?;
-					match btc_encode::deserialize(raw.as_slice()) {
-						Ok(val) => Ok(Some(val)),
-						Err(e) => Err(e.into()),
-					}
-				},
-				None => Ok(None),
+	($resp:ident, Option<$raw_type:ty>) => {{
+		let hex_opt = $resp.and_then(|r| r.into_result::<Option<String>>().map_err(Error::from))?;
+		match hex_opt {
+			Some(hex) => {
+				let raw = hex::decode(hex)?;
+				match btc_encode::deserialize(raw.as_slice()) {
+					Ok(val) => Ok(Some(val)),
+					Err(e) => Err(e.into()),
+				}
+				}
+			None => Ok(None),
 			}
-		}
-	};
+		}};
 	($resp:ident, $raw_type:ty) => {
-		$resp.and_then(|r| r.into_result::<String>().map_err(Error::from))
-			 .and_then(|h| hex::decode(h).map_err(Error::from))
-			 .and_then(|r| {
-				 let t: Result<$raw_type, Error> = btc_encode::deserialize(r.as_slice())
-					.map_err(Error::from);
-				 t
-			 })
+		$resp
+			.and_then(|r| r.into_result::<String>().map_err(Error::from))
+			.and_then(|h| hex::decode(h).map_err(Error::from))
+			.and_then(|r| {
+				let t: Result<$raw_type, Error> =
+					btc_encode::deserialize(r.as_slice()).map_err(Error::from);
+					t
+				})
 	};
 }
 
@@ -132,7 +134,7 @@ impl Client {
 		result_json!(resp)
 	}
 	//TODO(stevenroose) add getblock_txs
-	
+
 	pub fn getblockcount(&mut self) -> Result<usize, Error> {
 		let resp = make_call!(self, "getblockcount");
 		result_json!(resp)
@@ -148,7 +150,10 @@ impl Client {
 		result_raw!(resp, BlockHeader)
 	}
 
-	pub fn getblockheader_verbose(&mut self, hash: Sha256dHash) -> Result<GetBlockHeaderResult, Error> {
+	pub fn getblockheader_verbose(
+		&mut self,
+		hash: Sha256dHash,
+	) -> Result<GetBlockHeaderResult, Error> {
 		let resp = make_call!(self, "getblockheader", arg!(hash), arg!(true));
 		result_json!(resp)
 	}
@@ -174,7 +179,13 @@ impl Client {
 		txid: Sha256dHash,
 		block_hash: Option<Sha256dHash>,
 	) -> Result<Option<Transaction>, Error> {
-		let resp = make_call!(self, "getrawtransaction", arg!(txid), arg!(false), arg!(block_hash));
+		let resp = make_call!(
+			self,
+			"getrawtransaction",
+			arg!(txid),
+			arg!(false),
+			arg!(block_hash)
+		);
 		result_raw!(resp, Option<Transaction>)
 	}
 
@@ -183,7 +194,13 @@ impl Client {
 		txid: Sha256dHash,
 		block_hash: Option<Sha256dHash>,
 	) -> Result<GetRawTransactionResult, Error> {
-		let resp = make_call!(self, "getrawtransaction", arg!(txid), arg!(true), arg!(block_hash));
+		let resp = make_call!(
+			self,
+			"getrawtransaction",
+			arg!(txid),
+			arg!(true),
+			arg!(block_hash)
+		);
 		result_json!(resp)
 	}
 
@@ -193,7 +210,13 @@ impl Client {
 		vout: u32,
 		include_mempool: Option<bool>,
 	) -> Result<Option<GetTxOutResult>, Error> {
-		let resp = make_call!(self, "gettxout", arg!(txid), arg!(vout), arg!(include_mempool,));
+		let resp = make_call!(
+			self,
+			"gettxout",
+			arg!(txid),
+			arg!(vout),
+			arg!(include_mempool,)
+		);
 		result_json!(resp)
 	}
 
@@ -205,8 +228,15 @@ impl Client {
 		include_unsafe: Option<bool>,
 		query_options: Option<HashMap<String, String>>,
 	) -> Result<Vec<ListUnspentResult>, Error> {
-		let resp = make_call!(self, "listunspent", arg!(minconf, 0), arg!(maxconf, 9999999),
-			arg!(addresses, empty!()), arg!(include_unsafe, true), arg!(query_options,));
+		let resp = make_call!(
+			self,
+			"listunspent",
+			arg!(minconf, 0),
+			arg!(maxconf, 9999999),
+			arg!(addresses, empty!()),
+			arg!(include_unsafe, true),
+			arg!(query_options,)
+		);
 		result_json!(resp)
 	}
 
@@ -222,9 +252,14 @@ impl Client {
 			unimplemented!();
 		}
 		let sighash = sighash_string(sighash_type);
-		let resp = make_call!(self, "signrawtransaction", arg!(hex::encode(tx)),
-			arg!(utxos, empty!()), arg!(Some(empty!()), empty!()),//TODO(stevenroose) impl privkeys
-			arg!(sighash,));
+		let resp = make_call!(
+			self,
+			"signrawtransaction",
+			arg!(hex::encode(tx)),
+			arg!(utxos, empty!()),
+			arg!(Some(empty!()), empty!()), //TODO(stevenroose) impl privkeys
+			arg!(sighash,)
+		);
 		result_json!(resp)
 	}
 
@@ -236,14 +271,28 @@ impl Client {
 		sighash_type: Option<SigHashType>,
 	) -> Result<SignRawTransactionResult, Error> {
 		let sighash = sighash_string(sighash_type);
-		let resp = make_call!(self, "signrawtransactionwithwallet", arg!(hex::encode(tx)),
-			arg!(utxos, empty!()), arg!(sighash,));
+		let resp = make_call!(
+			self,
+			"signrawtransactionwithwallet",
+			arg!(hex::encode(tx)),
+			arg!(utxos, empty!()),
+			arg!(sighash,)
+		);
 		result_json!(resp)
 	}
 
 	pub fn stop(&mut self) -> Result<(), Error> {
 		let resp = make_call!(self, "stop");
 		result_json!(resp)
+	}
+
+	pub fn verifymessage(
+		&mut self,
+		address: Address,
+		signature: Signature,
+		message: &str,
+	) -> Result<bool, Error> {
+
 	}
 }
 
