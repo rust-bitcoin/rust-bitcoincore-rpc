@@ -25,6 +25,13 @@ macro_rules! bitcoin_hex {
 
 #[derive(Deserialize, Clone, PartialEq, Eq, Debug)]
 #[serde(rename_all = "camelCase")]
+pub struct AddMultiSigAddressResult {
+	pub address: Address,
+	pub redeem_script: Script,
+}
+
+#[derive(Deserialize, Clone, PartialEq, Eq, Debug)]
+#[serde(rename_all = "camelCase")]
 pub struct GetBlockResult {
 	pub hash: Sha256dHash,
 	pub confirmations: usize,
@@ -303,6 +310,21 @@ mod tests {
 		($s:expr) => {
 			serde_json::from_str(&format!(r#""{}""#, $s)).unwrap()
 		};
+	}
+
+	#[test]
+	fn test_AddMultiSigAddressResult() {
+		let expected = AddMultiSigAddressResult {
+			address: addr!("2N3Cvw3s23W43MXnW28DKpuDGeXV147KTzc"),
+			redeem_script: script!("51210330aa51b444e2bac981235a0056112385057492c6cd06936af410c5af27c1f9462103dae74774a6cd35d948ee60bc7a1b35fdaed7b54698762e963e3677f795c7ad2a52ae"),
+		};
+		let json = r#"
+			{
+			  "address": "2N3Cvw3s23W43MXnW28DKpuDGeXV147KTzc",
+			  "redeemScript": "51210330aa51b444e2bac981235a0056112385057492c6cd06936af410c5af27c1f9462103dae74774a6cd35d948ee60bc7a1b35fdaed7b54698762e963e3677f795c7ad2a52ae"
+			}
+		"#;
+		assert_eq!(expected, serde_json::from_str(json).unwrap());
 	}
 
 	#[test]

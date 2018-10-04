@@ -1,5 +1,6 @@
 use hex;
 use jsonrpc;
+use serde;
 use serde_json;
 
 use bitcoin::blockdata::block::{Block, BlockHeader};
@@ -7,7 +8,10 @@ use bitcoin::blockdata::transaction::{SigHashType, Transaction};
 use bitcoin::consensus::encode as btc_encode;
 use bitcoin::util::address::Address;
 use bitcoin::util::hash::Sha256dHash;
+use bitcoin::util::privkey::Privkey;
+use bitcoin_amount::Amount;
 use num_bigint::BigUint;
+use secp256k1::{PublicKey, Secp256k1, Signature};
 use std::collections::HashMap;
 
 use error::*;
@@ -108,6 +112,43 @@ macro_rules! result_raw {
 	};
 }
 
+pub enum AddressType {
+	Legacy,
+	P2shSegwit,
+	Bech32,
+}
+
+impl serde::Serialize for AddressType {
+	fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+	where
+		S: serde::Serializer,
+	{
+		serializer.serialize_str(match self {
+			AddressType::Legacy => "legacy",
+			AddressType::P2shSegwit => "p2sh-segwit",
+			AddressType::Bech32 => "bech32",
+		})
+	}
+}
+
+/// Used to represent arguments that can either be an address or a public key.
+pub enum PubKeyOrAddress {
+	Address(Address),
+	PubKey(PublicKey),
+}
+
+impl serde::Serialize for PubKeyOrAddress {
+	fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+	where
+		S: serde::Serializer,
+	{
+		match self {
+			PubKeyOrAddress::Address(a) => serde::Serialize::serialize(a, serializer),
+			PubKeyOrAddress::PubKey(k) => serde::Serialize::serialize(k, serializer),
+		}
+	}
+}
+
 /// Client implements a JSON-RPC client for the Bitcoin Core daemon or compatible APIs.
 pub struct Client {
 	client: jsonrpc::client::Client,
@@ -122,6 +163,39 @@ impl Client {
 		Client {
 			client: jsonrpc::client::Client::new(uri, user, pass),
 		}
+	}
+
+	pub fn addmultisigaddress(
+		&mut self,
+		nrequired: usize,
+		keys: Vec<PubKeyOrAddress>,
+		label: Option<String>,
+		address_type: Option<AddressType>,
+	) -> Result<AddMultiSigAddressResult, Error> {
+		let resp = make_call!(
+			self,
+			"addmultisigaddress",
+			arg!(nrequired),
+			arg!(keys),
+			arg!(label,),
+			arg!(address_type,)
+		);
+		result_json!(resp)
+	}
+
+	pub fn backupwallet(&mut self, destination: String) -> Result<(), Error> {
+		let resp = make_call!(self, "backupwallet", arg!(destination));
+		result_json!(resp)
+	}
+
+	pub fn dumpprivkey(&mut self, address: Address) -> Result<Privkey, Error> {
+		let resp = make_call!(self, "dumpprivkey", arg!(address));
+		result_json!(resp)
+	}
+
+	pub fn encryptwallet(&mut self, passphrase: String) -> Result<(), Error> {
+		let resp = make_call!(self, "encryptwallet", arg!(passphrase));
+		result_json!(resp)
 	}
 
 	pub fn getblock_raw(&mut self, hash: Sha256dHash) -> Result<Block, Error> {
@@ -201,6 +275,15 @@ impl Client {
 			arg!(true),
 			arg!(block_hash)
 		);
+		result_json!(resp)
+	}
+
+	pub fn getreceivedbyaddress(
+		&mut self,
+		address: Address,
+		minconf: Option<u32>,
+	) -> Result<Amount, Error> {
+		let resp = make_call!(self, "getreceivedbyaddress", arg!(address), arg!(minconf,));
 		result_json!(resp)
 	}
 
@@ -292,7 +375,15 @@ impl Client {
 		signature: Signature,
 		message: &str,
 	) -> Result<bool, Error> {
-
+		let secp = Secp256k1::without_caps();
+		let resp = make_call!(
+			self,
+			"verifymessage",
+			arg!(address),
+			arg!(hex::encode(signature.serialize_der(&secp))),
+			arg!(message)
+		);
+		result_json!(resp)
 	}
 }
 

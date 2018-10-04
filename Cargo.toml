@@ -27,6 +27,9 @@ hex = "0.3"
 # Used to parse difficulty values.
 num-bigint = { version = "0.2", features = [ "serde" ] }
 
+# Used for signatures and keys
+secp256k1 = { version = "0.11", features = [ "serde" ] }
+
 # Used for Bitcoin-specific types.
 [dependencies.bitcoin-amount] # 0.1.4
 version = "0.1.4"
