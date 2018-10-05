@@ -1,3 +1,5 @@
+use std::result;
+
 use hex;
 use jsonrpc;
 use serde;
@@ -16,6 +18,8 @@ use std::collections::HashMap;
 
 use error::*;
 use types::*;
+
+type Result<T> = result::Result<T, Error>;
 
 /// Arg is a simple enum to represent an argument value and its context.
 enum Arg {
@@ -119,7 +123,7 @@ pub enum AddressType {
 }
 
 impl serde::Serialize for AddressType {
-	fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+	fn serialize<S>(&self, serializer: S) -> result::Result<S::Ok, S::Error>
 	where
 		S: serde::Serializer,
 	{
@@ -138,7 +142,7 @@ pub enum PubKeyOrAddress {
 }
 
 impl serde::Serialize for PubKeyOrAddress {
-	fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+	fn serialize<S>(&self, serializer: S) -> result::Result<S::Ok, S::Error>
 	where
 		S: serde::Serializer,
 	{
@@ -171,7 +175,7 @@ impl Client {
 		keys: Vec<PubKeyOrAddress>,
 		label: Option<&str>,
 		address_type: Option<AddressType>,
-	) -> Result<AddMultiSigAddressResult, Error> {
+	) -> Result<AddMultiSigAddressResult> {
 		let resp = make_call!(
 			self,
 			"addmultisigaddress",
@@ -183,44 +187,44 @@ impl Client {
 		result_json!(resp)
 	}
 
-	pub fn backupwallet(&mut self, destination: &str) -> Result<(), Error> {
+	pub fn backupwallet(&mut self, destination: &str) -> Result<()> {
 		let resp = make_call!(self, "backupwallet", arg!(destination));
 		result_json!(resp)
 	}
 
 	//TODO(stevenroose) use Privkey type
-	pub fn dumpprivkey(&mut self, address: Address) -> Result<String, Error> {
+	pub fn dumpprivkey(&mut self, address: Address) -> Result<String> {
 		let resp = make_call!(self, "dumpprivkey", arg!(address));
 		result_json!(resp)
 	}
 
-	pub fn encryptwallet(&mut self, passphrase: &str) -> Result<(), Error> {
+	pub fn encryptwallet(&mut self, passphrase: &str) -> Result<()> {
 		let resp = make_call!(self, "encryptwallet", arg!(passphrase));
 		result_json!(resp)
 	}
 
-	pub fn getblock_raw(&mut self, hash: Sha256dHash) -> Result<Block, Error> {
+	pub fn getblock_raw(&mut self, hash: Sha256dHash) -> Result<Block> {
 		let resp = make_call!(self, "getblock", arg!(hash), arg!(0));
 		result_raw!(resp, Block)
 	}
 
-	pub fn getblock_info(&mut self, hash: Sha256dHash) -> Result<GetBlockResult, Error> {
+	pub fn getblock_info(&mut self, hash: Sha256dHash) -> Result<GetBlockResult> {
 		let resp = make_call!(self, "getblock", arg!(hash), arg!(1));
 		result_json!(resp)
 	}
 	//TODO(stevenroose) add getblock_txs
 
-	pub fn getblockcount(&mut self) -> Result<usize, Error> {
+	pub fn getblockcount(&mut self) -> Result<usize> {
 		let resp = make_call!(self, "getblockcount");
 		result_json!(resp)
 	}
 
-	pub fn getblockhash(&mut self, height: u32) -> Result<Sha256dHash, Error> {
+	pub fn getblockhash(&mut self, height: u32) -> Result<Sha256dHash> {
 		let resp = make_call!(self, "getblockhash", arg!(height));
 		result_json!(resp)
 	}
 
-	pub fn getblockheader(&mut self, hash: Sha256dHash) -> Result<BlockHeader, Error> {
+	pub fn getblockheader(&mut self, hash: Sha256dHash) -> Result<BlockHeader> {
 		let resp = make_call!(self, "getblockheader", arg!(hash), arg!(true));
 		result_raw!(resp, BlockHeader)
 	}
@@ -228,23 +232,23 @@ impl Client {
 	pub fn getblockheader_verbose(
 		&mut self,
 		hash: Sha256dHash,
-	) -> Result<GetBlockHeaderResult, Error> {
+	) -> Result<GetBlockHeaderResult> {
 		let resp = make_call!(self, "getblockheader", arg!(hash), arg!(true));
 		result_json!(resp)
 	}
 
 	//TODO(stevenroose) verify if return type works
-	pub fn getdifficulty(&mut self) -> Result<BigUint, Error> {
+	pub fn getdifficulty(&mut self) -> Result<BigUint> {
 		let resp = make_call!(self, "getdifficulty");
 		result_json!(resp)
 	}
 
-	pub fn getconnectioncount(&mut self) -> Result<usize, Error> {
+	pub fn getconnectioncount(&mut self) -> Result<usize> {
 		let resp = make_call!(self, "getconnectioncount");
 		result_json!(resp)
 	}
 
-	pub fn getmininginfo(&mut self) -> Result<GetMiningInfoResult, Error> {
+	pub fn getmininginfo(&mut self) -> Result<GetMiningInfoResult> {
 		let resp = make_call!(self, "getmininginfo");
 		result_json!(resp)
 	}
@@ -253,7 +257,7 @@ impl Client {
 		&mut self,
 		txid: Sha256dHash,
 		block_hash: Option<Sha256dHash>,
-	) -> Result<Option<Transaction>, Error> {
+	) -> Result<Option<Transaction>> {
 		let resp = make_call!(
 			self,
 			"getrawtransaction",
@@ -268,7 +272,7 @@ impl Client {
 		&mut self,
 		txid: Sha256dHash,
 		block_hash: Option<Sha256dHash>,
-	) -> Result<GetRawTransactionResult, Error> {
+	) -> Result<GetRawTransactionResult> {
 		let resp = make_call!(
 			self,
 			"getrawtransaction",
@@ -283,7 +287,7 @@ impl Client {
 		&mut self,
 		address: Address,
 		minconf: Option<u32>,
-	) -> Result<Amount, Error> {
+	) -> Result<Amount> {
 		let resp = make_call!(self, "getreceivedbyaddress", arg!(address), arg!(minconf,));
 		result_json!(resp)
 	}
@@ -292,7 +296,7 @@ impl Client {
 		&mut self,
 		txid: Sha256dHash,
 		include_watchonly: Option<bool>,
-	) -> Result<GetTransactionResult, Error> {
+	) -> Result<GetTransactionResult> {
 		let resp = make_call!(self, "gettransaction", arg!(txid), arg!(include_watchonly,));
 		result_json!(resp)
 	}
@@ -302,7 +306,7 @@ impl Client {
 		txid: Sha256dHash,
 		vout: u32,
 		include_mempool: Option<bool>,
-	) -> Result<Option<GetTxOutResult>, Error> {
+	) -> Result<Option<GetTxOutResult>> {
 		let resp = make_call!(
 			self,
 			"gettxout",
@@ -314,12 +318,12 @@ impl Client {
 	}
 
 	//TODO(stevenroose) use Privkey type
-	pub fn importprivkey(&mut self, privkey: &str, label: Option<&str>, rescan: Option<bool>) -> Result<(), Error> {
+	pub fn importprivkey(&mut self, privkey: &str, label: Option<&str>, rescan: Option<bool>) -> Result<()> {
 		let resp = make_call!(self, "importprivkey", arg!(privkey), arg!(label,), arg!(rescan,));
 		result_json!(resp)
 	}
 
-	pub fn keypoolrefill(&mut self, new_size: Option<usize>) -> Result<(), Error> {
+	pub fn keypoolrefill(&mut self, new_size: Option<usize>) -> Result<()> {
 		let resp = make_call!(self, "keypoolrefill", arg!(new_size,));
 		result_json!(resp)
 	}
@@ -331,7 +335,7 @@ impl Client {
 		addresses: Option<Vec<Address>>,
 		include_unsafe: Option<bool>,
 		query_options: Option<HashMap<String, String>>,
-	) -> Result<Vec<ListUnspentResult>, Error> {
+	) -> Result<Vec<ListUnspentResult>> {
 		let resp = make_call!(
 			self,
 			"listunspent",
@@ -351,7 +355,7 @@ impl Client {
 		utxos: Option<Vec<UTXO>>,
 		private_keys: Option<Vec<Vec<u8>>>,
 		sighash_type: Option<SigHashType>,
-	) -> Result<SignRawTransactionResult, Error> {
+	) -> Result<SignRawTransactionResult> {
 		if private_keys.is_some() {
 			unimplemented!();
 		}
@@ -373,7 +377,7 @@ impl Client {
 		tx: &[u8],
 		utxos: Option<Vec<UTXO>>,
 		sighash_type: Option<SigHashType>,
-	) -> Result<SignRawTransactionResult, Error> {
+	) -> Result<SignRawTransactionResult> {
 		let sighash = sighash_string(sighash_type);
 		let resp = make_call!(
 			self,
@@ -385,7 +389,7 @@ impl Client {
 		result_json!(resp)
 	}
 
-	pub fn stop(&mut self) -> Result<(), Error> {
+	pub fn stop(&mut self) -> Result<()> {
 		let resp = make_call!(self, "stop");
 		result_json!(resp)
 	}
@@ -395,7 +399,7 @@ impl Client {
 		address: Address,
 		signature: Signature,
 		message: &str,
-	) -> Result<bool, Error> {
+	) -> Result<bool> {
 		let secp = Secp256k1::without_caps();
 		let resp = make_call!(
 			self,
