@@ -191,10 +191,7 @@ impl Client {
 		result_raw!(resp, BlockHeader)
 	}
 
-	pub fn getblockheader_verbose(
-		&mut self,
-		hash: Sha256dHash,
-	) -> Result<GetBlockHeaderResult> {
+	pub fn getblockheader_verbose(&mut self, hash: Sha256dHash) -> Result<GetBlockHeaderResult> {
 		let resp = make_call!(self, "getblockheader", arg!(hash), arg!(true));
 		result_json!(resp)
 	}
@@ -220,13 +217,7 @@ impl Client {
 		txid: Sha256dHash,
 		block_hash: Option<Sha256dHash>,
 	) -> Result<Option<Transaction>> {
-		let resp = make_call!(
-			self,
-			"getrawtransaction",
-			arg!(txid),
-			arg!(false),
-			arg!(block_hash)
-		);
+		let resp = make_call!(self, "getrawtransaction", arg!(txid), arg!(false), arg!(block_hash));
 		result_raw!(resp, Option<Transaction>)
 	}
 
@@ -235,13 +226,7 @@ impl Client {
 		txid: Sha256dHash,
 		block_hash: Option<Sha256dHash>,
 	) -> Result<GetRawTransactionResult> {
-		let resp = make_call!(
-			self,
-			"getrawtransaction",
-			arg!(txid),
-			arg!(true),
-			arg!(block_hash)
-		);
+		let resp = make_call!(self, "getrawtransaction", arg!(txid), arg!(true), arg!(block_hash));
 		result_json!(resp)
 	}
 
@@ -269,18 +254,17 @@ impl Client {
 		vout: u32,
 		include_mempool: Option<bool>,
 	) -> Result<Option<GetTxOutResult>> {
-		let resp = make_call!(
-			self,
-			"gettxout",
-			arg!(txid),
-			arg!(vout),
-			arg!(include_mempool,)
-		);
+		let resp = make_call!(self, "gettxout", arg!(txid), arg!(vout), arg!(include_mempool,));
 		result_json!(resp)
 	}
 
 	//TODO(stevenroose) use Privkey type
-	pub fn importprivkey(&mut self, privkey: &str, label: Option<&str>, rescan: Option<bool>) -> Result<()> {
+	pub fn importprivkey(
+		&mut self,
+		privkey: &str,
+		label: Option<&str>,
+		rescan: Option<bool>,
+	) -> Result<()> {
 		let resp = make_call!(self, "importprivkey", arg!(privkey), arg!(label,), arg!(rescan,));
 		result_json!(resp)
 	}

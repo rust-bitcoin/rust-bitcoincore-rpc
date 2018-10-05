@@ -4,11 +4,11 @@ use bitcoin::blockdata::script::Script;
 use bitcoin::blockdata::transaction::Transaction;
 use bitcoin::consensus::encode as btc_encode;
 use bitcoin::util::address::Address;
-use secp256k1::PublicKey;
 use bitcoin::util::hash::Sha256dHash;
 use bitcoin_amount::Amount;
 use hex;
 use num_bigint::BigUint;
+use secp256k1::PublicKey;
 use serde;
 use serde::de::Error as SerdeError;
 use serde::Deserialize;
@@ -382,12 +382,7 @@ where
 	let s = f64::deserialize(deserializer)?.to_string();
 	let real = match s.split('.').nth(0) {
 		Some(r) => r,
-		None => {
-			return Err(D::Error::custom(&format!(
-				"error parsing difficulty: {}",
-				s
-			)))
-		}
+		None => return Err(D::Error::custom(&format!("error parsing difficulty: {}", s))),
 	};
 	BigUint::from_str(real)
 		.map_err(|_| D::Error::custom(&format!("error parsing difficulty: {}", s)))
@@ -473,9 +468,7 @@ mod tests {
 			version: 1,
 			version_hex: Some("00000001".into()),
 			merkleroot: hash!("20222eb90f5895556926c112bb5aa0df4ab5abc3107e21a6950aec3b2e3541e2"),
-			tx: vec![hash!(
-				"20222eb90f5895556926c112bb5aa0df4ab5abc3107e21a6950aec3b2e3541e2"
-			)],
+			tx: vec![hash!("20222eb90f5895556926c112bb5aa0df4ab5abc3107e21a6950aec3b2e3541e2")],
 			time: 1296688946,
 			mediantime: Some(1296688928),
 			nonce: 875942400,
@@ -696,12 +689,8 @@ mod tests {
 		assert_eq!(expected, serde_json::from_str(json).unwrap());
 		assert!(expected.transaction().is_ok());
 		assert_eq!(
-			expected.transaction().unwrap().input[0]
-				.previous_output
-				.txid,
-			"f04a336cb0fac5611e625827bd89e0be5dd2504e6a98ecbfaa5fcf1528d06b58"
-				.parse()
-				.unwrap()
+			expected.transaction().unwrap().input[0].previous_output.txid,
+			"f04a336cb0fac5611e625827bd89e0be5dd2504e6a98ecbfaa5fcf1528d06b58".parse().unwrap()
 		);
 		assert!(expected.vin[0].script_sig.script().is_ok());
 		assert!(expected.vout[0].script_pub_key.script().is_ok());
