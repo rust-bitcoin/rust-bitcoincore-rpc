@@ -12,7 +12,7 @@ use bitcoin::util::hash::Sha256dHash;
 use bitcoin::util::privkey::Privkey;
 use bitcoin_amount::Amount;
 use num_bigint::BigUint;
-use secp256k1::{Secp256k1, Signature};
+use secp256k1::Signature;
 use std::collections::HashMap;
 
 use error::*;
@@ -115,6 +115,67 @@ macro_rules! result_raw {
 	};
 }
 
+/// This macro generated methods that corresponds to RPC calls.  Because of the issue with fixed
+/// arguments, this macro is only used for methods that return JSON-parsed return types.
+/// The parameters in order are:
+/// - the method name
+/// - (optional) the command name in case it's not the same as the method name
+/// - the return type prefixed by `json:` or `raw:` for json-parsed or consensus-decoded types
+/// - (optional) a list of required params and their type
+/// a semicolon is used to seperate ^ and v
+/// - (optional) a list of optional params, their type and their default value (use "" for none)
+/// - (optional) a fixed-value param to place in between required and optional params
+macro_rules! call {
+	// Actual expansions used internally.
+	(@int $method:ident, $cmd:ident, json:$res:ty, $($arg:ident: $argt:ty),*; 
+	 $($oarg:ident: $oargt:ty: $oargv:expr),*; $($fix:expr),*) => {
+		pub fn $method(&mut self $(, $arg: $argt)* $(, $oarg: Option<$oargt>)*) -> Result<$res> {
+			let resp = make_call!(self, stringify!($cmd)
+								  $(, arg!($arg))* $(, arg!($fix))* $(, arg!($oarg, $oargv))*);
+			result_json!(resp)
+		}
+	};
+	(@int $method:ident, $cmd:ident, raw:$res:ty, $($arg:ident: $argt:ty),*; 
+	 $($oarg:ident: $oargt:ty: $oargv:expr),*; $($fix:expr),*) => {
+		pub fn $method(&mut self $(, $arg: $argt)* $(, $oarg: Option<$oargt>)*) -> Result<$res> {
+			let resp = make_call!(self, stringify!($cmd)
+								  $(, arg!($arg))* $(, arg!($fix))* $(, arg!($oarg, $oargv))*);
+			result_raw!(resp, $res)
+		}
+	};
+
+	// Rust method is JSON-RPC command suffixed with a variant name.
+	//
+	// Since it's not possible to join two ident captures with an underscore, in the case of a
+	// method variant, the method name needs to be repeated in full instead of just the suffix.
+	// This could be fixed somehow when the "mashup" crate becomes std lib or when
+	// concat_idents! gets fixed to be used inside macros.
+	($method:ident, $cmd:ident, $rt:ident:$res:ty $(, $arg:ident: $argt:ty)*; 
+	 $($oarg:ident: $oargt:ty: $oargv:expr),*; $fixed:expr) => {
+		call!(@int $method, $cmd, $rt:$res, $($arg: $argt),*; $($oarg: $oargt: $oargv),*; $fixed);
+	};
+	($method:ident, $cmd:ident, $rt:ident:$res:ty $(,$arg:ident: $argt:ty)*; 
+	 $($oarg:ident: $oargt:ty: $oargv:expr),*) => {
+		call!(@int $method, $cmd, $rt:$res, $($arg: $argt),*; $($oarg: $oargt),*;);
+	};
+	($method:ident, $cmd:ident, $rt:ident:$res:ty $(,$arg:ident: $argt:ty)*) => {
+		call!(@int $method, $cmd, $rt:$res, $($arg: $argt),*;;);
+	};
+
+	// Rust method is same as JSON-RPC command.
+	($cmd:ident, $rt:ident:$res:ty $(, $arg:ident: $argt:ty)*; 
+	 $($oarg:ident: $oargt:ty: $oargv:expr),*; $fixed:expr) => {
+		call!(@int $cmd, $cmd, $rt:$res, $($arg: $argt),*; $($oarg: $oargt: $oargv),*; $fixed);
+	};
+	($cmd:ident, $rt:ident:$res:ty $(, $arg:ident: $argt:ty)*; 
+	 $($oarg:ident: $oargt:ty: $oargv:expr),*) => {
+		call!(@int $cmd, $cmd, $rt:$res, $($arg: $argt),*; $($oarg: $oargt: $oargv),*;);
+	};
+	($cmd:ident, $rt:ident:$res:ty $(, $arg:ident: $argt:ty)*) => {
+		call!(@int $cmd, $cmd, $rt:$res, $($arg: $argt),*;;);
+	};
+}
+
 /// Client implements a JSON-RPC client for the Bitcoin Core daemon or compatible APIs.
 pub struct Client {
 	client: jsonrpc::client::Client,
@@ -131,169 +192,61 @@ impl Client {
 		}
 	}
 
-	pub fn addmultisigaddress(
-		&mut self,
-		nrequired: usize,
-		keys: Vec<PubKeyOrAddress>,
-		label: Option<&str>,
-		address_type: Option<AddressType>,
-	) -> Result<AddMultiSigAddressResult> {
-		let resp = make_call!(
-			self,
-			"addmultisigaddress",
-			arg!(nrequired),
-			arg!(keys),
-			arg!(label,),
-			arg!(address_type,)
-		);
-		result_json!(resp)
-	}
+	call!(addmultisigaddress, json:AddMultiSigAddressResult, nrequired: usize, 
+		  keys: Vec<PubKeyOrAddress>; label: &str: "", address_type: AddressType: "");
 
-	pub fn backupwallet(&mut self, destination: &str) -> Result<()> {
-		let resp = make_call!(self, "backupwallet", arg!(destination));
-		result_json!(resp)
-	}
+	call!(backupwallet, json:(), destination: &str);
 
 	//TODO(stevenroose) use Privkey type
-	pub fn dumpprivkey(&mut self, address: Address) -> Result<String> {
-		let resp = make_call!(self, "dumpprivkey", arg!(address));
-		result_json!(resp)
-	}
+	call!(dumpprivkey, json:String, address: Address);
 
-	pub fn encryptwallet(&mut self, passphrase: &str) -> Result<()> {
-		let resp = make_call!(self, "encryptwallet", arg!(passphrase));
-		result_json!(resp)
-	}
+	call!(encryptwallet, json:(), passphrase: &str);
 
-	pub fn getblock_raw(&mut self, hash: Sha256dHash) -> Result<Block> {
-		let resp = make_call!(self, "getblock", arg!(hash), arg!(0));
-		result_raw!(resp, Block)
-	}
+	call!(getblock_raw, getblock, raw:Block, hash: Sha256dHash; ; 0);
 
-	pub fn getblock_info(&mut self, hash: Sha256dHash) -> Result<GetBlockResult> {
-		let resp = make_call!(self, "getblock", arg!(hash), arg!(1));
-		result_json!(resp)
-	}
+	call!(getblock_info, getblock, json:GetBlockResult, hash: Sha256dHash; ; 1);
 	//TODO(stevenroose) add getblock_txs
 
-	pub fn getblockcount(&mut self) -> Result<usize> {
-		let resp = make_call!(self, "getblockcount");
-		result_json!(resp)
-	}
+	call!(getblockcount, json:usize);
 
-	pub fn getblockhash(&mut self, height: u32) -> Result<Sha256dHash> {
-		let resp = make_call!(self, "getblockhash", arg!(height));
-		result_json!(resp)
-	}
+	call!(getblockhash, json:Sha256dHash, height: u32);
 
-	pub fn getblockheader(&mut self, hash: Sha256dHash) -> Result<BlockHeader> {
-		let resp = make_call!(self, "getblockheader", arg!(hash), arg!(true));
-		result_raw!(resp, BlockHeader)
-	}
+	call!(getblockheader, raw:BlockHeader, hash: Sha256dHash; ; false);
 
-	pub fn getblockheader_verbose(&mut self, hash: Sha256dHash) -> Result<GetBlockHeaderResult> {
-		let resp = make_call!(self, "getblockheader", arg!(hash), arg!(true));
-		result_json!(resp)
-	}
-
+	call!(getblockheader_verbose, getblockheader, json:GetBlockHeaderResult, 
+		  hash: Sha256dHash; ; true);
+	
 	//TODO(stevenroose) verify if return type works
-	pub fn getdifficulty(&mut self) -> Result<BigUint> {
-		let resp = make_call!(self, "getdifficulty");
-		result_json!(resp)
-	}
+	call!(getdifficulty, json:BigUint);
 
-	pub fn getconnectioncount(&mut self) -> Result<usize> {
-		let resp = make_call!(self, "getconnectioncount");
-		result_json!(resp)
-	}
+	call!(getconnectioncount, json:usize);
 
-	pub fn getmininginfo(&mut self) -> Result<GetMiningInfoResult> {
-		let resp = make_call!(self, "getmininginfo");
-		result_json!(resp)
-	}
+	call!(getmininginfo, json:GetMiningInfoResult);
 
-	pub fn getrawtransaction(
-		&mut self,
-		txid: Sha256dHash,
-		block_hash: Option<Sha256dHash>,
-	) -> Result<Option<Transaction>> {
-		let resp = make_call!(self, "getrawtransaction", arg!(txid), arg!(false), arg!(block_hash));
-		result_raw!(resp, Option<Transaction>)
-	}
+	call!(getrawtransaction, raw:Transaction, txid: Sha256dHash; 
+		  block_hash: Sha256dHash: ""; false);
 
-	pub fn getrawtransaction_verbose(
-		&mut self,
-		txid: Sha256dHash,
-		block_hash: Option<Sha256dHash>,
-	) -> Result<GetRawTransactionResult> {
-		let resp = make_call!(self, "getrawtransaction", arg!(txid), arg!(true), arg!(block_hash));
-		result_json!(resp)
-	}
+	call!(getrawtransaction_verbose, getrawtransaction, json:GetRawTransactionResult,
+		  txid: Sha256dHash; block_hash: Sha256dHash: ""; true);
 
-	pub fn getreceivedbyaddress(
-		&mut self,
-		address: Address,
-		minconf: Option<u32>,
-	) -> Result<Amount> {
-		let resp = make_call!(self, "getreceivedbyaddress", arg!(address), arg!(minconf,));
-		result_json!(resp)
-	}
+	call!(getreceivedbyaddress, json:Amount, address: Address; minconf: u32: 0);
 
-	pub fn gettransaction(
-		&mut self,
-		txid: Sha256dHash,
-		include_watchonly: Option<bool>,
-	) -> Result<GetTransactionResult> {
-		let resp = make_call!(self, "gettransaction", arg!(txid), arg!(include_watchonly,));
-		result_json!(resp)
-	}
+	call!(gettransaction, json:GetTransactionResult, 
+		  txid: Sha256dHash; include_watchonly: bool: true);
 
-	pub fn gettxout(
-		&mut self,
-		txid: Sha256dHash,
-		vout: u32,
-		include_mempool: Option<bool>,
-	) -> Result<Option<GetTxOutResult>> {
-		let resp = make_call!(self, "gettxout", arg!(txid), arg!(vout), arg!(include_mempool,));
-		result_json!(resp)
-	}
+	call!(gettxout, json:GetTxOutResult, 
+		  txid: Sha256dHash, vout: u32; include_mempool: bool: true);
 
 	//TODO(stevenroose) use Privkey type
-	pub fn importprivkey(
-		&mut self,
-		privkey: &str,
-		label: Option<&str>,
-		rescan: Option<bool>,
-	) -> Result<()> {
-		let resp = make_call!(self, "importprivkey", arg!(privkey), arg!(label,), arg!(rescan,));
-		result_json!(resp)
-	}
+	call!(importprivkey, json:(), privkey: &str; label: &str: "", rescan: bool: true);
 
-	pub fn keypoolrefill(&mut self, new_size: Option<usize>) -> Result<()> {
-		let resp = make_call!(self, "keypoolrefill", arg!(new_size,));
-		result_json!(resp)
-	}
+	call!(keypoolrefill, json:(); new_size: usize: 0);
 
-	pub fn listunspent(
-		&mut self,
-		minconf: Option<usize>,
-		maxconf: Option<usize>,
-		addresses: Option<Vec<Address>>,
-		include_unsafe: Option<bool>,
-		query_options: Option<HashMap<String, String>>,
-	) -> Result<Vec<ListUnspentResult>> {
-		let resp = make_call!(
-			self,
-			"listunspent",
-			arg!(minconf, 0),
-			arg!(maxconf, 9999999),
-			arg!(addresses, empty!()),
-			arg!(include_unsafe, true),
-			arg!(query_options,)
-		);
-		result_json!(resp)
-	}
+	call!(listunspent, json:Vec<ListUnspentResult>; minconf: usize: 0, maxconf: usize: 9999999,
+			   addresses: Vec<Address>: empty!(), include_unsafe: bool: true,
+			   query_options: HashMap<String, String>: "");
 
+	//TODO(stevenroose) macro the hex thing
 	/// private_keys are not yet implemented.
 	pub fn signrawtransaction(
 		&mut self,
@@ -335,29 +288,12 @@ impl Client {
 		result_json!(resp)
 	}
 
-	pub fn stop(&mut self) -> Result<()> {
-		let resp = make_call!(self, "stop");
-		result_json!(resp)
-	}
+	call!(stop, json:());
 
-	pub fn verifymessage(
-		&mut self,
-		address: Address,
-		signature: Signature,
-		message: &str,
-	) -> Result<bool> {
-		let secp = Secp256k1::without_caps();
-		let resp = make_call!(
-			self,
-			"verifymessage",
-			arg!(address),
-			arg!(hex::encode(signature.serialize_der(&secp))),
-			arg!(message)
-		);
-		result_json!(resp)
-	}
+	call!(verifymessage, json:bool, address: Address, signature: Signature, message: &str);
 }
 
+//TODO(stevenroose) consider porting this to rust-bitcoin with serde::Serialize
 /// sighash_string converts a SigHashType object to a string representation used in the API.
 fn sighash_string(sighash: Option<SigHashType>) -> Option<String> {
 	match sighash {
