@@ -188,7 +188,8 @@ impl Client {
 		result_json!(resp)
 	}
 
-	pub fn dumpprivkey(&mut self, address: Address) -> Result<Privkey, Error> {
+	//TODO(stevenroose) use Privkey type
+	pub fn dumpprivkey(&mut self, address: Address) -> Result<String, Error> {
 		let resp = make_call!(self, "dumpprivkey", arg!(address));
 		result_json!(resp)
 	}
@@ -284,6 +285,15 @@ impl Client {
 		minconf: Option<u32>,
 	) -> Result<Amount, Error> {
 		let resp = make_call!(self, "getreceivedbyaddress", arg!(address), arg!(minconf,));
+		result_json!(resp)
+	}
+
+	pub fn gettransaction(
+		&mut self,
+		txid: Sha256dHash,
+		include_watchonly: Option<bool>,
+	) -> Result<GetTransactionResult, Error> {
+		let resp = make_call!(self, "gettransaction", arg!(txid), arg!(include_watchonly,));
 		result_json!(resp)
 	}
 

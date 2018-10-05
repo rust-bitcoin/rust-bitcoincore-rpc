@@ -14,6 +14,8 @@ use serde::Deserialize;
 
 use error::Error;
 
+//TODO(stevenroose) consider using a Time type
+
 macro_rules! bitcoin_hex {
 	(Script, $hex:expr) => {
 		Ok(Script::from(hex::decode($hex)?))
@@ -166,6 +168,90 @@ impl GetRawTransactionResult {
 	}
 }
 
+/// Enum to represent the BIP125 replacable status for a transaction.
+#[derive(Clone, PartialEq, Eq, Debug)]
+pub enum Bip125Replaceable {
+	Yes,
+	No,
+	Unknown,
+}
+
+impl<'de> ::serde::Deserialize<'de> for Bip125Replaceable {
+	fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+	where
+		D: ::serde::Deserializer<'de>,
+	{
+		let s = String::deserialize(deserializer)?;
+		match s.as_ref() {
+			"yes" => Ok(Bip125Replaceable::Yes),
+			"no" => Ok(Bip125Replaceable::No),
+			"unknown" => Ok(Bip125Replaceable::Unknown),
+			v => Err(D::Error::custom(&format!("wrong value for bip125-replacable: {}", v))),
+		}
+	}
+}
+
+/// Enum to represent the BIP125 replacable status for a transaction.
+#[derive(Clone, PartialEq, Eq, Debug)]
+pub enum GetTransactionResultDetailCategory {
+	Send,
+	Receive,
+}
+
+impl<'de> ::serde::Deserialize<'de> for GetTransactionResultDetailCategory {
+	fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+	where
+		D: ::serde::Deserializer<'de>,
+	{
+		let s = String::deserialize(deserializer)?;
+		match s.as_ref() {
+			"send" => Ok(GetTransactionResultDetailCategory::Send),
+			"receive" => Ok(GetTransactionResultDetailCategory::Receive),
+			v => Err(D::Error::custom(&format!("wrong value for 'detail' field: {}", v))),
+		}
+	}
+}
+
+#[derive(Deserialize, Clone, PartialEq, Eq, Debug)]
+#[serde(rename_all = "camelCase")]
+pub struct GetTransactionResultDetail {
+	pub address: Address,
+	pub category: GetTransactionResultDetailCategory,
+	#[serde(deserialize_with = "deserialize_amount")]
+	pub amount: Amount,
+	pub label: String,
+	pub vout: u32,
+	#[serde(default, deserialize_with = "deserialize_amount_opt")]
+	pub fee: Option<Amount>,
+	pub abandoned: Option<bool>,
+}
+
+#[derive(Deserialize, Clone, PartialEq, Eq, Debug)]
+#[serde(rename_all = "camelCase")]
+pub struct GetTransactionResult {
+	#[serde(deserialize_with = "deserialize_amount")]
+	pub amount: Amount,
+	#[serde(default, deserialize_with = "deserialize_amount_opt")]
+	pub fee: Option<Amount>,
+	pub confirmations: usize,
+	pub blockhash: Sha256dHash,
+	pub blockindex: usize,
+	pub blocktime: u64,
+	pub txid: Sha256dHash,
+	pub time: u64,
+	pub timereceived: u64,
+	#[serde(rename = "bip125-replaceable")]
+	pub bip125_replaceable: Bip125Replaceable,
+	pub details: Vec<GetTransactionResultDetail>,
+	pub hex: String,
+}
+
+impl GetTransactionResult {
+	pub fn transaction(&self) -> Result<Transaction, Error> {
+		bitcoin_hex!(Transaction, &self.hex)
+	}
+}
+
 #[derive(Deserialize, Clone, PartialEq, Eq, Debug)]
 #[serde(rename_all = "camelCase")]
 pub struct GetTxOutResult {
@@ -239,6 +325,15 @@ where
 	D: serde::Deserializer<'de>,
 {
 	Ok(Amount::from_btc(f64::deserialize(deserializer)?))
+}
+
+/// deserialize_amount_opt deserializes a BTC-denominated floating point Bitcoin amount into an
+/// Option of the Amount type.
+fn deserialize_amount_opt<'de, D>(deserializer: D) -> Result<Option<Amount>, D::Error>
+where
+	D: serde::Deserializer<'de>,
+{
+	Ok(Some(Amount::from_btc(f64::deserialize(deserializer)?)))
 }
 
 fn deserialize_difficulty<'de, D>(deserializer: D) -> Result<BigUint, D::Error>
@@ -574,6 +669,61 @@ mod tests {
 	}
 
 	#[test]
+	fn test_GetTransactionResult() {
+		let expected = GetTransactionResult {
+			amount: Amount::from_btc(1.0),
+			fee: None,
+			confirmations: 30104,
+			blockhash: hash!("00000000000000039dc06adbd7666a8d1df9acf9d0329d73651b764167d63765"),
+			blockindex: 2028,
+			blocktime: 1534935138,
+			txid: hash!("4a5b5266e1750488395ac15c0376c9d48abf45e4df620777fe8cff096f57aa91"),
+			time: 1534934745,
+			timereceived: 1534934745,
+			bip125_replaceable: Bip125Replaceable::No,
+			details: vec![
+				GetTransactionResultDetail {
+					address: addr!("mq3VuL2K63VKWkp8vvqRiJPre4h9awrHfA"),
+					category: GetTransactionResultDetailCategory::Receive,
+					amount: Amount::from_btc(1.0),
+					label: "".into(),
+					vout: 1,
+					fee: None,
+					abandoned: None,
+				},
+			],
+			hex: "0200000001586bd02815cf5faabfec986a4e50d25dbee089bd2758621e61c5fab06c334af0000000006b483045022100e85425f6d7c589972ee061413bcf08dc8c8e589ce37b217535a42af924f0e4d602205c9ba9cb14ef15513c9d946fa1c4b797883e748e8c32171bdf6166583946e35c012103dae30a4d7870cd87b45dd53e6012f71318fdd059c1c2623b8cc73f8af287bb2dfeffffff021dc4260c010000001976a914f602e88b2b5901d8aab15ebe4a97cf92ec6e03b388ac00e1f505000000001976a914687ffeffe8cf4e4c038da46a9b1d37db385a472d88acfd211500".into(),
+		};
+		let json = r#"
+			{
+			  "amount": 1.00000000,
+			  "confirmations": 30104,
+			  "blockhash": "00000000000000039dc06adbd7666a8d1df9acf9d0329d73651b764167d63765",
+			  "blockindex": 2028,
+			  "blocktime": 1534935138,
+			  "txid": "4a5b5266e1750488395ac15c0376c9d48abf45e4df620777fe8cff096f57aa91",
+			  "walletconflicts": [
+			  ],
+			  "time": 1534934745,
+			  "timereceived": 1534934745,
+			  "bip125-replaceable": "no",
+			  "details": [
+				{
+				  "address": "mq3VuL2K63VKWkp8vvqRiJPre4h9awrHfA",
+				  "category": "receive",
+				  "amount": 1.00000000,
+				  "label": "",
+				  "vout": 1
+				}
+			  ],
+			  "hex": "0200000001586bd02815cf5faabfec986a4e50d25dbee089bd2758621e61c5fab06c334af0000000006b483045022100e85425f6d7c589972ee061413bcf08dc8c8e589ce37b217535a42af924f0e4d602205c9ba9cb14ef15513c9d946fa1c4b797883e748e8c32171bdf6166583946e35c012103dae30a4d7870cd87b45dd53e6012f71318fdd059c1c2623b8cc73f8af287bb2dfeffffff021dc4260c010000001976a914f602e88b2b5901d8aab15ebe4a97cf92ec6e03b388ac00e1f505000000001976a914687ffeffe8cf4e4c038da46a9b1d37db385a472d88acfd211500"
+			}
+		"#;
+		assert_eq!(expected, serde_json::from_str(json).unwrap());
+		assert!(expected.transaction().is_ok());
+	}
+
+	#[test]
 	fn test_GetTxOutResult() {
 		let expected = GetTxOutResult {
 			bestblock: hash!("000000000000002a1fde7234dc2bc016863f3d672af749497eb5c227421e44d5"),
@@ -656,6 +806,20 @@ mod tests {
 		];
 		for vector in vectors.into_iter() {
 			let d = deserialize_amount(deserializer!(vector.0)).unwrap();
+			assert_eq!(d, vector.1);
+		}
+	}
+
+	#[test]
+	fn test_deserialize_amount_opt() {
+		let vectors = vec![
+			("0", Some(Amount::from_sat(0))),
+			("1", Some(Amount::from_sat(100000000))),
+			("1.00000001", Some(Amount::from_sat(100000001))),
+			("10000000.00000001", Some(Amount::from_sat(1000000000000001))),
+		];
+		for vector in vectors.into_iter() {
+			let d = deserialize_amount_opt(deserializer!(vector.0)).unwrap();
 			assert_eq!(d, vector.1);
 		}
 	}
