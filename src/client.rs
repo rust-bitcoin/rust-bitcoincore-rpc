@@ -2,7 +2,6 @@ use std::result;
 
 use hex;
 use jsonrpc;
-use serde;
 use serde_json;
 
 use bitcoin::blockdata::block::{Block, BlockHeader};
@@ -13,7 +12,7 @@ use bitcoin::util::hash::Sha256dHash;
 use bitcoin::util::privkey::Privkey;
 use bitcoin_amount::Amount;
 use num_bigint::BigUint;
-use secp256k1::{PublicKey, Secp256k1, Signature};
+use secp256k1::{Secp256k1, Signature};
 use std::collections::HashMap;
 
 use error::*;
@@ -114,43 +113,6 @@ macro_rules! result_raw {
 					t
 				})
 	};
-}
-
-pub enum AddressType {
-	Legacy,
-	P2shSegwit,
-	Bech32,
-}
-
-impl serde::Serialize for AddressType {
-	fn serialize<S>(&self, serializer: S) -> result::Result<S::Ok, S::Error>
-	where
-		S: serde::Serializer,
-	{
-		serializer.serialize_str(match self {
-			AddressType::Legacy => "legacy",
-			AddressType::P2shSegwit => "p2sh-segwit",
-			AddressType::Bech32 => "bech32",
-		})
-	}
-}
-
-/// Used to represent arguments that can either be an address or a public key.
-pub enum PubKeyOrAddress {
-	Address(Address),
-	PubKey(PublicKey),
-}
-
-impl serde::Serialize for PubKeyOrAddress {
-	fn serialize<S>(&self, serializer: S) -> result::Result<S::Ok, S::Error>
-	where
-		S: serde::Serializer,
-	{
-		match self {
-			PubKeyOrAddress::Address(a) => serde::Serialize::serialize(a, serializer),
-			PubKeyOrAddress::PubKey(k) => serde::Serialize::serialize(k, serializer),
-		}
-	}
 }
 
 /// Client implements a JSON-RPC client for the Bitcoin Core daemon or compatible APIs.

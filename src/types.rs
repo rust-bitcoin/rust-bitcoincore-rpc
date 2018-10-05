@@ -4,6 +4,7 @@ use bitcoin::blockdata::script::Script;
 use bitcoin::blockdata::transaction::Transaction;
 use bitcoin::consensus::encode as btc_encode;
 use bitcoin::util::address::Address;
+use secp256k1::PublicKey;
 use bitcoin::util::hash::Sha256dHash;
 use bitcoin_amount::Amount;
 use hex;
@@ -314,6 +315,44 @@ pub struct UTXO {
 	pub vout: u32,
 	pub script_pub_key: Script,
 	pub redeem_script: Script,
+}
+
+/// Used to represent an address type.
+pub enum AddressType {
+	Legacy,
+	P2shSegwit,
+	Bech32,
+}
+
+impl serde::Serialize for AddressType {
+	fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+	where
+		S: serde::Serializer,
+	{
+		serializer.serialize_str(match self {
+			AddressType::Legacy => "legacy",
+			AddressType::P2shSegwit => "p2sh-segwit",
+			AddressType::Bech32 => "bech32",
+		})
+	}
+}
+
+/// Used to represent arguments that can either be an address or a public key.
+pub enum PubKeyOrAddress {
+	Address(Address),
+	PubKey(PublicKey),
+}
+
+impl serde::Serialize for PubKeyOrAddress {
+	fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+	where
+		S: serde::Serializer,
+	{
+		match self {
+			PubKeyOrAddress::Address(a) => serde::Serialize::serialize(a, serializer),
+			PubKeyOrAddress::PubKey(k) => serde::Serialize::serialize(k, serializer),
+		}
+	}
 }
 
 // Custom deserializer functions.
