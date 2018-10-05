@@ -169,7 +169,7 @@ impl Client {
 		&mut self,
 		nrequired: usize,
 		keys: Vec<PubKeyOrAddress>,
-		label: Option<String>,
+		label: Option<&str>,
 		address_type: Option<AddressType>,
 	) -> Result<AddMultiSigAddressResult, Error> {
 		let resp = make_call!(
@@ -183,7 +183,7 @@ impl Client {
 		result_json!(resp)
 	}
 
-	pub fn backupwallet(&mut self, destination: String) -> Result<(), Error> {
+	pub fn backupwallet(&mut self, destination: &str) -> Result<(), Error> {
 		let resp = make_call!(self, "backupwallet", arg!(destination));
 		result_json!(resp)
 	}
@@ -194,7 +194,7 @@ impl Client {
 		result_json!(resp)
 	}
 
-	pub fn encryptwallet(&mut self, passphrase: String) -> Result<(), Error> {
+	pub fn encryptwallet(&mut self, passphrase: &str) -> Result<(), Error> {
 		let resp = make_call!(self, "encryptwallet", arg!(passphrase));
 		result_json!(resp)
 	}
@@ -314,7 +314,7 @@ impl Client {
 	}
 
 	//TODO(stevenroose) use Privkey type
-	pub fn importprivkey(&mut self, privkey: String, label: Option<String>, rescan: Option<bool>) -> Result<(), Error> {
+	pub fn importprivkey(&mut self, privkey: &str, label: Option<&str>, rescan: Option<bool>) -> Result<(), Error> {
 		let resp = make_call!(self, "importprivkey", arg!(privkey), arg!(label,), arg!(rescan,));
 		result_json!(resp)
 	}
