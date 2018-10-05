@@ -108,7 +108,7 @@ macro_rules! result_raw {
 			.and_then(|r| r.into_result::<String>().map_err(Error::from))
 			.and_then(|h| hex::decode(h).map_err(Error::from))
 			.and_then(|r| {
-				let t: Result<$raw_type, Error> =
+				let t: Result<$raw_type> =
 					btc_encode::deserialize(r.as_slice()).map_err(Error::from);
 					t
 				})
