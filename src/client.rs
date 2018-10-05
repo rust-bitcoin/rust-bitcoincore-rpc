@@ -313,6 +313,17 @@ impl Client {
 		result_json!(resp)
 	}
 
+	//TODO(stevenroose) use Privkey type
+	pub fn importprivkey(&mut self, privkey: String, label: Option<String>, rescan: Option<bool>) -> Result<(), Error> {
+		let resp = make_call!(self, "importprivkey", arg!(privkey), arg!(label,), arg!(rescan,));
+		result_json!(resp)
+	}
+
+	pub fn keypoolrefill(&mut self, new_size: Option<usize>) -> Result<(), Error> {
+		let resp = make_call!(self, "keypoolrefill", arg!(new_size,));
+		result_json!(resp)
+	}
+
 	pub fn listunspent(
 		&mut self,
 		minconf: Option<usize>,
