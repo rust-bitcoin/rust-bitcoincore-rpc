@@ -234,7 +234,7 @@ impl Client {
 	call!(gettransaction, json:GetTransactionResult, 
 		  txid: Sha256dHash; include_watchonly: bool: true);
 
-	call!(gettxout, json:GetTxOutResult, 
+	call!(gettxout, json:Option<GetTxOutResult>, 
 		  txid: Sha256dHash, vout: u32; include_mempool: bool: true);
 
 	//TODO(stevenroose) use Privkey type
