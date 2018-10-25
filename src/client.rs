@@ -4,6 +4,7 @@ use hex;
 use jsonrpc;
 use serde_json;
 
+use log::Level::Trace;
 use bitcoin::blockdata::block::{Block, BlockHeader};
 use bitcoin::blockdata::transaction::{SigHashType, Transaction};
 use bitcoin::consensus::encode as btc_encode;
@@ -74,8 +75,17 @@ macro_rules! make_call {
 				Arg::OptionalSet(v) => v,
 				Arg::OptionalDefault(v) => v,
 			}).collect();
+
 			let req = $self.client.build_request($method.to_string(), json_args);
-			$self.client.send_request(&req).map_err(Error::from)
+			if log_enabled!(Trace) {
+				trace!("JSON-RPC request: {}", serde_json::to_string(&req).unwrap());
+			}
+			let resp = $self.client.send_request(&req).map_err(Error::from);
+			if log_enabled!(Trace) && resp.is_ok() {
+				let resp = resp.as_ref().unwrap();
+				trace!("JSON-RPC response: {}", serde_json::to_string(resp).unwrap());
+			}
+			resp
 		}
 	}
 }
@@ -99,10 +109,10 @@ macro_rules! result_raw {
 					Ok(val) => Ok(Some(val)),
 					Err(e) => Err(e.into()),
 				}
-				}
-			None => Ok(None),
 			}
-		}};
+			None => Ok(None),
+		}
+	}};
 	($resp:ident, $raw_type:ty) => {
 		$resp
 			.and_then(|r| r.into_result::<String>().map_err(Error::from))

@@ -16,6 +16,7 @@ name = "bitcoindrpc"
 path = "src/lib.rs"
 
 [dependencies]
+log = "0.4.5"
 jsonrpc = "0.10"
 
 # Used for deserialization of JSON.
@@ -24,22 +25,15 @@ serde_derive = "1"
 serde_json = "1"
 hex = "0.3"
 
-# Used to parse difficulty values.
-num-bigint = { version = "0.2", features = [ "serde" ] }
+# Used for Bitcoin-specific types.
+bitcoin = { version = "0.14.2", features = [ "serde-decimal" ] }
+bitcoin-amount = { version = "0.1.4", features = [ "serde" ] }
 
 # Used for signatures and keys
 secp256k1 = { version = "0.11", features = [ "serde" ] }
 
-# Used for Bitcoin-specific types.
-[dependencies.bitcoin-amount] # 0.1.4
-version = "0.1.4"
-#git = "https://github.com/jeandudey/rust-bitcoin-amount.git"
-#rev = "7882b6a57762be61e8743ba7e61b6607a9e602d7"
-features = [ "serde" ]
-
-[dependencies.bitcoin]
-version = "0.14.2"
-features = [ "serde-decimal" ]
+# Used to parse difficulty values.
+num-bigint = { version = "0.2", features = [ "serde" ] }
 
 
 [patch.crates-io]

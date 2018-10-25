@@ -7,6 +7,8 @@
 #![crate_type = "rlib"]
 
 #[macro_use]
+extern crate log;
+#[macro_use]
 extern crate serde_derive;
 extern crate bitcoin;
 extern crate bitcoin_amount;
