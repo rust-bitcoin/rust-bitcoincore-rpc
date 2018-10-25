@@ -3,10 +3,9 @@
 name = "bitcoindrpc"
 version = "0.0.0"
 authors = ["Steven Roose <steven@stevenroose.org>"]
-license = "MIT"
+license = "CC0-1.0"
 homepage = "https://github.com/stevenroose/rust-bitcoindrpc/"
 repository = "https://github.com/stevenroose/rust-bitcoindrpc/"
-documentation = "https://docs.rs/bitcoindrpc/"
 description = "RPC client library for the Bitcoin Core JSON-RPC API."
 keywords = [ "crypto", "bitcoin", "bitcoin core", "rpc" ]
 readme = "README.md"
