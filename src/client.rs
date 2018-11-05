@@ -187,18 +187,18 @@ macro_rules! call {
 }
 
 /// Client implements a JSON-RPC client for the Bitcoin Core daemon or compatible APIs.
+///
+/// Methods have identical casing to API methods on purpose.
+/// Variants of API methods are formed using an underscore.
 pub struct Client {
 	client: jsonrpc::client::Client,
 }
 
 impl Client {
 	/// Create a new Client.
-	///
-	/// Methods have identical casing to API methods on purpose.
-	/// Variants of API methods are formed using an underscore.
-	pub fn new(uri: String, user: Option<String>, pass: Option<String>) -> Client {
+	pub fn new(client: jsonrpc::client::Client) -> Client {
 		Client {
-			client: jsonrpc::client::Client::new(uri, user, pass),
+			client: client,
 		}
 	}
 
