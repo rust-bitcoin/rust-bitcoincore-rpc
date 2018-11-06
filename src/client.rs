@@ -4,7 +4,6 @@ use hex;
 use jsonrpc;
 use serde_json;
 
-use log::Level::Trace;
 use bitcoin::blockdata::block::{Block, BlockHeader};
 use bitcoin::blockdata::transaction::{SigHashType, Transaction};
 use bitcoin::consensus::encode as btc_encode;
@@ -12,6 +11,7 @@ use bitcoin::util::address::Address;
 use bitcoin::util::hash::Sha256dHash;
 use bitcoin::util::privkey::Privkey;
 use bitcoin_amount::Amount;
+use log::Level::Trace;
 use num_bigint::BigUint;
 use secp256k1::Signature;
 use std::collections::HashMap;
@@ -90,17 +90,15 @@ macro_rules! make_call {
 	}
 }
 
-/// result_json converts a JSON response into the provided type.
-macro_rules! result_json {
-	($resp:ident) => {
+macro_rules! result {
+	// `json:` converts a JSON response into the provided type.
+	($resp:ident, json:$_:tt) => {
 		$resp.and_then(|r| r.into_result().map_err(Error::from))
 	};
-}
 
-/// result_raw converts a hex response into a Bitcoin data type.
-/// This works both for Option types and regular types.
-macro_rules! result_raw {
-	($resp:ident, Option<$raw_type:ty>) => {{
+	// `raw:` converts a hex response into a Bitcoin data type.
+	// This works both for Option types and regular types.
+	($resp:ident, raw:Option<$raw_type:ty>) => {{
 		let hex_opt = $resp.and_then(|r| r.into_result::<Option<String>>().map_err(Error::from))?;
 		match hex_opt {
 			Some(hex) => {
@@ -109,11 +107,11 @@ macro_rules! result_raw {
 					Ok(val) => Ok(Some(val)),
 					Err(e) => Err(e.into()),
 				}
-			}
+				}
 			None => Ok(None),
-		}
-	}};
-	($resp:ident, $raw_type:ty) => {
+			}
+		}};
+	($resp:ident, raw:$raw_type:ty) => {
 		$resp
 			.and_then(|r| r.into_result::<String>().map_err(Error::from))
 			.and_then(|h| hex::decode(h).map_err(Error::from))
@@ -125,64 +123,70 @@ macro_rules! result_raw {
 	};
 }
 
-/// This macro generated methods that corresponds to RPC calls.  Because of the issue with fixed
-/// arguments, this macro is only used for methods that return JSON-parsed return types.
-/// The parameters in order are:
-/// - the method name
-/// - (optional) the command name in case it's not the same as the method name
-/// - the return type prefixed by `json:` or `raw:` for json-parsed or consensus-decoded types
-/// - (optional) a list of required params and their type
-/// a semicolon is used to seperate ^ and v
-/// - (optional) a list of optional params, their type and their default value (use "" for none)
-/// - (optional) a fixed-value param to place in between required and optional params
-macro_rules! call {
-	// Actual expansions used internally.
-	(@int $method:ident, $cmd:ident, json:$res:ty, $($arg:ident: $argt:ty),*; 
-	 $($oarg:ident: $oargt:ty: $oargv:expr),*; $($fix:expr),*) => {
-		pub fn $method(&mut self $(, $arg: $argt)* $(, $oarg: Option<$oargt>)*) -> Result<$res> {
-			let resp = make_call!(self, stringify!($cmd)
-								  $(, arg!($arg))* $(, arg!($fix))* $(, arg!($oarg, $oargv))*);
-			result_json!(resp)
-		}
-	};
-	(@int $method:ident, $cmd:ident, raw:$res:ty, $($arg:ident: $argt:ty),*; 
-	 $($oarg:ident: $oargt:ty: $oargv:expr),*; $($fix:expr),*) => {
-		pub fn $method(&mut self $(, $arg: $argt)* $(, $oarg: Option<$oargt>)*) -> Result<$res> {
-			let resp = make_call!(self, stringify!($cmd)
-								  $(, arg!($arg))* $(, arg!($fix))* $(, arg!($oarg, $oargv))*);
-			result_raw!(resp, $res)
-		}
-	};
+macro_rules! methods {
+	{
+		$(
+		pub fn $method:ident(self
+			$(, $arg:ident: $argt:ty)*
+			$(, !$farg:expr)*
+			$(, ?$oarg:ident: $oargt:ty = $oargv:expr)*
+		)-> $reskind:ident:$restype:ty;
+		)*
+	} => {
+		$(
+		pub fn $method(
+			&mut self
+			$(, $arg: $argt)*
+			$(, $oarg: Option<$oargt>)*
+		) -> Result<$restype> {
+			// Split the variant suffix from the method name to get the command.
+			//TODO(stevenroose) this should be replaced with an in-macro way to take away the
+			// _suffix
+			let cmd = stringify!($method).splitn(2, "_").nth(0).unwrap();
 
-	// Rust method is JSON-RPC command suffixed with a variant name.
-	//
-	// Since it's not possible to join two ident captures with an underscore, in the case of a
-	// method variant, the method name needs to be repeated in full instead of just the suffix.
-	// This could be fixed somehow when the "mashup" crate becomes std lib or when
-	// concat_idents! gets fixed to be used inside macros.
-	($method:ident, $cmd:ident, $rt:ident:$res:ty $(, $arg:ident: $argt:ty)*; 
-	 $($oarg:ident: $oargt:ty: $oargv:expr),*; $fixed:expr) => {
-		call!(@int $method, $cmd, $rt:$res, $($arg: $argt),*; $($oarg: $oargt: $oargv),*; $fixed);
-	};
-	($method:ident, $cmd:ident, $rt:ident:$res:ty $(,$arg:ident: $argt:ty)*; 
-	 $($oarg:ident: $oargt:ty: $oargv:expr),*) => {
-		call!(@int $method, $cmd, $rt:$res, $($arg: $argt),*; $($oarg: $oargt),*;);
-	};
-	($method:ident, $cmd:ident, $rt:ident:$res:ty $(,$arg:ident: $argt:ty)*) => {
-		call!(@int $method, $cmd, $rt:$res, $($arg: $argt),*;;);
-	};
+			// Build the argument list by combining regular, fixed and optional ones.
+			// It just happend to be the case that the fixed-value arguments that we want to set
+			// always are in between normal ones and optional ones.  If that changes, we might
+			// need to do ugly stuff, but we can avoid that as long as it's not the case.
+			let mut args = Vec::new();
+			// Normal arguments.
+			$( args.push(Arg::Required(serde_json::to_value($arg)?)); )*
+			// Fixed-value arguments.
+			$( args.push(Arg::Required(serde_json::to_value($farg)?)); )*
+			// Optional arguments.
+			$( args.push(match $oarg {
+				Some(v) => Arg::OptionalSet(serde_json::to_value(v)?),
+				None => Arg::OptionalDefault(serde_json::to_value($oargv)?),
+			   });
+			)*
 
-	// Rust method is same as JSON-RPC command.
-	($cmd:ident, $rt:ident:$res:ty $(, $arg:ident: $argt:ty)*; 
-	 $($oarg:ident: $oargt:ty: $oargv:expr),*; $fixed:expr) => {
-		call!(@int $cmd, $cmd, $rt:$res, $($arg: $argt),*; $($oarg: $oargt: $oargv),*; $fixed);
-	};
-	($cmd:ident, $rt:ident:$res:ty $(, $arg:ident: $argt:ty)*; 
-	 $($oarg:ident: $oargt:ty: $oargv:expr),*) => {
-		call!(@int $cmd, $cmd, $rt:$res, $($arg: $argt),*; $($oarg: $oargt: $oargv),*;);
-	};
-	($cmd:ident, $rt:ident:$res:ty $(, $arg:ident: $argt:ty)*) => {
-		call!(@int $cmd, $cmd, $rt:$res, $($arg: $argt),*;;);
+			// We want to truncate the argument list to remove the trailing non-set optional
+			// arguments.
+			// This makes sure we don't send default values if we don't really need to, which
+			// prevents unexpected behaviour if the server changes its default values.
+			while let Some(Arg::OptionalDefault(_)) = args.last() {
+				args.pop();
+			}
+
+			let json_args = args.into_iter().map(|a| match a {
+				Arg::Required(v) => v,
+				Arg::OptionalSet(v) => v,
+				Arg::OptionalDefault(v) => v,
+			}).collect();
+
+			let req = self.client.build_request(cmd.to_owned(), json_args);
+			if log_enabled!(Trace) {
+				trace!("JSON-RPC request: {}", serde_json::to_string(&req).unwrap());
+			}
+			let resp = self.client.send_request(&req).map_err(Error::from);
+			if log_enabled!(Trace) && resp.is_ok() {
+				let resp = resp.as_ref().unwrap();
+				trace!("JSON-RPC response: {}", serde_json::to_string(resp).unwrap());
+			}
+
+			result!(resp, $reskind:$restype)
+		}
+		)*
 	};
 }
 
@@ -202,59 +206,84 @@ impl Client {
 		}
 	}
 
-	call!(addmultisigaddress, json:AddMultiSigAddressResult, nrequired: usize, 
-		  keys: Vec<PubKeyOrAddress>; label: &str: "", address_type: AddressType: "");
+	//call!(backupwallet, json:(), destination: &str);
+	methods! {
+		pub fn addmultisigaddress(self,
+			nrequired: usize,
+			keys: Vec<PubKeyOrAddress>,
+			?label: &str = "",
+			?address_type: AddressType = ""
+		) -> json:AddMultiSigAddressResult;
 
-	call!(backupwallet, json:(), destination: &str);
+		pub fn backupwallet(self, ?destination: &str = "") -> json:();
 
-	//TODO(stevenroose) use Privkey type
-	call!(dumpprivkey, json:String, address: Address);
+		//TODO(stevenroose) use Privkey type
+		pub fn dumpprivkey(self, address: Address) -> json:String;
 
-	call!(encryptwallet, json:(), passphrase: &str);
+		pub fn encryptwallet(self, passphrase: String) -> json:();
 
-	call!(getblock_raw, getblock, raw:Block, hash: Sha256dHash; ; 0);
+		pub fn getblock_raw(self, hash: Sha256dHash, !0) -> raw:Block;
 
-	call!(getblock_info, getblock, json:GetBlockResult, hash: Sha256dHash; ; 1);
-	//TODO(stevenroose) add getblock_txs
+		pub fn getblock_info(self, hash: Sha256dHash, !1) -> json:GetBlockResult;
+		//TODO(stevenroose) add getblock_txs
 
-	call!(getblockcount, json:usize);
+		pub fn getblockcount(self) -> json:usize;
 
-	call!(getblockhash, json:Sha256dHash, height: u32);
+		pub fn getblockhash(self, height: u32) -> json:Sha256dHash;
 
-	call!(getblockheader, raw:BlockHeader, hash: Sha256dHash; ; false);
+		pub fn getblockheader_raw(self, hash: Sha256dHash, !false) -> raw:BlockHeader;
 
-	call!(getblockheader_verbose, getblockheader, json:GetBlockHeaderResult, 
-		  hash: Sha256dHash; ; true);
-	
-	//TODO(stevenroose) verify if return type works
-	call!(getdifficulty, json:BigUint);
+		pub fn getblockheader_verbose(self, hash: Sha256dHash, !true) -> json:GetBlockHeaderResult;
 
-	call!(getconnectioncount, json:usize);
+		//TODO(stevenroose) verify if return type works
+		pub fn getdifficulty(self) -> json:BigUint;
 
-	call!(getmininginfo, json:GetMiningInfoResult);
+		pub fn getconnectioncount(self) -> json:usize;
 
-	call!(getrawtransaction, raw:Transaction, txid: Sha256dHash; 
-		  block_hash: Sha256dHash: ""; false);
+		pub fn getmininginfo(self) -> json:GetMiningInfoResult;
 
-	call!(getrawtransaction_verbose, getrawtransaction, json:GetRawTransactionResult,
-		  txid: Sha256dHash; block_hash: Sha256dHash: ""; true);
+		pub fn getrawtransaction_raw(self,
+			txid: Sha256dHash,
+			!false,
+			?block_hash: Sha256dHash = ""
+		) -> raw:Transaction;
 
-	call!(getreceivedbyaddress, json:Amount, address: Address; minconf: u32: 0);
+		pub fn getrawtransaction_verbose(self,
+			txid: Sha256dHash,
+			!false,
+			?block_hash: Sha256dHash = ""
+		) -> raw:Transaction;
 
-	call!(gettransaction, json:GetTransactionResult, 
-		  txid: Sha256dHash; include_watchonly: bool: true);
+		pub fn getreceivedbyaddress(self, address: Address, ?minconf: u32 = 0) -> json:Amount;
 
-	call!(gettxout, json:Option<GetTxOutResult>, 
-		  txid: Sha256dHash, vout: u32; include_mempool: bool: true);
+		pub fn gettransaction(self,
+			txid: Sha256dHash,
+			?include_watchonly: bool = true
+		) -> json:GetTransactionResult;
 
-	//TODO(stevenroose) use Privkey type
-	call!(importprivkey, json:(), privkey: &str; label: &str: "", rescan: bool: true);
+		pub fn gettxout(self,
+			txid: Sha256dHash,
+			vout: u32,
+			?include_mempool: bool = true
+		) -> json:Option<GetTxOutResult>;
 
-	call!(keypoolrefill, json:(); new_size: usize: 0);
+		//TODO(stevenroose) use Privkey type
+		pub fn importprivkey(self,
+			privkey: &str,
+			?label: &str = "",
+			?rescan: bool = true
+		) -> json:();
 
-	call!(listunspent, json:Vec<ListUnspentResult>; minconf: usize: 0, maxconf: usize: 9999999,
-			   addresses: Vec<Address>: empty!(), include_unsafe: bool: true,
-			   query_options: HashMap<String, String>: "");
+		pub fn keypoolrefill(self, ?new_size: usize = 0) -> json:();
+
+		pub fn listunspent(self,
+			?minconf: usize = 0,
+			?maxconf: usize = 9999999,
+			?addresses: Vec<Address> = empty!(),
+			?include_unsafe: bool = true,
+			?query_options: HashMap<String, String> = ""
+		) -> json:Vec<ListUnspentResult>;
+	}
 
 	//TODO(stevenroose) macro the hex thing
 	/// private_keys are not yet implemented.
@@ -277,7 +306,7 @@ impl Client {
 			arg!(Some(empty!()), empty!()), //TODO(stevenroose) impl privkeys
 			arg!(sighash,)
 		);
-		result_json!(resp)
+		resp.and_then(|r| r.into_result().map_err(Error::from))
 	}
 
 	/// private_keys are not yet implemented.
@@ -295,12 +324,18 @@ impl Client {
 			arg!(utxos, empty!()),
 			arg!(sighash,)
 		);
-		result_json!(resp)
+		resp.and_then(|r| r.into_result().map_err(Error::from))
 	}
 
-	call!(stop, json:());
+	methods!{
+		pub fn stop(self) -> json:();
 
-	call!(verifymessage, json:bool, address: Address, signature: Signature, message: &str);
+		pub fn verifymessage(self,
+			address: Address,
+			signature: Signature,
+			message: &str
+		) -> json:bool;
+	}
 }
 
 //TODO(stevenroose) consider porting this to rust-bitcoin with serde::Serialize
