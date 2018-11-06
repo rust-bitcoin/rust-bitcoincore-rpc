@@ -21,13 +21,6 @@ use types::*;
 
 type Result<T> = result::Result<T, Error>;
 
-/// Arg is a simple enum to represent an argument value and its context.
-enum Arg {
-	Required(serde_json::Value),
-	OptionalSet(serde_json::Value),
-	OptionalDefault(serde_json::Value),
-}
-
 /// empty quickly creates an empty Vec<serde_json::Value>.
 /// Used because using vec![] as default value lacks type annotation.
 macro_rules! empty {
@@ -70,6 +63,12 @@ macro_rules! result {
 	};
 }
 
+/// OptionalArg is a simple enum to represent an argument value and its context.
+enum OptionalArg {
+	Set(serde_json::Value),
+	Default(serde_json::Value),
+}
+
 macro_rules! methods {
 	{
 		$(
@@ -99,34 +98,37 @@ macro_rules! methods {
 			// need to do ugly stuff, but we can avoid that as long as it's not the case.
 			let mut args = Vec::new();
 			// Normal arguments.
-			$( args.push(Arg::Required(serde_json::to_value($arg)?)); )*
+			$( args.push(serde_json::to_value($arg)?); )*
 			// Fixed-value arguments.
-			$( args.push(Arg::Required(serde_json::to_value($farg)?)); )*
-			// Optional arguments.
-			$( args.push(match $oarg {
-				Some(v) => Arg::OptionalSet(serde_json::to_value(v)?),
-				None => Arg::OptionalDefault(serde_json::to_value($oargv)?),
-			   });
-			)*
+			$( args.push(serde_json::to_value($farg)?); )*
 
 			// We want to truncate the argument list to remove the trailing non-set optional
-			// arguments.
-			// This makes sure we don't send default values if we don't really need to, which
-			// prevents unexpected behaviour if the server changes its default values.
-			while let Some(Arg::OptionalDefault(_)) = args.last() {
-				args.pop();
+			// arguments.  This makes sure we don't send default values if we don't
+			// really need to, which prevents unexpected behaviour if the server changes its
+			// default values.
+			// Because we can't know the last optional arguments before we parsing the macro, we
+			// first have to add them to a new vector, and then remove the ones that are not
+			// necessary.  Ultimately we can add them to the argument list.
+			let mut optional_args = Vec::new();
+			$(
+				optional_args.push(match $oarg {
+					Some(v) => OptionalArg::Set(serde_json::to_value(v)?),
+					None => OptionalArg::Default(serde_json::to_value($oargv)?),
+				});
+			)*
+			while let Some(OptionalArg::Default(_)) = optional_args.last() {
+				optional_args.pop();
 			}
+			args.extend(optional_args.into_iter().map(|a| match a {
+				OptionalArg::Set(v) => v,
+				OptionalArg::Default(v) => v,
+			}));
 
-			let json_args = args.into_iter().map(|a| match a {
-				Arg::Required(v) => v,
-				Arg::OptionalSet(v) => v,
-				Arg::OptionalDefault(v) => v,
-			}).collect();
-
-			let req = self.client.build_request(cmd.to_owned(), json_args);
+			let req = self.client.build_request(cmd.to_owned(), args);
 			if log_enabled!(Trace) {
 				trace!("JSON-RPC request: {}", serde_json::to_string(&req).unwrap());
 			}
+
 			let resp = self.client.send_request(&req).map_err(Error::from);
 			if log_enabled!(Trace) && resp.is_ok() {
 				let resp = resp.as_ref().unwrap();
