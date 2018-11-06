@@ -289,7 +289,7 @@ impl Client {
 	/// private_keys are not yet implemented.
 	pub fn signrawtransaction(
 		&mut self,
-		tx: &[u8],
+		tx: HexBytes,
 		utxos: Option<Vec<UTXO>>,
 		private_keys: Option<Vec<Vec<u8>>>,
 		sighash_type: Option<SigHashType>,
@@ -301,7 +301,7 @@ impl Client {
 		let resp = make_call!(
 			self,
 			"signrawtransaction",
-			arg!(hex::encode(tx)),
+			arg!(tx),
 			arg!(utxos, empty!()),
 			arg!(Some(empty!()), empty!()), //TODO(stevenroose) impl privkeys
 			arg!(sighash,)
@@ -312,7 +312,7 @@ impl Client {
 	/// private_keys are not yet implemented.
 	pub fn signrawtransactionwithwallet(
 		&mut self,
-		tx: &[u8],
+		tx: HexBytes,
 		utxos: Option<Vec<UTXO>>,
 		sighash_type: Option<SigHashType>,
 	) -> Result<SignRawTransactionResult> {
@@ -320,7 +320,7 @@ impl Client {
 		let resp = make_call!(
 			self,
 			"signrawtransactionwithwallet",
-			arg!(hex::encode(tx)),
+			arg!(tx),
 			arg!(utxos, empty!()),
 			arg!(sighash,)
 		);

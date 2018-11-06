@@ -307,6 +307,24 @@ impl SignRawTransactionResult {
 
 // Custom types for input arguments.
 
+/// A wrapper around &[u8] that will be serialized as hexadecimal.
+pub struct HexBytes<'a>(&'a [u8]);
+
+impl<'a> From<&'a [u8]> for HexBytes<'a> {
+	fn from(b: &'a [u8]) -> HexBytes<'a> {
+		HexBytes(b)
+	}
+}
+
+impl<'a> serde::Serialize for HexBytes<'a> {
+	fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+	where
+		S: serde::Serializer,
+	{
+		serializer.serialize_str(&hex::encode(self.0))
+	}
+}
+
 // Used for signrawtransaction argument.
 #[derive(Serialize, Clone, PartialEq, Eq, Debug)]
 #[serde(rename_all = "camelCase")]
