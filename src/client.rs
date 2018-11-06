@@ -28,66 +28,13 @@ enum Arg {
 	OptionalDefault(serde_json::Value),
 }
 
-/// arg is used to quickly generate Arg instances.  For optional argument a default value can be
-/// provided that will be used if the actual value was None.  If the default value doesn't matter
-/// (f.e. for the last optional argument), it can be left empty, but a comma should still be
-/// present.
-macro_rules! arg {
-	($val:expr) => {
-		Arg::Required(serde_json::to_value($val)?)
-	};
-	($val:expr, $def:expr) => {
-		match $val {
-			Some(v) => Arg::OptionalSet(serde_json::to_value(v)?),
-			None => Arg::OptionalDefault(serde_json::to_value($def)?),
-			}
-	};
-	($val:expr,) => {
-		arg!($val, "")
-	};
-}
-
 /// empty quickly creates an empty Vec<serde_json::Value>.
 /// Used because using vec![] as default value lacks type annotation.
 macro_rules! empty {
 	() => {{
-		let v: Vec<serde_json::Value> = vec![];
+		let v: Vec<serde_json::Value> = Vec::new();
 			v
 		}};
-}
-
-/// make_call processes the argument list and makes the RPC call to the server.
-/// It returns the response object.
-macro_rules! make_call {
-	($self:ident, $method:expr) => { make_call!($self, $method,) };
-	($self:ident, $method:expr, $($arg:expr),*) => {
-		{
-			// We want to truncate the argument to remove the trailing non-set optional arguments.
-			// This makes sure we don't send default values if we don't really need to and this
-			// can prevent unexpected behaviour if the server changes its default values.
-			let mut args = Vec::new();
-			$( args.push($arg); )*
-			while let Some(Arg::OptionalDefault(_)) = args.last() {
-				args.pop();
-			}
-			let json_args = args.into_iter().map(|a| match a {
-				Arg::Required(v) => v,
-				Arg::OptionalSet(v) => v,
-				Arg::OptionalDefault(v) => v,
-			}).collect();
-
-			let req = $self.client.build_request($method.to_string(), json_args);
-			if log_enabled!(Trace) {
-				trace!("JSON-RPC request: {}", serde_json::to_string(&req).unwrap());
-			}
-			let resp = $self.client.send_request(&req).map_err(Error::from);
-			if log_enabled!(Trace) && resp.is_ok() {
-				let resp = resp.as_ref().unwrap();
-				trace!("JSON-RPC response: {}", serde_json::to_string(resp).unwrap());
-			}
-			resp
-		}
-	}
 }
 
 macro_rules! result {
@@ -126,6 +73,7 @@ macro_rules! result {
 macro_rules! methods {
 	{
 		$(
+		$(#[$met:meta])*
 		pub fn $method:ident(self
 			$(, $arg:ident: $argt:ty)*
 			$(, !$farg:expr)*
@@ -134,6 +82,7 @@ macro_rules! methods {
 		)*
 	} => {
 		$(
+		$(#[$met])*
 		pub fn $method(
 			&mut self
 			$(, $arg: $argt)*
@@ -283,49 +232,21 @@ impl Client {
 			?include_unsafe: bool = true,
 			?query_options: HashMap<String, String> = ""
 		) -> json:Vec<ListUnspentResult>;
-	}
 
-	//TODO(stevenroose) macro the hex thing
-	/// private_keys are not yet implemented.
-	pub fn signrawtransaction(
-		&mut self,
-		tx: HexBytes,
-		utxos: Option<Vec<UTXO>>,
-		private_keys: Option<Vec<Vec<u8>>>,
-		sighash_type: Option<SigHashType>,
-	) -> Result<SignRawTransactionResult> {
-		if private_keys.is_some() {
-			unimplemented!();
-		}
-		let resp = make_call!(
-			self,
-			"signrawtransaction",
-			arg!(tx),
-			arg!(utxos, empty!()),
-			arg!(Some(empty!()), empty!()), //TODO(stevenroose) impl privkeys
-			arg!(sighash_type,)
-		);
-		resp.and_then(|r| r.into_result().map_err(Error::from))
-	}
+		#[doc="private_keys are not yet implemented."]
+		pub fn signrawtransaction(self,
+			tx: HexBytes,
+			?utxos: Vec<UTXO> = empty!(),
+			?private_keys: Vec<String> = empty!(),
+			?sighash_type: SigHashType = ""
+		) -> json:SignRawTransactionResult;
 
-	/// private_keys are not yet implemented.
-	pub fn signrawtransactionwithwallet(
-		&mut self,
-		tx: HexBytes,
-		utxos: Option<Vec<UTXO>>,
-		sighash_type: Option<SigHashType>,
-	) -> Result<SignRawTransactionResult> {
-		let resp = make_call!(
-			self,
-			"signrawtransactionwithwallet",
-			arg!(tx),
-			arg!(utxos, empty!()),
-			arg!(sighash_type,)
-		);
-		resp.and_then(|r| r.into_result().map_err(Error::from))
-	}
+		pub fn signrawtransactionwithwallet(self,
+			tx: HexBytes,
+			?utxos: Vec<UTXO> = empty!(),
+			?sighash_type: SigHashType = ""
+		) -> json:SignRawTransactionResult;
 
-	methods!{
 		pub fn stop(self) -> json:();
 
 		pub fn verifymessage(self,
