@@ -325,6 +325,32 @@ impl<'a> serde::Serialize for HexBytes<'a> {
 	}
 }
 
+/// A wrapper around bitcoin::SigHashType that will be serialized
+/// according to what the RPC expects.
+pub struct SigHashType(bitcoin::SigHashType);
+
+impl From<bitcoin::SigHashType> for SigHashType {
+	fn from(sht: bitcoin::SigHashType) -> SigHashType {
+		SigHashType(sht)
+	}
+}
+
+impl serde::Serialize for SigHashType {
+	fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+	where
+		S: serde::Serializer,
+	{
+		serializer.serialize_str(match self.0 {
+			bitcoin::SigHashType::All => "ALL",
+			bitcoin::SigHashType::None => "NONE",
+			bitcoin::SigHashType::Single => "SINGLE",
+			bitcoin::SigHashType::AllPlusAnyoneCanPay => "ALL|ANYONECANPAY",
+			bitcoin::SigHashType::NonePlusAnyoneCanPay => "NONE|ANYONECANPAY",
+			bitcoin::SigHashType::SinglePlusAnyoneCanPay => "SINGLE|ANYONECANPAY",
+		})
+	}
+}
+
 // Used for signrawtransaction argument.
 #[derive(Serialize, Clone, PartialEq, Eq, Debug)]
 #[serde(rename_all = "camelCase")]

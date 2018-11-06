@@ -5,7 +5,7 @@ use jsonrpc;
 use serde_json;
 
 use bitcoin::blockdata::block::{Block, BlockHeader};
-use bitcoin::blockdata::transaction::{SigHashType, Transaction};
+use bitcoin::blockdata::transaction::Transaction;
 use bitcoin::consensus::encode as btc_encode;
 use bitcoin::util::address::Address;
 use bitcoin::util::hash::Sha256dHash;
@@ -297,14 +297,13 @@ impl Client {
 		if private_keys.is_some() {
 			unimplemented!();
 		}
-		let sighash = sighash_string(sighash_type);
 		let resp = make_call!(
 			self,
 			"signrawtransaction",
 			arg!(tx),
 			arg!(utxos, empty!()),
 			arg!(Some(empty!()), empty!()), //TODO(stevenroose) impl privkeys
-			arg!(sighash,)
+			arg!(sighash_type,)
 		);
 		resp.and_then(|r| r.into_result().map_err(Error::from))
 	}
@@ -316,13 +315,12 @@ impl Client {
 		utxos: Option<Vec<UTXO>>,
 		sighash_type: Option<SigHashType>,
 	) -> Result<SignRawTransactionResult> {
-		let sighash = sighash_string(sighash_type);
 		let resp = make_call!(
 			self,
 			"signrawtransactionwithwallet",
 			arg!(tx),
 			arg!(utxos, empty!()),
-			arg!(sighash,)
+			arg!(sighash_type,)
 		);
 		resp.and_then(|r| r.into_result().map_err(Error::from))
 	}
@@ -335,21 +333,5 @@ impl Client {
 			signature: Signature,
 			message: &str
 		) -> json:bool;
-	}
-}
-
-//TODO(stevenroose) consider porting this to rust-bitcoin with serde::Serialize
-/// sighash_string converts a SigHashType object to a string representation used in the API.
-fn sighash_string(sighash: Option<SigHashType>) -> Option<String> {
-	match sighash {
-		None => None,
-		Some(sh) => Some(String::from(match sh {
-			SigHashType::All => "ALL",
-			SigHashType::None => "NONE",
-			SigHashType::Single => "SINGLE",
-			SigHashType::AllPlusAnyoneCanPay => "ALL|ANYONECANPAY",
-			SigHashType::NonePlusAnyoneCanPay => "NONE|ANYONECANPAY",
-			SigHashType::SinglePlusAnyoneCanPay => "SINGLE|ANYONECANPAY",
-		})),
 	}
 }
