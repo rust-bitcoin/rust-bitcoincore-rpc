@@ -308,6 +308,7 @@ impl SignRawTransactionResult {
 // Custom types for input arguments.
 
 /// A wrapper around &[u8] that will be serialized as hexadecimal.
+/// If you have an `&[u8]`, you can `.into()` it into `HexBytes`.
 pub struct HexBytes<'a>(&'a [u8]);
 
 impl<'a> From<&'a [u8]> for HexBytes<'a> {

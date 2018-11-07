@@ -69,6 +69,43 @@ enum OptionalArg {
 	Default(serde_json::Value),
 }
 
+/// Main macro used for defining RPC methods.
+/// The format used to specify methods is like follows:
+/// ```rust
+/// #[doc="only works with txindex=1"]
+/// pub fn getrawtransaction_raw(self,
+/// 	txid: Sha256dHash,
+/// 	!false,
+/// 	?block_hash: Sha256dHash = ""
+/// ) -> raw:Transaction;
+/// ```
+///
+/// It consists out of the following aspects:
+/// - Optional meta tags.  Comments can be added using the `#[doc=""]` meta tag.
+/// - The method name must be the exact RPC command (i.e. lowercase), optionally followed by an
+/// underscore and a suffix (`getrawtransaction` + `_raw`).
+/// - There are three types of arguments that must occur in this order:
+///   1. normal arguments: appear like normal Rust arguments
+///	     e.g. `txid: Sha256dHash`
+///   2. fixed value arguments, prefixed with !: These are arguments in the original RPC call,
+///      that we don't let the user specify because we need a certain value to be passed.
+///      e.g. `!false`
+///   3. optional arguments, prefixed with ?: These arguments will occur in the API as Option
+///      types, and need to have a default value specified in case it is ommitted.  For the last
+///      optional argument, the default value doesn't matter, but still needs to be set, so just
+///      set it to `""`.
+///      e.g. `?block_hash: Sha256dHash = ""`
+/// - The return type is a Rust type prefixed with either `raw:` or `json:` depending on if the
+///   type should be decoded with serde (`json:`) or hex + rust-bitcoin consensus decoding `raw:`.
+///
+/// The eventual method signature of the example above will be:
+/// ```rust
+/// /// only works with txindex=1
+/// pub fn getrawtransaction_raw(&mut self,
+/// 	txid: Sha256dHash,
+/// 	block_hash: Option<Sha256dHash>,
+/// ) -> Result<Transaction>;
+/// ```
 macro_rules! methods {
 	{
 		$(
@@ -219,6 +256,7 @@ impl Client {
 		) -> json:Option<GetTxOutResult>;
 
 		//TODO(stevenroose) use Privkey type
+		// dep: https://github.com/rust-bitcoin/rust-bitcoin/pull/183
 		pub fn importprivkey(self,
 			privkey: &str,
 			?label: &str = "",
@@ -235,6 +273,8 @@ impl Client {
 			?query_options: HashMap<String, String> = ""
 		) -> json:Vec<ListUnspentResult>;
 
+		//TODO(stevenroose) update with privkey type
+		// dep: https://github.com/rust-bitcoin/rust-bitcoin/pull/183
 		#[doc="private_keys are not yet implemented."]
 		pub fn signrawtransaction(self,
 			tx: HexBytes,
