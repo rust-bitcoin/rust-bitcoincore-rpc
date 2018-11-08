@@ -350,8 +350,17 @@ pub struct Client {
 }
 
 impl Client {
+	/// Creates a client to a bitcoind JSON-RPC server.
+	pub fn new(url: String, user: Option<String>, pass: Option<String>) -> Self {
+		debug_assert!(pass.is_none() || user.is_some());
+
+		Client {
+			client: jsonrpc::client::Client::new(url, user, pass),
+		}
+	}
+
 	/// Create a new Client.
-	pub fn new(client: jsonrpc::client::Client) -> Client {
+	pub fn from_jsonrpc(client: jsonrpc::client::Client) -> Client {
 		Client {
 			client: client,
 		}
@@ -419,10 +428,6 @@ impl Client {
 		pub fn getblock_info(self, hash: Sha256dHash, !1) -> json:GetBlockResult;
 		//TODO(stevenroose) add getblock_txs
 
-		pub fn getblockcount(self) -> json:usize;
-
-		pub fn getblockhash(self, height: u32) -> json:Sha256dHash;
-
 		pub fn getblockheader_raw(self, hash: Sha256dHash, !false) -> raw:BlockHeader;
 
 		pub fn getblockheader_verbose(self, hash: Sha256dHash, !true) -> json:GetBlockHeaderResult;
@@ -433,6 +438,29 @@ impl Client {
 		pub fn getconnectioncount(self) -> json:usize;
 
 		pub fn getmininginfo(self) -> json:GetMiningInfoResult;
+	}
+
+	/// Returns a data structure containing various state info regarding
+	/// blockchain processing.
+	pub fn getblockchaininfo(&mut self) -> Result<bitcoindrpc_json::BlockchainInfo> {
+		self.call("getblockchaininfo", &[])
+	}
+
+	/// Returns the numbers of block in the longest chain.
+	pub fn getblockcount(&mut self) -> Result<u64> {
+		self.call("getblockcount", &[])
+	}
+
+	/// Returns the hash of the best (tip) block in the longest blockchain.
+	pub fn getbestblockhash(&mut self) -> Result<Sha256dHash> {
+		let hex: String = self.call("getbestblockhash", &[])?;
+		Ok(Sha256dHash::from_hex(&hex)?)
+	}
+
+	/// Get block hash at a given height
+	pub fn getblockhash(&mut self, height: u64) -> Result<Sha256dHash> {
+		let hex: String = self.call("getblockhash", &[height.into()])?;
+		Ok(Sha256dHash::from_hex(&hex)?)
 	}
 
 	pub fn getrawtransaction(
