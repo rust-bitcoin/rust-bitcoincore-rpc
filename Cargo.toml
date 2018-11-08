@@ -25,7 +25,7 @@ serde_json = "1"
 hex = "0.3"
 
 # Used for Bitcoin-specific types.
-bitcoin = { version = "0.14.2", features = [ "serde-decimal" ] }
+bitcoin = { version = "0.15", features = [ "serde-decimal" ] }
 bitcoin-amount = { version = "0.1.4", features = [ "serde" ] }
 
 # Used for signatures and keys
@@ -36,5 +36,4 @@ num-bigint = { version = "0.2", features = [ "serde" ] }
 
 
 [patch.crates-io]
-bitcoin = { path = "/home/steven/code/rust/bitcoin" }
 bitcoindrpc-json = { path = "./json" }
