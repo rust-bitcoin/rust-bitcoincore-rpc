@@ -3,20 +3,20 @@ use bitcoin::{Script, Transaction};
 use hex;
 
 use error::Error;
-use json::*;
+use json;
 
 /// Retrieve a relevant Script for the type.
 pub trait GetScript {
 	fn script(&self) -> Result<Script, Error>;
 }
 
-impl GetScript for GetRawTransactionResultVinScriptSig {
+impl GetScript for json::GetRawTransactionResultVinScriptSig {
 	fn script(&self) -> Result<Script, Error> {
 		Ok(Script::from(hex::decode(&self.hex)?))
 	}
 }
 
-impl GetScript for GetRawTransactionResultVoutScriptPubKey {
+impl GetScript for json::GetRawTransactionResultVoutScriptPubKey {
 	fn script(&self) -> Result<Script, Error> {
 		Ok(Script::from(hex::decode(&self.hex)?))
 	}
@@ -27,19 +27,19 @@ pub trait GetTransaction {
 	fn transaction(&self) -> Result<Transaction, Error>;
 }
 
-impl GetTransaction for GetRawTransactionResult {
+impl GetTransaction for json::GetRawTransactionResult {
 	fn transaction(&self) -> Result<Transaction, Error> {
 		Ok(btc_encode::deserialize(&hex::decode(&self.hex)?)?)
 	}
 }
 
-impl GetTransaction for GetTransactionResult {
+impl GetTransaction for json::GetTransactionResult {
 	fn transaction(&self) -> Result<Transaction, Error> {
 		Ok(btc_encode::deserialize(&hex::decode(&self.hex)?)?)
 	}
 }
 
-impl GetTransaction for SignRawTransactionResult {
+impl GetTransaction for json::SignRawTransactionResult {
 	fn transaction(&self) -> Result<Transaction, Error> {
 		Ok(btc_encode::deserialize(&hex::decode(&self.hex)?)?)
 	}

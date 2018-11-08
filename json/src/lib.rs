@@ -3,7 +3,7 @@
 //! This is a client library for the Bitcoin Core JSON-RPC API.
 //!
 
-#![crate_name = "bitcoindrpc_json"]
+#![crate_name = "bitcoincore_rpc_json"]
 #![crate_type = "rlib"]
 
 #[macro_use]

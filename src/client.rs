@@ -18,7 +18,7 @@ use secp256k1::Signature;
 use std::collections::HashMap;
 
 use error::*;
-use json::*;
+use json;
 
 type Result<T> = result::Result<T, Error>;
 
@@ -403,10 +403,10 @@ impl Client {
 	pub fn addmultisigaddress(
 		&mut self,
 		nrequired: usize,
-		keys: Vec<PubKeyOrAddress>,
+		keys: Vec<json::PubKeyOrAddress>,
 		label: Option<&str>,
-		address_type: Option<AddressType>,
-	) -> Result<AddMultiSigAddressResult> {
+		address_type: Option<json::AddressType>,
+	) -> Result<json::AddMultiSigAddressResult> {
 		let mut args = [
 			into_json(nrequired)?,
 			into_json(keys)?,
@@ -433,24 +433,24 @@ impl Client {
 
 		pub fn getblock_raw(self, hash: Sha256dHash, !0) -> raw:Block;
 
-		pub fn getblock_info(self, hash: Sha256dHash, !1) -> json:GetBlockResult;
+		pub fn getblock_info(self, hash: Sha256dHash, !1) -> json:json::GetBlockResult;
 		//TODO(stevenroose) add getblock_txs
 
 		pub fn getblockheader_raw(self, hash: Sha256dHash, !false) -> raw:BlockHeader;
 
-		pub fn getblockheader_verbose(self, hash: Sha256dHash, !true) -> json:GetBlockHeaderResult;
+		pub fn getblockheader_verbose(self, hash: Sha256dHash, !true) -> json:json::GetBlockHeaderResult;
 
 		//TODO(stevenroose) verify if return type works
 		pub fn getdifficulty(self) -> json:BigUint;
 
 		pub fn getconnectioncount(self) -> json:usize;
 
-		pub fn getmininginfo(self) -> json:GetMiningInfoResult;
+		pub fn getmininginfo(self) -> json:json::GetMiningInfoResult;
 	}
 
 	/// Returns a data structure containing various state info regarding
 	/// blockchain processing.
-	pub fn getblockchaininfo(&mut self) -> Result<bitcoindrpc_json::BlockchainInfo> {
+	pub fn getblockchaininfo(&mut self) -> Result<json::BlockchainInfo> {
 		self.call("getblockchaininfo", &[])
 	}
 
@@ -492,20 +492,20 @@ impl Client {
 			txid: Sha256dHash,
 			!true,
 			?block_hash: Sha256dHash = ""
-		) -> json:GetRawTransactionResult;
+		) -> json:json::GetRawTransactionResult;
 
 		pub fn getreceivedbyaddress(self, address: Address, ?minconf: u32 = 0) -> json:Amount;
 
 		pub fn gettransaction(self,
 			txid: Sha256dHash,
 			?include_watchonly: bool = true
-		) -> json:GetTransactionResult;
+		) -> json:json::GetTransactionResult;
 
 		pub fn gettxout(self,
 			txid: Sha256dHash,
 			vout: u32,
 			?include_mempool: bool = true
-		) -> json:Option<GetTxOutResult>;
+		) -> json:Option<json::GetTxOutResult>;
 
 		//TODO(stevenroose) use Privkey type
 		// dep: https://github.com/rust-bitcoin/rust-bitcoin/pull/183
@@ -523,23 +523,23 @@ impl Client {
 			?addresses: Vec<Address> = empty!(),
 			?include_unsafe: bool = true,
 			?query_options: HashMap<String, String> = ""
-		) -> json:Vec<ListUnspentResult>;
+		) -> json:Vec<json::ListUnspentResult>;
 
 		//TODO(stevenroose) update with privkey type
 		// dep: https://github.com/rust-bitcoin/rust-bitcoin/pull/183
 		#[doc="private_keys are not yet implemented."]
 		pub fn signrawtransaction(self,
-			tx: HexBytes,
-			?utxos: Vec<UTXO> = empty!(),
+			tx: json::HexBytes,
+			?utxos: Vec<json::UTXO> = empty!(),
 			?private_keys: Vec<String> = empty!(),
-			?sighash_type: SigHashType = ""
-		) -> json:SignRawTransactionResult;
+			?sighash_type: json::SigHashType = ""
+		) -> json:json::SignRawTransactionResult;
 
 		pub fn signrawtransactionwithwallet(self,
-			tx: HexBytes,
-			?utxos: Vec<UTXO> = empty!(),
-			?sighash_type: SigHashType = ""
-		) -> json:SignRawTransactionResult;
+			tx: json::HexBytes,
+			?utxos: Vec<json::UTXO> = empty!(),
+			?sighash_type: json::SigHashType = ""
+		) -> json:json::SignRawTransactionResult;
 
 		pub fn stop(self) -> json:();
 

@@ -1,11 +1,11 @@
 //! A very simple example used as a self-test of this library against a Bitcoin
 //! Core node.
 extern crate bitcoin;
-extern crate bitcoindrpc;
+extern crate bitcoincore_rpc;
 #[macro_use]
 extern crate failure;
 
-use bitcoindrpc::Client;
+use bitcoincore_rpc::Client;
 
 type Result<T> = std::result::Result<T, failure::Error>;
 
