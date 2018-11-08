@@ -7,40 +7,40 @@ use json;
 
 /// Retrieve a relevant Script for the type.
 pub trait GetScript {
-	fn script(&self) -> Result<Script, Error>;
+    fn script(&self) -> Result<Script, Error>;
 }
 
 impl GetScript for json::GetRawTransactionResultVinScriptSig {
-	fn script(&self) -> Result<Script, Error> {
-		Ok(Script::from(hex::decode(&self.hex)?))
-	}
+    fn script(&self) -> Result<Script, Error> {
+        Ok(Script::from(hex::decode(&self.hex)?))
+    }
 }
 
 impl GetScript for json::GetRawTransactionResultVoutScriptPubKey {
-	fn script(&self) -> Result<Script, Error> {
-		Ok(Script::from(hex::decode(&self.hex)?))
-	}
+    fn script(&self) -> Result<Script, Error> {
+        Ok(Script::from(hex::decode(&self.hex)?))
+    }
 }
 
 /// Retrieve a relevant Transaction for the type.
 pub trait GetTransaction {
-	fn transaction(&self) -> Result<Transaction, Error>;
+    fn transaction(&self) -> Result<Transaction, Error>;
 }
 
 impl GetTransaction for json::GetRawTransactionResult {
-	fn transaction(&self) -> Result<Transaction, Error> {
-		Ok(btc_encode::deserialize(&hex::decode(&self.hex)?)?)
-	}
+    fn transaction(&self) -> Result<Transaction, Error> {
+        Ok(btc_encode::deserialize(&hex::decode(&self.hex)?)?)
+    }
 }
 
 impl GetTransaction for json::GetTransactionResult {
-	fn transaction(&self) -> Result<Transaction, Error> {
-		Ok(btc_encode::deserialize(&hex::decode(&self.hex)?)?)
-	}
+    fn transaction(&self) -> Result<Transaction, Error> {
+        Ok(btc_encode::deserialize(&hex::decode(&self.hex)?)?)
+    }
 }
 
 impl GetTransaction for json::SignRawTransactionResult {
-	fn transaction(&self) -> Result<Transaction, Error> {
-		Ok(btc_encode::deserialize(&hex::decode(&self.hex)?)?)
-	}
+    fn transaction(&self) -> Result<Transaction, Error> {
+        Ok(btc_encode::deserialize(&hex::decode(&self.hex)?)?)
+    }
 }
