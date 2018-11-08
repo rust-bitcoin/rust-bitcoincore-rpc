@@ -6,11 +6,11 @@ use jsonrpc;
 use serde_json;
 
 use bitcoin::blockdata::block::{Block, BlockHeader};
-use bitcoin::blockdata::transaction::Transaction;
 use bitcoin::consensus::encode as btc_encode;
 use bitcoin::util::address::Address;
 use bitcoin::util::hash::Sha256dHash;
-use bitcoin::util::privkey::Privkey;
+use bitcoin::Transaction;
+//use bitcoin::util::privkey::Privkey;
 use bitcoin_amount::Amount;
 use log::Level::Trace;
 use num_bigint::BigUint;
@@ -180,25 +180,16 @@ enum ArgValue {
 }
 
 /// Read the response body as hex and decode into a rust-bitcoin struct.
-fn into_struct<T>(resp: jsonrpc::Response) -> Result<T>
+fn hex_consensus_decode<T>(hex: &str) -> Result<T>
 where
 	T: bitcoin::consensus::Decodable<std::io::Cursor<Vec<u8>>>,
 {
-	let hex = resp.into_result::<String>()?;
 	let bytes = hex::decode(hex)?;
 	Ok(T::consensus_decode(&mut io::Cursor::new(bytes))?)
 }
 
-/// Read the response body as JSON and decode into a JSON type..
-fn into_json<T>(resp: jsonrpc::Response) -> Result<T>
-where
-	T: for<'a> serde::de::Deserialize<'a>,
-{
-	Ok(resp.into_result()?)
-}
-
 /// Shorthand for converting a variable into a serde_json::Value.
-fn into_value<T>(val: T) -> Result<serde_json::Value>
+fn into_json<T>(val: T) -> Result<serde_json::Value>
 where
 	T: serde::ser::Serialize,
 {
@@ -206,24 +197,107 @@ where
 }
 
 /// Shorthand for converting an Option into an Option<serde_json::Value>.
-fn into_opt<T>(opt: Option<T>) -> Result<Option<serde_json::Value>>
+fn opt_into_json<T>(opt: Option<T>) -> Result<serde_json::Value>
 where
 	T: serde::ser::Serialize,
 {
 	match opt {
-		Some(val) => Ok(Some(into_value(val)?)),
-		None => Ok(None),
+		Some(val) => Ok(into_json(val)?),
+		None => Ok(serde_json::Value::Null),
 	}
 }
 
-/// Shorthand for a serde_json::Value annotated empty vector.
-fn empty() -> Vec<serde_json::Value> {
-	Vec::new()
-}
-
-/// Shorthand for serde_json::Value::Null.
+/// Shorthand for `serde_json::Value::Null`.
+#[allow(unused)]
 fn null() -> serde_json::Value {
 	serde_json::Value::Null
+}
+
+/// Handle default values in the argument list
+///
+/// Substitute `Value::Null`s with corresponding values from `defaults` table,
+/// except when they are trailing, in which case just skip them altogether
+/// in returned list.
+///
+/// Note, that `defaults` corresponds to the last elements of `args`.
+///
+/// ```norust
+/// arg1 arg2 arg3 arg4
+///           def1 def2
+/// ```
+///
+/// Elements of `args` without corresponding `defaults` value, won't
+/// be substituted, because they are required.
+fn handle_defaults<'a, 'b>(
+	args: &'a mut [serde_json::Value],
+	defaults: &'b [serde_json::Value],
+) -> &'a [serde_json::Value] {
+	assert!(args.len() >= defaults.len());
+
+	let mut first_non_empty_args_i = None;
+	for i in 0..defaults.len() {
+		let args_i = args.len() - 1 - i;
+		let defaults_i = defaults.len() - 1 - i;
+		if args[args_i] == serde_json::Value::Null {
+			if first_non_empty_args_i.is_some() {
+				args[args_i] = defaults[defaults_i].clone();
+			}
+		} else {
+			if first_non_empty_args_i.is_none() {
+				first_non_empty_args_i = Some(args_i);
+			}
+		}
+	}
+
+	let required_num = args.len() - defaults.len();
+
+	if let Some(i) = first_non_empty_args_i {
+		&args[..=i]
+	} else {
+		&args[..required_num]
+	}
+}
+
+// TODO: move to a test module
+#[test]
+fn test_handle_defaults() -> Result<()> {
+	{
+		let mut args = [into_json(0)?, null(), null()];
+		let defaults = [into_json(1)?, into_json(2)?];
+		let res = [into_json(0)?];
+		assert_eq!(handle_defaults(&mut args, &defaults), &res);
+	}
+	{
+		let mut args = [into_json(0)?, into_json(1)?, null()];
+		let defaults = [into_json(2)?];
+		let res = [into_json(0)?, into_json(1)?];
+		assert_eq!(handle_defaults(&mut args, &defaults), &res);
+	}
+	{
+		let mut args = [into_json(0)?, null(), into_json(5)?];
+		let defaults = [into_json(2)?, into_json(3)?];
+		let res = [into_json(0)?, into_json(2)?, into_json(5)?];
+		assert_eq!(handle_defaults(&mut args, &defaults), &res);
+	}
+	{
+		let mut args = [null(), null()];
+		let defaults = [into_json(2)?, into_json(3)?];
+		let res: [serde_json::Value; 0] = [];
+		assert_eq!(handle_defaults(&mut args, &defaults), &res);
+	}
+	{
+		let mut args = [];
+		let defaults = [];
+		let res: [serde_json::Value; 0] = [];
+		assert_eq!(handle_defaults(&mut args, &defaults), &res);
+	}
+	{
+		let mut args = [into_json(0)?];
+		let defaults = [into_json(2)?];
+		let res = [into_json(0)?];
+		assert_eq!(handle_defaults(&mut args, &defaults), &res);
+	}
+	Ok(())
 }
 
 /// Client implements a JSON-RPC client for the Bitcoin Core daemon or compatible APIs.
@@ -242,31 +316,15 @@ impl Client {
 		}
 	}
 
-	fn call(
+	fn call<T: for<'a> serde::de::Deserialize<'a>>(
 		&mut self,
 		cmd: &str,
-		mut args: Vec<serde_json::Value>,
-		mut oargs: Vec<Option<serde_json::Value>>,
-		defaults: Vec<serde_json::Value>,
-	) -> Result<jsonrpc::Response> {
-		// We want to truncate the argument list to remove the trailing non-set optional
-		// arguments.  This makes sure we don't send default values if we don't
-		// really need to, which prevents unexpected behaviour if the server changes its
-		// default values.
-		while oargs.len() > 0 && oargs.last().is_none() {
-			oargs.pop();
-		}
-
-		// Add the optional arguments to the list while filling in the default values for missing
-		// ones.
-		args.extend(
-			oargs
-				.into_iter()
-				.zip(defaults.into_iter())
-				.map(|(val, def)| val.or_else(|| Some(def)).unwrap()),
-		);
-
-		let req = self.client.build_request(cmd.to_owned(), args);
+		args: &[serde_json::Value],
+	) -> Result<T> {
+		// Get rid of to_owned after
+		// https://github.com/apoelstra/rust-jsonrpc/pull/19
+		// lands
+		let req = self.client.build_request(cmd.to_owned(), args.to_owned());
 		if log_enabled!(Trace) {
 			trace!("JSON-RPC request: {}", serde_json::to_string(&req).unwrap());
 		}
@@ -276,7 +334,7 @@ impl Client {
 			let resp = resp.as_ref().unwrap();
 			trace!("JSON-RPC response: {}", serde_json::to_string(resp).unwrap());
 		}
-		resp
+		Ok(resp?.into_result()?)
 	}
 
 	pub fn addmultisigaddress(
@@ -286,13 +344,13 @@ impl Client {
 		label: Option<&str>,
 		address_type: Option<AddressType>,
 	) -> Result<AddMultiSigAddressResult> {
-		let resp = self.call(
-			"addmultisigaddress",
-			vec![nrequired.into(), into_value(keys)?],
-			vec![into_opt(label)?, into_opt(address_type)?],
-			vec![empty().into()],
-		)?;
-		into_json(resp)
+		let mut args = [
+			into_json(nrequired)?,
+			into_json(keys)?,
+			opt_into_json(label)?,
+			opt_into_json(address_type)?,
+		];
+		self.call("addmultisigaddress", handle_defaults(&mut args, &[]))
 	}
 
 	methods! {
@@ -336,13 +394,9 @@ impl Client {
 		txid: Sha256dHash,
 		block_hash: Option<Sha256dHash>,
 	) -> Result<Transaction> {
-		let resp = self.call(
-			"getrawtransaction",
-			vec![into_value(txid)?, true.into()],
-			vec![into_opt(block_hash)?],
-			vec![null()],
-		)?;
-		into_struct(resp)
+		let mut args = [into_json(txid)?, opt_into_json(block_hash)?];
+		let resp: String = self.call("getrawtransaction", handle_defaults(&mut args, &[]))?;
+		hex_consensus_decode(&resp)
 	}
 
 	methods!{
