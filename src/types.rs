@@ -383,6 +383,7 @@ impl serde::Serialize for AddressType {
 }
 
 /// Used to represent arguments that can either be an address or a public key.
+#[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Debug)]
 pub enum PubKeyOrAddress {
 	Address(Address),
 	PubKey(PublicKey),
