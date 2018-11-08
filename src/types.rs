@@ -1,8 +1,6 @@
 use std::str::FromStr;
 
 use bitcoin::blockdata::script::Script;
-use bitcoin::blockdata::transaction::Transaction;
-use bitcoin::consensus::encode as btc_encode;
 use bitcoin::util::address::Address;
 use bitcoin::util::hash::Sha256dHash;
 use bitcoin_amount::Amount;
@@ -13,18 +11,7 @@ use serde;
 use serde::de::Error as SerdeError;
 use serde::Deserialize;
 
-use error::Error;
-
 //TODO(stevenroose) consider using a Time type
-
-macro_rules! bitcoin_hex {
-	(Script, $hex:expr) => {
-		Ok(Script::from(hex::decode($hex)?))
-	};
-	($raw_type:ty, $hex:expr) => {
-		btc_encode::deserialize(hex::decode($hex)?.as_slice()).map_err(Error::from)
-	};
-}
 
 #[derive(Deserialize, Clone, PartialEq, Eq, Debug)]
 #[serde(rename_all = "camelCase")]
@@ -100,12 +87,6 @@ pub struct GetRawTransactionResultVinScriptSig {
 	pub hex: String,
 }
 
-impl GetRawTransactionResultVinScriptSig {
-	pub fn script(&self) -> Result<Script, Error> {
-		bitcoin_hex!(Script, &self.hex)
-	}
-}
-
 #[derive(Deserialize, Clone, PartialEq, Eq, Debug)]
 #[serde(rename_all = "camelCase")]
 pub struct GetRawTransactionResultVin {
@@ -126,12 +107,6 @@ pub struct GetRawTransactionResultVoutScriptPubKey {
 	#[serde(rename = "type")]
 	pub type_: String, //TODO(stevenroose) consider enum
 	pub addresses: Vec<Address>,
-}
-
-impl GetRawTransactionResultVoutScriptPubKey {
-	pub fn script(&self) -> Result<Script, Error> {
-		bitcoin_hex!(Script, &self.hex)
-	}
 }
 
 #[derive(Deserialize, Clone, PartialEq, Eq, Debug)]
@@ -161,12 +136,6 @@ pub struct GetRawTransactionResult {
 	pub confirmations: usize,
 	pub time: usize,
 	pub blocktime: usize,
-}
-
-impl GetRawTransactionResult {
-	pub fn transaction(&self) -> Result<Transaction, Error> {
-		bitcoin_hex!(Transaction, &self.hex)
-	}
 }
 
 /// Enum to represent the BIP125 replacable status for a transaction.
@@ -247,12 +216,6 @@ pub struct GetTransactionResult {
 	pub hex: String,
 }
 
-impl GetTransactionResult {
-	pub fn transaction(&self) -> Result<Transaction, Error> {
-		bitcoin_hex!(Transaction, &self.hex)
-	}
-}
-
 #[derive(Deserialize, Clone, PartialEq, Eq, Debug)]
 #[serde(rename_all = "camelCase")]
 pub struct GetTxOutResult {
@@ -297,12 +260,6 @@ pub struct SignRawTransactionResult {
 	pub complete: bool,
 	#[serde(default)]
 	pub errors: Vec<SignRawTransactionResultError>,
-}
-
-impl SignRawTransactionResult {
-	pub fn transaction(&self) -> Result<Transaction, Error> {
-		bitcoin_hex!(Transaction, &self.hex)
-	}
 }
 
 // Custom types for input arguments.
