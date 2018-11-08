@@ -1,3 +1,4 @@
+use std::io;
 use std::result;
 
 use hex;
@@ -61,12 +62,6 @@ macro_rules! result {
 					t
 				})
 	};
-}
-
-/// OptionalArg is a simple enum to represent an argument value and its context.
-enum OptionalArg {
-	Set(serde_json::Value),
-	Default(serde_json::Value),
 }
 
 /// Main macro used for defining RPC methods.
@@ -149,16 +144,16 @@ macro_rules! methods {
 			let mut optional_args = Vec::new();
 			$(
 				optional_args.push(match $oarg {
-					Some(v) => OptionalArg::Set(serde_json::to_value(v)?),
-					None => OptionalArg::Default(serde_json::to_value($oargv)?),
+					Some(v) => ArgValue::Set(serde_json::to_value(v)?),
+					None => ArgValue::Default(serde_json::to_value($oargv)?),
 				});
 			)*
-			while let Some(OptionalArg::Default(_)) = optional_args.last() {
+			while let Some(ArgValue::Default(_)) = optional_args.last() {
 				optional_args.pop();
 			}
 			args.extend(optional_args.into_iter().map(|a| match a {
-				OptionalArg::Set(v) => v,
-				OptionalArg::Default(v) => v,
+				ArgValue::Set(v) => v,
+				ArgValue::Default(v) => v,
 			}));
 
 			let req = self.client.build_request(cmd.to_owned(), args);
@@ -178,6 +173,59 @@ macro_rules! methods {
 	};
 }
 
+/// ArgValue is a simple enum to represent an argument value and its context.
+enum ArgValue {
+	Set(serde_json::Value),
+	Default(serde_json::Value),
+}
+
+impl ArgValue {
+	fn val(self) -> serde_json::Value {
+		match self {
+			ArgValue::Set(v) => v,
+			ArgValue::Default(v) => v,
+		}
+	}
+}
+
+/// Create an ArgValue::Set.
+fn arg<T>(value: T) -> Result<ArgValue>
+where
+	T: serde::ser::Serialize,
+{
+	Ok(ArgValue::Set(serde_json::to_value(value)?))
+}
+
+/// Create an ArgValue from an optional argument, using the default value when the value is None.
+fn oarg<T, D>(value: Option<T>, default: D) -> Result<ArgValue>
+where
+	T: serde::ser::Serialize,
+	D: serde::ser::Serialize,
+{
+	match value {
+		Some(val) => Ok(ArgValue::Set(serde_json::to_value(val)?)),
+		None => Ok(ArgValue::Default(serde_json::to_value(default)?)),
+	}
+}
+
+/// Read the response body as hex and decode into a rust-bitcoin struct.
+fn into_struct<T>(resp: jsonrpc::Response) -> Result<T>
+where
+	T: bitcoin::consensus::Decodable<std::io::Cursor<Vec<u8>>>,
+{
+	let hex = resp.into_result::<String>()?;
+	let bytes = hex::decode(hex)?;
+	Ok(T::consensus_decode(&mut io::Cursor::new(bytes))?)
+}
+
+/// Read the response body as JSON and decode into a JSON type..
+fn into_json<T>(resp: jsonrpc::Response) -> Result<T>
+where
+	T: for<'a> serde::de::Deserialize<'a>,
+{
+	Ok(resp.into_result()?)
+}
+
 /// Client implements a JSON-RPC client for the Bitcoin Core daemon or compatible APIs.
 ///
 /// Methods have identical casing to API methods on purpose.
@@ -194,14 +242,53 @@ impl Client {
 		}
 	}
 
-	//call!(backupwallet, json:(), destination: &str);
+	fn call(&mut self, cmd: &str, mut args: Vec<ArgValue>) -> Result<jsonrpc::Response> {
+		// We want to truncate the argument list to remove the trailing non-set optional
+		// arguments.  This makes sure we don't send default values if we don't
+		// really need to, which prevents unexpected behaviour if the server changes its
+		// default values.
+		// Because we can't know the last optional arguments before we parsing the macro, we
+		// first have to add them to a new vector, and then remove the ones that are not
+		// necessary.  Ultimately we can add them to the argument list.
+		while let Some(ArgValue::Default(_)) = args.last() {
+			args.pop();
+		}
+
+		let json_args = args.into_iter().map(|v| v.val()).collect();
+		let req = self.client.build_request(cmd.to_owned(), json_args);
+		if log_enabled!(Trace) {
+			trace!("JSON-RPC request: {}", serde_json::to_string(&req).unwrap());
+		}
+
+		let resp = self.client.send_request(&req).map_err(Error::from);
+		if log_enabled!(Trace) && resp.is_ok() {
+			let resp = resp.as_ref().unwrap();
+			trace!("JSON-RPC response: {}", serde_json::to_string(resp).unwrap());
+		}
+		resp
+	}
+
+	pub fn addmultisigaddress(
+		&mut self,
+		nrequired: usize,
+		keys: Vec<PubKeyOrAddress>,
+		label: Option<&str>,
+		address_type: Option<AddressType>,
+	) -> Result<AddMultiSigAddressResult> {
+		let resp = self.call(
+			"addmultisigaddress",
+			vec![arg(nrequired)?, arg(keys)?, oarg(label, "")?, oarg(address_type, "")?],
+		)?;
+		into_json(resp)
+	}
+
 	methods! {
-		pub fn addmultisigaddress(self,
-			nrequired: usize,
-			keys: Vec<PubKeyOrAddress>,
-			?label: &str = "",
-			?address_type: AddressType = ""
-		) -> json:AddMultiSigAddressResult;
+		//pub fn addmultisigaddress(self,
+		//	nrequired: usize,
+		//	keys: Vec<PubKeyOrAddress>,
+		//	?label: &str = "",
+		//	?address_type: AddressType = ""
+		//) -> json:AddMultiSigAddressResult;
 
 		pub fn backupwallet(self, ?destination: &str = "") -> json:();
 
@@ -229,18 +316,30 @@ impl Client {
 		pub fn getconnectioncount(self) -> json:usize;
 
 		pub fn getmininginfo(self) -> json:GetMiningInfoResult;
+	}
 
-		pub fn getrawtransaction_raw(self,
-			txid: Sha256dHash,
-			!false,
-			?block_hash: Sha256dHash = ""
-		) -> raw:Transaction;
+	pub fn getrawtransaction(
+		&mut self,
+		txid: Sha256dHash,
+		block_hash: Option<Sha256dHash>,
+	) -> Result<Transaction> {
+		let resp =
+			self.call("getrawtransaction", vec![arg(txid)?, arg(true)?, oarg(block_hash, "")?])?;
+		into_struct(resp)
+	}
+
+	methods!{
+		//pub fn getrawtransaction(self,
+		//	txid: Sha256dHash,
+		//	!false,
+		//	?block_hash: Sha256dHash = ""
+		//) -> raw:Transaction;
 
 		pub fn getrawtransaction_verbose(self,
 			txid: Sha256dHash,
-			!false,
+			!true,
 			?block_hash: Sha256dHash = ""
-		) -> raw:Transaction;
+		) -> json:GetRawTransactionResult;
 
 		pub fn getreceivedbyaddress(self, address: Address, ?minconf: u32 = 0) -> json:Amount;
 
