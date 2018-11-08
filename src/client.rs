@@ -179,35 +179,6 @@ enum ArgValue {
 	Default(serde_json::Value),
 }
 
-impl ArgValue {
-	fn val(self) -> serde_json::Value {
-		match self {
-			ArgValue::Set(v) => v,
-			ArgValue::Default(v) => v,
-		}
-	}
-}
-
-/// Create an ArgValue::Set.
-fn arg<T>(value: T) -> Result<ArgValue>
-where
-	T: serde::ser::Serialize,
-{
-	Ok(ArgValue::Set(serde_json::to_value(value)?))
-}
-
-/// Create an ArgValue from an optional argument, using the default value when the value is None.
-fn oarg<T, D>(value: Option<T>, default: D) -> Result<ArgValue>
-where
-	T: serde::ser::Serialize,
-	D: serde::ser::Serialize,
-{
-	match value {
-		Some(val) => Ok(ArgValue::Set(serde_json::to_value(val)?)),
-		None => Ok(ArgValue::Default(serde_json::to_value(default)?)),
-	}
-}
-
 /// Read the response body as hex and decode into a rust-bitcoin struct.
 fn into_struct<T>(resp: jsonrpc::Response) -> Result<T>
 where
@@ -226,6 +197,35 @@ where
 	Ok(resp.into_result()?)
 }
 
+/// Shorthand for converting a variable into a serde_json::Value.
+fn into_value<T>(val: T) -> Result<serde_json::Value>
+where
+	T: serde::ser::Serialize,
+{
+	Ok(serde_json::to_value(val)?)
+}
+
+/// Shorthand for converting an Option into an Option<serde_json::Value>.
+fn into_opt<T>(opt: Option<T>) -> Result<Option<serde_json::Value>>
+where
+	T: serde::ser::Serialize,
+{
+	match opt {
+		Some(val) => Ok(Some(into_value(val)?)),
+		None => Ok(None),
+	}
+}
+
+/// Shorthand for a serde_json::Value annotated empty vector.
+fn empty() -> Vec<serde_json::Value> {
+	Vec::new()
+}
+
+/// Shorthand for serde_json::Value::Null.
+fn null() -> serde_json::Value {
+	serde_json::Value::Null
+}
+
 /// Client implements a JSON-RPC client for the Bitcoin Core daemon or compatible APIs.
 ///
 /// Methods have identical casing to API methods on purpose.
@@ -242,20 +242,31 @@ impl Client {
 		}
 	}
 
-	fn call(&mut self, cmd: &str, mut args: Vec<ArgValue>) -> Result<jsonrpc::Response> {
+	fn call(
+		&mut self,
+		cmd: &str,
+		mut args: Vec<serde_json::Value>,
+		mut oargs: Vec<Option<serde_json::Value>>,
+		defaults: Vec<serde_json::Value>,
+	) -> Result<jsonrpc::Response> {
 		// We want to truncate the argument list to remove the trailing non-set optional
 		// arguments.  This makes sure we don't send default values if we don't
 		// really need to, which prevents unexpected behaviour if the server changes its
 		// default values.
-		// Because we can't know the last optional arguments before we parsing the macro, we
-		// first have to add them to a new vector, and then remove the ones that are not
-		// necessary.  Ultimately we can add them to the argument list.
-		while let Some(ArgValue::Default(_)) = args.last() {
-			args.pop();
+		while oargs.len() > 0 && oargs.last().is_none() {
+			oargs.pop();
 		}
 
-		let json_args = args.into_iter().map(|v| v.val()).collect();
-		let req = self.client.build_request(cmd.to_owned(), json_args);
+		// Add the optional arguments to the list while filling in the default values for missing
+		// ones.
+		args.extend(
+			oargs
+				.into_iter()
+				.zip(defaults.into_iter())
+				.map(|(val, def)| val.or_else(|| Some(def)).unwrap()),
+		);
+
+		let req = self.client.build_request(cmd.to_owned(), args);
 		if log_enabled!(Trace) {
 			trace!("JSON-RPC request: {}", serde_json::to_string(&req).unwrap());
 		}
@@ -277,7 +288,9 @@ impl Client {
 	) -> Result<AddMultiSigAddressResult> {
 		let resp = self.call(
 			"addmultisigaddress",
-			vec![arg(nrequired)?, arg(keys)?, oarg(label, "")?, oarg(address_type, "")?],
+			vec![nrequired.into(), into_value(keys)?],
+			vec![into_opt(label)?, into_opt(address_type)?],
+			vec![empty().into()],
 		)?;
 		into_json(resp)
 	}
@@ -323,8 +336,12 @@ impl Client {
 		txid: Sha256dHash,
 		block_hash: Option<Sha256dHash>,
 	) -> Result<Transaction> {
-		let resp =
-			self.call("getrawtransaction", vec![arg(txid)?, arg(true)?, oarg(block_hash, "")?])?;
+		let resp = self.call(
+			"getrawtransaction",
+			vec![into_value(txid)?, true.into()],
+			vec![into_opt(block_hash)?],
+			vec![null()],
+		)?;
 		into_struct(resp)
 	}
 
