@@ -1,0 +1,12 @@
+language: rust
+rust:
+  - stable
+  - beta
+  - nightly
+  - 1.21.0 # first cargo that supports [patch]
+
+script:
+  - cargo build --verbose
+  - cargo test --verbose
+  - cargo build --verbose --examples
+
