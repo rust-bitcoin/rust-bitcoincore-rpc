@@ -22,6 +22,8 @@ pub use bitcoindrpc_json as json;
 
 mod client;
 mod error;
+mod getters;
 
 pub use client::*;
 pub use error::Error;
+pub use getters::*;
