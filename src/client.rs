@@ -18,7 +18,7 @@ use secp256k1::Signature;
 use std::collections::HashMap;
 
 use error::*;
-use types::*;
+use json::*;
 
 type Result<T> = result::Result<T, Error>;
 

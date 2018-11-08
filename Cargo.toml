@@ -15,12 +15,12 @@ name = "bitcoindrpc"
 path = "src/lib.rs"
 
 [dependencies]
+bitcoindrpc-json = "0"
 log = "0.4.5"
 jsonrpc = "0.10"
 
 # Used for deserialization of JSON.
 serde = "1"
-serde_derive = "1"
 serde_json = "1"
 hex = "0.3"
 
@@ -37,3 +37,4 @@ num-bigint = { version = "0.2", features = [ "serde" ] }
 
 [patch.crates-io]
 bitcoin = { path = "/home/steven/code/rust/bitcoin" }
+bitcoindrpc-json = { path = "./json" }

@@ -8,8 +8,6 @@
 
 #[macro_use]
 extern crate log;
-#[macro_use]
-extern crate serde_derive;
 extern crate bitcoin;
 extern crate bitcoin_amount;
 extern crate hex;
@@ -19,10 +17,11 @@ extern crate secp256k1;
 extern crate serde;
 extern crate serde_json;
 
+pub extern crate bitcoindrpc_json;
+pub use bitcoindrpc_json as json;
+
 mod client;
 mod error;
-mod types;
 
 pub use client::*;
 pub use error::Error;
-pub use types::*;
