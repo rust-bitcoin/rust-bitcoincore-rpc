@@ -275,24 +275,26 @@ fn handle_defaults<'a, 'b>(
 ) -> &'a [serde_json::Value] {
 	assert!(args.len() >= defaults.len());
 
-	let mut first_non_empty_args_i = None;
+	// Pass over the optional arguments in backwards order, filling in defaults after the first
+	// non-null optional argument has been observed.
+	let mut first_non_null_optional_idx = None;
 	for i in 0..defaults.len() {
 		let args_i = args.len() - 1 - i;
 		let defaults_i = defaults.len() - 1 - i;
 		if args[args_i] == serde_json::Value::Null {
-			if first_non_empty_args_i.is_some() {
+			if first_non_null_optional_idx.is_some() {
 				args[args_i] = defaults[defaults_i].clone();
 			}
 		} else {
-			if first_non_empty_args_i.is_none() {
-				first_non_empty_args_i = Some(args_i);
+			if first_non_null_optional_idx.is_none() {
+				first_non_null_optional_idx = Some(args_i);
 			}
 		}
 	}
 
 	let required_num = args.len() - defaults.len();
 
-	if let Some(i) = first_non_empty_args_i {
+	if let Some(i) = first_non_null_optional_idx {
 		&args[..=i]
 	} else {
 		&args[..required_num]
@@ -317,6 +319,12 @@ fn test_handle_defaults() -> Result<()> {
 	{
 		let mut args = [into_json(0)?, null(), into_json(5)?];
 		let defaults = [into_json(2)?, into_json(3)?];
+		let res = [into_json(0)?, into_json(2)?, into_json(5)?];
+		assert_eq!(handle_defaults(&mut args, &defaults), &res);
+	}
+	{
+		let mut args = [into_json(0)?, null(), into_json(5)?, null()];
+		let defaults = [into_json(2)?, into_json(3)?, into_json(4)?];
 		let res = [into_json(0)?, into_json(2)?, into_json(5)?];
 		assert_eq!(handle_defaults(&mut args, &defaults), &res);
 	}
