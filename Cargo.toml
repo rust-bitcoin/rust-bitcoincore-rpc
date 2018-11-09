@@ -2,7 +2,11 @@
 [package]
 name = "bitcoincore-rpc"
 version = "0.0.0"
-authors = ["Steven Roose <steven@stevenroose.org>"]
+authors = [
+    "Steven Roose <steven@stevenroose.org>",
+    "Jean Pierre Dudey <jeandudey@hotmail.com>",
+    "Dawid Ciężarkiewicz <dpc@dpc.pw>"
+]
 license = "CC0-1.0"
 homepage = "https://github.com/stevenroose/rust-bitcoindrpc/"
 repository = "https://github.com/stevenroose/rust-bitcoindrpc/"
