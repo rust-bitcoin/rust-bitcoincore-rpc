@@ -1,7 +1,11 @@
 [package]
 name = "bitcoincore-rpc-json"
 version = "0.1.0"
-authors = ["Steven Roose <steven@stevenroose.org>"]
+authors = [
+    "Steven Roose <steven@stevenroose.org>",
+    "Jean Pierre Dudey <jeandudey@hotmail.com>",
+    "Dawid Ciężarkiewicz <dpc@dpc.pw>"
+]
 
 [dependencies]
 serde = "1"
@@ -12,6 +16,3 @@ bitcoin = { version = "0.15", features = [ "serde-decimal" ] }
 bitcoin-amount = { version = "0.1.4", features = [ "serde" ] }
 secp256k1 = { version = "0.11", features = [ "serde" ] }
 num-bigint = { version = "0.2", features = [ "serde" ] }
-
-#[patch.crates-io]
-#bitcoin = { path = "/home/steven/code/rust/bitcoin" }

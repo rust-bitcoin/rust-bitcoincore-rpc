@@ -1,7 +1,7 @@
 
 [package]
 name = "bitcoincore-rpc"
-version = "0.0.0"
+version = "0.1.0"
 authors = [
     "Steven Roose <steven@stevenroose.org>",
     "Jean Pierre Dudey <jeandudey@hotmail.com>",
@@ -33,8 +33,6 @@ bitcoin = { version = "0.15", features = [ "serde-decimal" ] }
 bitcoin-amount = { version = "0.1.4", features = [ "serde" ] }
 secp256k1 = { version = "0.11", features = [ "serde" ] }
 num-bigint = { version = "0.2", features = [ "serde" ] }
-
-[dev-dependencies]
 
 [patch.crates-io]
 bitcoincore-rpc-json = { path = "./json" }
