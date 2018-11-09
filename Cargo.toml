@@ -1,4 +1,3 @@
-
 [package]
 name = "bitcoincore-rpc"
 version = "0.1.0"
@@ -11,7 +10,7 @@ license = "CC0-1.0"
 homepage = "https://github.com/stevenroose/rust-bitcoindrpc/"
 repository = "https://github.com/stevenroose/rust-bitcoindrpc/"
 description = "RPC client library for the Bitcoin Core JSON-RPC API."
-keywords = [ "crypto", "bitcoin", "bitcoin core", "rpc" ]
+keywords = [ "crypto", "bitcoin", "bitcoin-core", "rpc" ]
 readme = "README.md"
 
 [lib]

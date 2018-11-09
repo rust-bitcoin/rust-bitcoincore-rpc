@@ -6,6 +6,16 @@ authors = [
     "Jean Pierre Dudey <jeandudey@hotmail.com>",
     "Dawid Ciężarkiewicz <dpc@dpc.pw>"
 ]
+license = "CC0-1.0"
+homepage = "https://github.com/stevenroose/rust-bitcoindrpc/"
+repository = "https://github.com/stevenroose/rust-bitcoindrpc/"
+description = "JSON-enabled type structs for bitcoincore-rpc crate."
+keywords = [ "crypto", "bitcoin", "bitcoin-core", "rpc" ]
+readme = "README.md"
+
+[lib]
+name = "bitcoincore_rpc_json"
+path = "src/lib.rs"
 
 [dependencies]
 serde = "1"
