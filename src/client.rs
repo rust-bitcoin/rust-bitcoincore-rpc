@@ -355,6 +355,65 @@ impl Client {
         let args = [into_json(address)?, into_json(signature)?, into_json(message)?];
         self.call("verifymessage", &args)
     }
+
+    /// Generate new address under own control
+    pub fn get_new_address(&mut self, account: &str) -> Result<String> {
+        self.call("getnewaddress", &[into_json(account)?])
+    }
+
+    /// Mine `block_num` blocks and pay coinbase to `address`
+    ///
+    /// Returns hashes of the generated blocks
+    pub fn generate_to_address(
+        &mut self,
+        block_num: u64,
+        address: &str,
+    ) -> Result<Vec<Sha256dHash>> {
+        let v: Vec<String> = self.call("generatetoaddress", &[block_num.into(), address.into()])?;
+
+        Ok(v.into_iter()
+            .map(|v| Sha256dHash::from_hex(&v))
+            .collect::<std::result::Result<Vec<Sha256dHash>, _>>()?)
+    }
+
+    /// Mark a block as invalid by `block_hash`
+    pub fn invalidate_block(&mut self, block_hash: &Sha256dHash) -> Result<()> {
+        self.call("invalidateblock", &[into_json(block_hash)?])
+    }
+
+    /// Returns data about each connected network node as an array of
+    /// [`PeerInfo`][]
+    ///
+    /// [`PeerInfo`]: net/struct.PeerInfo.html
+    pub fn get_peer_info(&mut self) -> Result<Vec<json::PeerInfo>> {
+        self.call("getpeerinfo", &[])
+    }
+
+    /// Requests that a ping be sent to all other nodes, to measure ping
+    /// time.
+    ///
+    /// Results provided in `getpeerinfo`, `pingtime` and `pingwait` fields
+    /// are decimal seconds.
+    ///
+    /// Ping command is handled in queue with all other commands, so it
+    /// measures processing backlog, not just network ping.
+    pub fn ping(&mut self) -> Result<()> {
+        self.call("ping", &[])
+    }
+
+    pub fn send_raw_transaction(&mut self, tx: &str) -> Result<String> {
+        self.call("sendrawtransaction", &[into_json(tx)?])
+    }
+
+    pub fn estimatesmartfee<E>(
+        &mut self,
+        conf_target: u16,
+        estimate_mode: Option<json::EstimateMode>,
+    ) -> Result<json::EstimateSmartFee> {
+        let mut args = [into_json(conf_target)?, opt_into_json(estimate_mode)?];
+        let defaults = [null()];
+        self.call("estimatesmartfee", handle_defaults(&mut args, &defaults))
+    }
 }
 
 #[cfg(tests)]
