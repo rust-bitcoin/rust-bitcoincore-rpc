@@ -20,13 +20,13 @@ fn main() -> Result<()> {
 
     let mut rpc = Client::new(url, user, pass);
 
-    let _blockchain_info = rpc.getblockchaininfo()?;
+    let _blockchain_info = rpc.get_blockchain_info()?;
 
-    let best_block_hash = rpc.getbestblockhash()?;
+    let best_block_hash = rpc.get_best_block_hash()?;
     println!("best block hash: {}", best_block_hash);
-    let bestblockcount = rpc.getblockcount()?;
+    let bestblockcount = rpc.get_block_count()?;
     println!("best block height: {}", bestblockcount);
-    let best_block_hash_by_height = rpc.getblockhash(bestblockcount)?;
+    let best_block_hash_by_height = rpc.get_block_hash(bestblockcount)?;
     println!("best block hash by height: {}", best_block_hash_by_height);
     assert_eq!(best_block_hash_by_height, best_block_hash);
 

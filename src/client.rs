@@ -1,4 +1,3 @@
-use std::io;
 use std::result;
 
 use hex;
@@ -179,6 +178,7 @@ enum ArgValue {
     Default(serde_json::Value),
 }
 
+/*
 /// Read the response body as hex and decode into a rust-bitcoin struct.
 fn hex_consensus_decode<T>(hex: &str) -> Result<T>
 where
@@ -186,7 +186,7 @@ where
 {
     let bytes = hex::decode(hex)?;
     Ok(T::consensus_decode(&mut io::Cursor::new(bytes))?)
-}
+}*/
 
 /// Shorthand for converting a variable into a serde_json::Value.
 fn into_json<T>(val: T) -> Result<serde_json::Value>
@@ -242,6 +242,9 @@ fn handle_defaults<'a, 'b>(
         let defaults_i = defaults.len() - 1 - i;
         if args[args_i] == serde_json::Value::Null {
             if first_non_null_optional_idx.is_some() {
+                if defaults[defaults_i] == serde_json::Value::Null {
+                    panic!("Missing `default` for argument idx {}", args_i);
+                }
                 args[args_i] = defaults[defaults_i].clone();
             }
         } else {
@@ -363,7 +366,7 @@ impl Client {
         Ok(resp?.into_result()?)
     }
 
-    pub fn addmultisigaddress(
+    pub fn add_multisig_address(
         &mut self,
         nrequired: usize,
         keys: Vec<json::PubKeyOrAddress>,
@@ -376,17 +379,10 @@ impl Client {
             opt_into_json(label)?,
             opt_into_json(address_type)?,
         ];
-        self.call("addmultisigaddress", handle_defaults(&mut args, &[]))
+        self.call("addmultisigaddress", handle_defaults(&mut args, &[into_json("")?, null()]))
     }
 
     methods! {
-        //pub fn addmultisigaddress(self,
-        //	nrequired: usize,
-        //	keys: Vec<PubKeyOrAddress>,
-        //	?label: &str = "",
-        //	?address_type: AddressType = ""
-        //) -> json:AddMultiSigAddressResult;
-
         pub fn backupwallet(self, ?destination: &str = "") -> json:();
 
         //TODO(stevenroose) use Privkey type
@@ -408,56 +404,63 @@ impl Client {
 
         pub fn getconnectioncount(self) -> json:usize;
 
-        pub fn getmininginfo(self) -> json:json::GetMiningInfoResult;
+    }
+
+    pub fn get_mining_info(&mut self) -> Result<json::GetMiningInfoResult> {
+        self.call("getmininginfo", &[])
     }
 
     /// Returns a data structure containing various state info regarding
     /// blockchain processing.
-    pub fn getblockchaininfo(&mut self) -> Result<json::BlockchainInfo> {
+    pub fn get_blockchain_info(&mut self) -> Result<json::BlockchainInfo> {
         self.call("getblockchaininfo", &[])
     }
 
     /// Returns the numbers of block in the longest chain.
-    pub fn getblockcount(&mut self) -> Result<u64> {
+    pub fn get_block_count(&mut self) -> Result<u64> {
         self.call("getblockcount", &[])
     }
 
     /// Returns the hash of the best (tip) block in the longest blockchain.
-    pub fn getbestblockhash(&mut self) -> Result<Sha256dHash> {
+    pub fn get_best_block_hash(&mut self) -> Result<Sha256dHash> {
         let hex: String = self.call("getbestblockhash", &[])?;
         Ok(Sha256dHash::from_hex(&hex)?)
     }
 
     /// Get block hash at a given height
-    pub fn getblockhash(&mut self, height: u64) -> Result<Sha256dHash> {
+    pub fn get_block_hash(&mut self, height: u64) -> Result<Sha256dHash> {
         let hex: String = self.call("getblockhash", &[height.into()])?;
         Ok(Sha256dHash::from_hex(&hex)?)
     }
 
-    pub fn getrawtransaction(
+    pub fn get_raw_transaction(
         &mut self,
         txid: Sha256dHash,
         block_hash: Option<Sha256dHash>,
     ) -> Result<Transaction> {
-        let mut args = [into_json(txid)?, opt_into_json(block_hash)?];
-        let resp: String = self.call("getrawtransaction", handle_defaults(&mut args, &[]))?;
-        hex_consensus_decode(&resp)
+        let mut args = [into_json(txid)?, into_json(false)?, opt_into_json(block_hash)?];
+        self.call("getrawtransaction", handle_defaults(&mut args, &[null()]))
+    }
+
+    pub fn get_raw_transaction_verbose(
+        &mut self,
+        txid: Sha256dHash,
+        block_hash: Option<Sha256dHash>,
+    ) -> Result<json::GetRawTransactionResult> {
+        let mut args = [into_json(txid)?, into_json(true)?, opt_into_json(block_hash)?];
+        self.call("getrawtransaction", handle_defaults(&mut args, &[null()]))
+    }
+
+    pub fn getreceivedbyaddress(
+        &mut self,
+        address: Address,
+        minconf: Option<u32>,
+    ) -> Result<Amount> {
+        let mut args = [into_json(address.to_string())?, opt_into_json(minconf)?];
+        self.call("getreceivedbyaddress", handle_defaults(&mut args, &[null()]))
     }
 
     methods!{
-        //pub fn getrawtransaction(self,
-        //	txid: Sha256dHash,
-        //	!false,
-        //	?block_hash: Sha256dHash = ""
-        //) -> raw:Transaction;
-
-        pub fn getrawtransaction_verbose(self,
-            txid: Sha256dHash,
-            !true,
-            ?block_hash: Sha256dHash = ""
-        ) -> json:json::GetRawTransactionResult;
-
-        pub fn getreceivedbyaddress(self, address: Address, ?minconf: u32 = 0) -> json:Amount;
 
         pub fn gettransaction(self,
             txid: Sha256dHash,
