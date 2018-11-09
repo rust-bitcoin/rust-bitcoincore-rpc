@@ -329,7 +329,7 @@ impl Client {
         maxconf: Option<usize>,
         addresses: Option<Vec<&Address>>,
         include_unsafe: Option<bool>,
-        query_options: Option<HashMap<String, String>>,
+        query_options: Option<HashMap<&str, &str>>,
     ) -> Result<Vec<json::ListUnspentResult>> {
         let mut args = [
             opt_into_json(minconf)?,
@@ -352,7 +352,7 @@ impl Client {
         &mut self,
         tx: json::HexBytes,
         utxos: Option<&[json::UTXO]>,
-        private_keys: Option<&[String]>,
+        private_keys: Option<&[&str]>,
         sighash_type: Option<json::SigHashType>,
     ) -> Result<json::SignRawTransactionResult> {
         let mut args = [
@@ -361,7 +361,7 @@ impl Client {
             opt_into_json(private_keys)?,
             opt_into_json(sighash_type)?,
         ];
-        let defaults = [into_json::<&[json::UTXO]>(&[])?, into_json::<&[String]>(&[])?, null()];
+        let defaults = [into_json::<&[json::UTXO]>(&[])?, into_json::<&[&str]>(&[])?, null()];
         self.call("signrawtransaction", handle_defaults(&mut args, &defaults))
     }
 
@@ -441,8 +441,7 @@ impl Client {
         estimate_mode: Option<json::EstimateMode>,
     ) -> Result<json::EstimateSmartFeeResult> {
         let mut args = [into_json(conf_target)?, opt_into_json(estimate_mode)?];
-        let defaults = [null()];
-        self.call("estimatesmartfee", handle_defaults(&mut args, &defaults))
+        self.call("estimatesmartfee", handle_defaults(&mut args, &[null()]))
     }
 
     /// Waits for a specific new block and returns useful info about it.
