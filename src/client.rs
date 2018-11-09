@@ -133,7 +133,7 @@ impl Client {
     }
 
     /// Call an `cmd` rpc with given `args` list
-    pub(crate) fn call<T: for<'a> serde::de::Deserialize<'a>>(
+    pub fn call<T: for<'a> serde::de::Deserialize<'a>>(
         &mut self,
         cmd: &str,
         args: &[serde_json::Value],
