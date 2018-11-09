@@ -23,6 +23,7 @@ pub use bitcoincore_rpc_json as json;
 mod client;
 mod error;
 mod getters;
+mod queryable;
 
 pub use client::*;
 pub use error::Error;
