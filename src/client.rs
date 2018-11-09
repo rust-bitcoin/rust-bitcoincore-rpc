@@ -414,6 +414,33 @@ impl Client {
         let defaults = [null()];
         self.call("estimatesmartfee", handle_defaults(&mut args, &defaults))
     }
+
+    /// Waits for a specific new block and returns useful info about it.
+    /// Returns the current block on timeout or exit.
+    ///
+    /// # Arguments
+    ///
+    /// 1. `timeout`: Time in milliseconds to wait for a response. 0
+    /// indicates no timeout.
+    pub fn waitfornewblock(&mut self, timeout: u64) -> Result<json::BlockRef> {
+        let v: json::SerdeBlockRef = self.call("waitfornewblock", &[into_json(timeout)?])?;
+        Ok(v.into())
+    }
+
+    /// Waits for a specific new block and returns useful info about it.
+    /// Returns the current block on timeout or exit.
+    ///
+    /// # Arguments
+    ///
+    /// 1. `blockhash`: Block hash to wait for.
+    /// 2. `timeout`: Time in milliseconds to wait for a response. 0
+    /// indicates no timeout.
+    pub fn waitforblock(&mut self, blockhash: &str, timeout: u64) -> Result<json::BlockRef> {
+        let args = [into_json(blockhash)?, into_json(timeout)?];
+
+        let v: json::SerdeBlockRef = self.call("waitforblock", &args)?;
+        Ok(v.into())
+    }
 }
 
 #[cfg(tests)]

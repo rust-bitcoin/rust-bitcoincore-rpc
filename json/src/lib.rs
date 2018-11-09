@@ -492,6 +492,30 @@ impl ::serde::Serialize for EstimateMode {
         serializer.serialize_str(s)
     }
 }
+
+/// Models the result of "waitfornewblock", and "waitforblock"
+#[derive(Debug, Clone)]
+pub struct BlockRef {
+    pub hash: Sha256dHash,
+    pub height: u64,
+}
+
+impl From<SerdeBlockRef> for BlockRef {
+    fn from(v: SerdeBlockRef) -> BlockRef {
+        BlockRef {
+            hash: Sha256dHash::from_hex(&v.hash).unwrap(),
+            height: v.height,
+        }
+    }
+}
+
+#[doc(hidden)]
+#[derive(Debug, Clone, Deserialize, Serialize)]
+pub struct SerdeBlockRef {
+    pub hash: String,
+    pub height: u64,
+}
+
 // Custom types for input arguments.
 
 /// A wrapper around &[u8] that will be serialized as hexadecimal.
