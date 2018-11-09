@@ -92,54 +92,6 @@ fn handle_defaults<'a, 'b>(
     }
 }
 
-// TODO: move to a test module
-#[test]
-fn test_handle_defaults() -> Result<()> {
-    {
-        let mut args = [into_json(0)?, null(), null()];
-        let defaults = [into_json(1)?, into_json(2)?];
-        let res = [into_json(0)?];
-        assert_eq!(handle_defaults(&mut args, &defaults), &res);
-    }
-    {
-        let mut args = [into_json(0)?, into_json(1)?, null()];
-        let defaults = [into_json(2)?];
-        let res = [into_json(0)?, into_json(1)?];
-        assert_eq!(handle_defaults(&mut args, &defaults), &res);
-    }
-    {
-        let mut args = [into_json(0)?, null(), into_json(5)?];
-        let defaults = [into_json(2)?, into_json(3)?];
-        let res = [into_json(0)?, into_json(2)?, into_json(5)?];
-        assert_eq!(handle_defaults(&mut args, &defaults), &res);
-    }
-    {
-        let mut args = [into_json(0)?, null(), into_json(5)?, null()];
-        let defaults = [into_json(2)?, into_json(3)?, into_json(4)?];
-        let res = [into_json(0)?, into_json(2)?, into_json(5)?];
-        assert_eq!(handle_defaults(&mut args, &defaults), &res);
-    }
-    {
-        let mut args = [null(), null()];
-        let defaults = [into_json(2)?, into_json(3)?];
-        let res: [serde_json::Value; 0] = [];
-        assert_eq!(handle_defaults(&mut args, &defaults), &res);
-    }
-    {
-        let mut args = [];
-        let defaults = [];
-        let res: [serde_json::Value; 0] = [];
-        assert_eq!(handle_defaults(&mut args, &defaults), &res);
-    }
-    {
-        let mut args = [into_json(0)?];
-        let defaults = [into_json(2)?];
-        let res = [into_json(0)?];
-        assert_eq!(handle_defaults(&mut args, &defaults), &res);
-    }
-    Ok(())
-}
-
 /// Client implements a JSON-RPC client for the Bitcoin Core daemon or compatible APIs.
 ///
 /// Methods have identical casing to API methods on purpose.
@@ -213,7 +165,6 @@ impl Client {
 
     pub fn backup_wallet(&mut self, destination: Option<&str>) -> Result<()> {
         let mut args = [opt_into_json(destination)?];
-
         self.call("backupwallet", handle_defaults(&mut args, &[null()]))
     }
 
@@ -403,5 +354,56 @@ impl Client {
     ) -> Result<bool> {
         let args = [into_json(address)?, into_json(signature)?, into_json(message)?];
         self.call("verifymessage", &args)
+    }
+}
+
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_handle_defaults() -> Result<()> {
+        {
+            let mut args = [into_json(0)?, null(), null()];
+            let defaults = [into_json(1)?, into_json(2)?];
+            let res = [into_json(0)?];
+            assert_eq!(handle_defaults(&mut args, &defaults), &res);
+        }
+        {
+            let mut args = [into_json(0)?, into_json(1)?, null()];
+            let defaults = [into_json(2)?];
+            let res = [into_json(0)?, into_json(1)?];
+            assert_eq!(handle_defaults(&mut args, &defaults), &res);
+        }
+        {
+            let mut args = [into_json(0)?, null(), into_json(5)?];
+            let defaults = [into_json(2)?, into_json(3)?];
+            let res = [into_json(0)?, into_json(2)?, into_json(5)?];
+            assert_eq!(handle_defaults(&mut args, &defaults), &res);
+        }
+        {
+            let mut args = [into_json(0)?, null(), into_json(5)?, null()];
+            let defaults = [into_json(2)?, into_json(3)?, into_json(4)?];
+            let res = [into_json(0)?, into_json(2)?, into_json(5)?];
+            assert_eq!(handle_defaults(&mut args, &defaults), &res);
+        }
+        {
+            let mut args = [null(), null()];
+            let defaults = [into_json(2)?, into_json(3)?];
+            let res: [serde_json::Value; 0] = [];
+            assert_eq!(handle_defaults(&mut args, &defaults), &res);
+        }
+        {
+            let mut args = [];
+            let defaults = [];
+            let res: [serde_json::Value; 0] = [];
+            assert_eq!(handle_defaults(&mut args, &defaults), &res);
+        }
+        {
+            let mut args = [into_json(0)?];
+            let defaults = [into_json(2)?];
+            let res = [into_json(0)?];
+            assert_eq!(handle_defaults(&mut args, &defaults), &res);
+        }
+        Ok(())
     }
 }
