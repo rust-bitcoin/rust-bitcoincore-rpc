@@ -1,15 +1,11 @@
 use std::result;
 
-use hex;
 use jsonrpc;
 use serde_json;
 
-use bitcoin::blockdata::block::{Block, BlockHeader};
-use bitcoin::consensus::encode as btc_encode;
 use bitcoin::util::address::Address;
 use bitcoin::util::hash::Sha256dHash;
 use bitcoin::Transaction;
-//use bitcoin::util::privkey::Privkey;
 use bitcoin_amount::Amount;
 use log::Level::Trace;
 use num_bigint::BigUint;
@@ -20,164 +16,6 @@ use error::*;
 use json;
 
 pub type Result<T> = result::Result<T, Error>;
-
-macro_rules! result {
-    // `json:` converts a JSON response into the provided type.
-    ($resp:ident, json:$_:tt) => {
-        $resp.and_then(|r| r.into_result().map_err(Error::from))
-    };
-
-    // `raw:` converts a hex response into a Bitcoin data type.
-    // This works both for Option types and regular types.
-    ($resp:ident, raw:Option<$raw_type:ty>) => {{
-        let hex_opt = $resp.and_then(|r| r.into_result::<Option<String>>().map_err(Error::from))?;
-        match hex_opt {
-            Some(hex) => {
-                let raw = hex::decode(hex)?;
-                match btc_encode::deserialize(raw.as_slice()) {
-                    Ok(val) => Ok(Some(val)),
-                    Err(e) => Err(e.into()),
-                }
-            }
-            None => Ok(None),
-        }
-    }};
-    ($resp:ident, raw:$raw_type:ty) => {
-        $resp
-            .and_then(|r| r.into_result::<String>().map_err(Error::from))
-            .and_then(|h| hex::decode(h).map_err(Error::from))
-            .and_then(|r| {
-                let t: Result<$raw_type> =
-                    btc_encode::deserialize(r.as_slice()).map_err(Error::from);
-                t
-            })
-    };
-}
-
-/// Main macro used for defining RPC methods.
-/// The format used to specify methods is like follows:
-/// ```rust
-/// #[doc="only works with txindex=1"]
-/// pub fn getrawtransaction_raw(self,
-/// 	txid: Sha256dHash,
-/// 	!false,
-/// 	?block_hash: Sha256dHash = ""
-/// ) -> raw:Transaction;
-/// ```
-///
-/// It consists out of the following aspects:
-/// - Optional meta tags.  Comments can be added using the `#[doc=""]` meta tag.
-/// - The method name must be the exact RPC command (i.e. lowercase), optionally followed by an
-/// underscore and a suffix (`getrawtransaction` + `_raw`).
-/// - There are three types of arguments that must occur in this order:
-///   1. normal arguments: appear like normal Rust arguments
-///	     e.g. `txid: Sha256dHash`
-///   2. fixed value arguments, prefixed with !: These are arguments in the original RPC call,
-///      that we don't let the user specify because we need a certain value to be passed.
-///      e.g. `!false`
-///   3. optional arguments, prefixed with ?: These arguments will occur in the API as Option
-///      types, and need to have a default value specified in case it is ommitted.  For the last
-///      optional argument, the default value doesn't matter, but still needs to be set, so just
-///      set it to `""`.
-///      e.g. `?block_hash: Sha256dHash = ""`
-/// - The return type is a Rust type prefixed with either `raw:` or `json:` depending on if the
-///   type should be decoded with serde (`json:`) or hex + rust-bitcoin consensus decoding `raw:`.
-///
-/// The eventual method signature of the example above will be:
-/// ```rust
-/// /// only works with txindex=1
-/// pub fn getrawtransaction_raw(&mut self,
-/// 	txid: Sha256dHash,
-/// 	block_hash: Option<Sha256dHash>,
-/// ) -> Result<Transaction>;
-/// ```
-macro_rules! methods {
-	{
-		$(
-		$(#[$met:meta])*
-		pub fn $method:ident(self
-			$(, $arg:ident: $argt:ty)*
-			$(, !$farg:expr)*
-			$(, ?$oarg:ident: $oargt:ty = $oargv:expr)*
-		)-> $reskind:ident:$restype:ty;
-		)*
-	} => {
-		$(
-		$(#[$met])*
-		pub fn $method(
-			&mut self
-			$(, $arg: $argt)*
-			$(, $oarg: Option<$oargt>)*
-		) -> Result<$restype> {
-			// Split the variant suffix from the method name to get the command.
-			//TODO(stevenroose) this should be replaced with an in-macro way to take away the
-			// _suffix
-			let cmd = stringify!($method).splitn(2, "_").nth(0).unwrap();
-
-			// Build the argument list by combining regular, fixed and optional ones.
-			// It just happend to be the case that the fixed-value arguments that we want to set
-			// always are in between normal ones and optional ones.  If that changes, we might
-			// need to do ugly stuff, but we can avoid that as long as it's not the case.
-			let mut args = Vec::new();
-			// Normal arguments.
-			$( args.push(serde_json::to_value($arg)?); )*
-			// Fixed-value arguments.
-			$( args.push(serde_json::to_value($farg)?); )*
-
-			// We want to truncate the argument list to remove the trailing non-set optional
-			// arguments.  This makes sure we don't send default values if we don't
-			// really need to, which prevents unexpected behaviour if the server changes its
-			// default values.
-			// Because we can't know the last optional arguments before we parsing the macro, we
-			// first have to add them to a new vector, and then remove the ones that are not
-			// necessary.  Ultimately we can add them to the argument list.
-			let mut optional_args = Vec::new();
-			$(
-				optional_args.push(match $oarg {
-					Some(v) => ArgValue::Set(serde_json::to_value(v)?),
-					None => ArgValue::Default(serde_json::to_value($oargv)?),
-				});
-			)*
-			while let Some(ArgValue::Default(_)) = optional_args.last() {
-				optional_args.pop();
-			}
-			args.extend(optional_args.into_iter().map(|a| match a {
-				ArgValue::Set(v) => v,
-				ArgValue::Default(v) => v,
-			}));
-
-			let req = self.client.build_request(cmd.to_owned(), args);
-			if log_enabled!(Trace) {
-				trace!("JSON-RPC request: {}", serde_json::to_string(&req).unwrap());
-			}
-
-			let resp = self.client.send_request(&req).map_err(Error::from);
-			if log_enabled!(Trace) && resp.is_ok() {
-				let resp = resp.as_ref().unwrap();
-				trace!("JSON-RPC response: {}", serde_json::to_string(resp).unwrap());
-			}
-
-			result!(resp, $reskind:$restype)
-		}
-		)*
-	};
-}
-
-/// ArgValue is a simple enum to represent an argument value and its context.
-enum ArgValue {
-    Set(serde_json::Value),
-    Default(serde_json::Value),
-}
-
-/*
-/// Read the response body as hex and decode into a rust-bitcoin struct.
-fn hex_consensus_decode<T>(hex: &str) -> Result<T>
-where
-    T: bitcoin::consensus::Decodable<std::io::Cursor<Vec<u8>>>,
-{
-    let bytes = hex::decode(hex)?;
-    Ok(T::consensus_decode(&mut io::Cursor::new(bytes))?)
-}*/
 
 /// Shorthand for converting a variable into a serde_json::Value.
 fn into_json<T>(val: T) -> Result<serde_json::Value>
