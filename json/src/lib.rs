@@ -425,6 +425,13 @@ pub struct EstimateSmartFeeResult {
     pub blocks: i64,
 }
 
+/// Models the result of "waitfornewblock", and "waitforblock"
+#[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
+pub struct BlockRef {
+    pub hash: Sha256dHash,
+    pub height: u64,
+}
+
 // Custom types for input arguments.
 
 #[derive(Debug, Clone, Copy, Eq, PartialEq, Hash)]
@@ -460,13 +467,6 @@ impl ::serde::Serialize for EstimateMode {
 
         serializer.serialize_str(s)
     }
-}
-
-/// Models the result of "waitfornewblock", and "waitforblock"
-#[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
-pub struct BlockRef {
-    pub hash: Sha256dHash,
-    pub height: u64,
 }
 
 /// A wrapper around &[u8] that will be serialized as hexadecimal.
@@ -517,11 +517,11 @@ impl serde::Serialize for SigHashType {
 // Used for signrawtransaction argument.
 #[derive(Serialize, Clone, PartialEq, Eq, Debug)]
 #[serde(rename_all = "camelCase")]
-pub struct UTXO {
-    pub txid: Sha256dHash,
+pub struct UTXO<'a> {
+    pub txid: &'a Sha256dHash,
     pub vout: u32,
-    pub script_pub_key: Script,
-    pub redeem_script: Script,
+    pub script_pub_key: &'a Script,
+    pub redeem_script: &'a Script,
 }
 
 /// Used to represent an address type.
@@ -546,12 +546,12 @@ impl serde::Serialize for AddressType {
 
 /// Used to represent arguments that can either be an address or a public key.
 #[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Debug)]
-pub enum PubKeyOrAddress {
-    Address(Address),
-    PubKey(PublicKey),
+pub enum PubKeyOrAddress<'a> {
+    Address(&'a Address),
+    PubKey(&'a PublicKey),
 }
 
-impl serde::Serialize for PubKeyOrAddress {
+impl<'a> serde::Serialize for PubKeyOrAddress<'a> {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: serde::Serializer,
