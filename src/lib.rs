@@ -38,3 +38,4 @@ mod queryable;
 pub use client::*;
 pub use error::Error;
 pub use getters::*;
+pub use queryable::*;
