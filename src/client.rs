@@ -480,6 +480,12 @@ mod tests {
             assert_eq!(handle_defaults(&mut args, &defaults), &res);
         }
         {
+            let mut args = [null(), into_json(1)?];
+            let defaults = [];
+            let res = [null(), into_json(1)?];
+            assert_eq!(handle_defaults(&mut args, &defaults), &res);
+        }
+        {
             let mut args = [];
             let defaults = [];
             let res: [serde_json::Value; 0] = [];
