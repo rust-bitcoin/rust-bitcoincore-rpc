@@ -14,7 +14,10 @@ use std::collections::HashMap;
 
 use error::*;
 use json;
+use queryable;
 
+/// Crate-specific Result type, shorthand for `std::result::Result` with our 
+/// crate-specific Error type;
 pub type Result<T> = result::Result<T, Error>;
 
 /// Shorthand for converting a variable into a serde_json::Value.
@@ -93,9 +96,6 @@ fn handle_defaults<'a, 'b>(
 }
 
 /// Client implements a JSON-RPC client for the Bitcoin Core daemon or compatible APIs.
-///
-/// Methods have identical casing to API methods on purpose.
-/// Variants of API methods are formed using an underscore.
 pub struct Client {
     client: jsonrpc::client::Client,
 }
@@ -118,9 +118,9 @@ impl Client {
     }
 
     /// Query an object implementing `Querable` type
-    pub fn get_by_id<T: ::queryable::Queryable>(
+    pub fn get_by_id<T: queryable::Queryable>(
         &mut self,
-        id: &<T as ::queryable::Queryable>::Id,
+        id: &<T as queryable::Queryable>::Id,
     ) -> Result<T> {
         T::query(self, &id)
     }
@@ -230,8 +230,8 @@ impl Client {
 
     pub fn get_raw_transaction(
         &mut self,
-        txid: Sha256dHash,
-        block_hash: Option<Sha256dHash>,
+        txid: &Sha256dHash,
+        block_hash: Option<&Sha256dHash>,
     ) -> Result<Transaction> {
         let mut args = [into_json(txid)?, into_json(false)?, opt_into_json(block_hash)?];
         self.call("getrawtransaction", handle_defaults(&mut args, &[null()]))
@@ -239,8 +239,8 @@ impl Client {
 
     pub fn get_raw_transaction_verbose(
         &mut self,
-        txid: Sha256dHash,
-        block_hash: Option<Sha256dHash>,
+        txid: &Sha256dHash,
+        block_hash: Option<&Sha256dHash>,
     ) -> Result<json::GetRawTransactionResult> {
         let mut args = [into_json(txid)?, into_json(true)?, opt_into_json(block_hash)?];
         self.call("getrawtransaction", handle_defaults(&mut args, &[null()]))
@@ -257,7 +257,7 @@ impl Client {
 
     pub fn get_transaction(
         &mut self,
-        txid: Sha256dHash,
+        txid: &Sha256dHash,
         include_watchonly: Option<bool>,
     ) -> Result<json::GetTransactionResult> {
         let mut args = [into_json(txid)?, opt_into_json(include_watchonly)?];
@@ -266,7 +266,7 @@ impl Client {
 
     pub fn get_tx_out(
         &mut self,
-        txid: Sha256dHash,
+        txid: &Sha256dHash,
         vout: u32,
         include_mempool: Option<bool>,
     ) -> Result<json::GetTxOutResult> {
