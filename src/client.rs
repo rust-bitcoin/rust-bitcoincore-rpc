@@ -3,9 +3,8 @@ use std::result;
 use jsonrpc;
 use serde_json;
 
-use bitcoin::util::address::Address;
 use bitcoin::util::hash::Sha256dHash;
-use bitcoin::Transaction;
+use bitcoin::{Address, Block, BlockHeader, Transaction};
 use bitcoin_amount::Amount;
 use log::Level::Trace;
 use num_bigint::BigUint;
@@ -16,7 +15,7 @@ use error::*;
 use json;
 use queryable;
 
-/// Crate-specific Result type, shorthand for `std::result::Result` with our 
+/// Crate-specific Result type, shorthand for `std::result::Result` with our
 /// crate-specific Error type;
 pub type Result<T> = result::Result<T, Error>;
 
@@ -191,15 +190,33 @@ impl Client {
         self.call("getconnectioncount", &[])
     }
 
-    // TODO: I run out of patience/energy to convert these
-    /* {
-        pub fn getblock_raw(self, hash: Sha256dHash, !0) -> raw:Block;
-        pub fn getblock_info(self, hash: Sha256dHash, !1) -> json:json::GetBlockResult;
-        //TODO(stevenroose) add getblock_txs
-        pub fn getblockheader_raw(self, hash: Sha256dHash, !false) -> raw:BlockHeader;
-        pub fn getblockheader_verbose(self, hash: Sha256dHash, !true) -> json:json::GetBlockHeaderResult;
+    pub fn get_block(&mut self, hash: &Sha256dHash) -> Result<Block> {
+        let hex: String = self.call("getblock", &[into_json(hash)?, 0.into()])?;
+        let bytes = hex::decode(hex)?;
+        Ok(bitcoin::consensus::encode::deserialize(&bytes)?)
     }
-    */
+
+    pub fn get_block_hex(&mut self, hash: &Sha256dHash) -> Result<String> {
+        self.call("getblock", &[into_json(hash)?, 0.into()])
+    }
+
+    pub fn get_block_info(&mut self, hash: &Sha256dHash) -> Result<json::GetBlockResult> {
+        self.call("getblock", &[into_json(hash)?, 1.into()])
+    }
+    //TODO(stevenroose) add getblock_txs
+
+    pub fn get_block_header_raw(&mut self, hash: &Sha256dHash) -> Result<BlockHeader> {
+        let hex: String = self.call("getblockheader", &[into_json(hash)?, false.into()])?;
+        let bytes = hex::decode(hex)?;
+        Ok(bitcoin::consensus::encode::deserialize(&bytes)?)
+    }
+
+    pub fn get_block_header_verbose(
+        &mut self,
+        hash: &Sha256dHash,
+    ) -> Result<json::GetBlockHeaderResult> {
+        self.call("getblockheader", &[into_json(hash)?, true.into()])
+    }
 
     pub fn get_mining_info(&mut self) -> Result<json::GetMiningInfoResult> {
         self.call("getmininginfo", &[])
@@ -207,7 +224,7 @@ impl Client {
 
     /// Returns a data structure containing various state info regarding
     /// blockchain processing.
-    pub fn get_blockchain_info(&mut self) -> Result<json::BlockchainInfo> {
+    pub fn get_blockchain_info(&mut self) -> Result<json::GetBlockchainInfoResult> {
         self.call("getblockchaininfo", &[])
     }
 
@@ -218,14 +235,12 @@ impl Client {
 
     /// Returns the hash of the best (tip) block in the longest blockchain.
     pub fn get_best_block_hash(&mut self) -> Result<Sha256dHash> {
-        let hex: String = self.call("getbestblockhash", &[])?;
-        Ok(Sha256dHash::from_hex(&hex)?)
+        self.call("getbestblockhash", &[])
     }
 
     /// Get block hash at a given height
     pub fn get_block_hash(&mut self, height: u64) -> Result<Sha256dHash> {
-        let hex: String = self.call("getblockhash", &[height.into()])?;
-        Ok(Sha256dHash::from_hex(&hex)?)
+        self.call("getblockhash", &[height.into()])
     }
 
     pub fn get_raw_transaction(
@@ -233,6 +248,17 @@ impl Client {
         txid: &Sha256dHash,
         block_hash: Option<&Sha256dHash>,
     ) -> Result<Transaction> {
+        let mut args = [into_json(txid)?, into_json(false)?, opt_into_json(block_hash)?];
+        let hex: String = self.call("getrawtransaction", handle_defaults(&mut args, &[null()]))?;
+        let bytes = hex::decode(hex)?;
+        Ok(bitcoin::consensus::encode::deserialize(&bytes)?)
+    }
+
+    pub fn get_raw_transaction_hex(
+        &mut self,
+        txid: &Sha256dHash,
+        block_hash: Option<&Sha256dHash>,
+    ) -> Result<String> {
         let mut args = [into_json(txid)?, into_json(false)?, opt_into_json(block_hash)?];
         self.call("getrawtransaction", handle_defaults(&mut args, &[null()]))
     }
@@ -248,10 +274,10 @@ impl Client {
 
     pub fn get_received_by_address(
         &mut self,
-        address: Address,
+        address: &Address,
         minconf: Option<u32>,
     ) -> Result<Amount> {
-        let mut args = [into_json(address.to_string())?, opt_into_json(minconf)?];
+        let mut args = [into_json(address)?, opt_into_json(minconf)?];
         self.call("getreceivedbyaddress", handle_defaults(&mut args, &[null()]))
     }
 
@@ -293,7 +319,7 @@ impl Client {
         &mut self,
         minconf: Option<usize>,
         maxconf: Option<usize>,
-        addresses: Option<Vec<Address>>,
+        addresses: Option<Vec<&Address>>,
         include_unsafe: Option<bool>,
         query_options: Option<HashMap<String, String>>,
     ) -> Result<Vec<json::ListUnspentResult>> {
@@ -369,11 +395,7 @@ impl Client {
         block_num: u64,
         address: &str,
     ) -> Result<Vec<Sha256dHash>> {
-        let v: Vec<String> = self.call("generatetoaddress", &[block_num.into(), address.into()])?;
-
-        Ok(v.into_iter()
-            .map(|v| Sha256dHash::from_hex(&v))
-            .collect::<std::result::Result<Vec<Sha256dHash>, _>>()?)
+        self.call("generatetoaddress", &[block_num.into(), address.into()])
     }
 
     /// Mark a block as invalid by `block_hash`
@@ -385,7 +407,7 @@ impl Client {
     /// [`PeerInfo`][]
     ///
     /// [`PeerInfo`]: net/struct.PeerInfo.html
-    pub fn get_peer_info(&mut self) -> Result<Vec<json::PeerInfo>> {
+    pub fn get_peer_info(&mut self) -> Result<Vec<json::GetPeerInfoResult>> {
         self.call("getpeerinfo", &[])
     }
 
@@ -405,11 +427,11 @@ impl Client {
         self.call("sendrawtransaction", &[into_json(tx)?])
     }
 
-    pub fn estimatesmartfee<E>(
+    pub fn estimate_smartfee<E>(
         &mut self,
         conf_target: u16,
         estimate_mode: Option<json::EstimateMode>,
-    ) -> Result<json::EstimateSmartFee> {
+    ) -> Result<json::EstimateSmartFeeResult> {
         let mut args = [into_json(conf_target)?, opt_into_json(estimate_mode)?];
         let defaults = [null()];
         self.call("estimatesmartfee", handle_defaults(&mut args, &defaults))
@@ -422,9 +444,8 @@ impl Client {
     ///
     /// 1. `timeout`: Time in milliseconds to wait for a response. 0
     /// indicates no timeout.
-    pub fn waitfornewblock(&mut self, timeout: u64) -> Result<json::BlockRef> {
-        let v: json::SerdeBlockRef = self.call("waitfornewblock", &[into_json(timeout)?])?;
-        Ok(v.into())
+    pub fn wait_for_new_block(&mut self, timeout: u64) -> Result<json::BlockRef> {
+        self.call("waitfornewblock", &[into_json(timeout)?])
     }
 
     /// Waits for a specific new block and returns useful info about it.
@@ -435,11 +456,13 @@ impl Client {
     /// 1. `blockhash`: Block hash to wait for.
     /// 2. `timeout`: Time in milliseconds to wait for a response. 0
     /// indicates no timeout.
-    pub fn waitforblock(&mut self, blockhash: &str, timeout: u64) -> Result<json::BlockRef> {
+    pub fn wait_for_block(
+        &mut self,
+        blockhash: &Sha256dHash,
+        timeout: u64,
+    ) -> Result<json::BlockRef> {
         let args = [into_json(blockhash)?, into_json(timeout)?];
-
-        let v: json::SerdeBlockRef = self.call("waitforblock", &args)?;
-        Ok(v.into())
+        self.call("waitforblock", &args)
     }
 }
 

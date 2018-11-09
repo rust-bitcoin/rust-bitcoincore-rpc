@@ -27,18 +27,17 @@ use secp256k1::PublicKey;
 use serde::de::Error as SerdeError;
 use serde::Deserialize;
 use serde_json::Value;
-use std::fmt;
 
 //TODO(stevenroose) consider using a Time type
 
-#[derive(Deserialize, Clone, PartialEq, Eq, Debug)]
+#[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct AddMultiSigAddressResult {
     pub address: Address,
     pub redeem_script: Script,
 }
 
-#[derive(Deserialize, Clone, PartialEq, Eq, Debug)]
+#[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct GetBlockResult {
     pub hash: Sha256dHash,
@@ -63,7 +62,7 @@ pub struct GetBlockResult {
     pub nextblockhash: Option<Sha256dHash>,
 }
 
-#[derive(Deserialize, Clone, PartialEq, Eq, Debug)]
+#[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct GetBlockHeaderResult {
     pub hash: Sha256dHash,
@@ -84,7 +83,7 @@ pub struct GetBlockHeaderResult {
     pub nextblockhash: Option<Sha256dHash>,
 }
 
-#[derive(Deserialize, Clone, PartialEq, Debug)]
+#[derive(Clone, PartialEq, Debug, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct GetMiningInfoResult {
     pub blocks: u32,
@@ -98,14 +97,14 @@ pub struct GetMiningInfoResult {
     pub warnings: String,
 }
 
-#[derive(Deserialize, Clone, PartialEq, Eq, Debug)]
+#[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct GetRawTransactionResultVinScriptSig {
     pub asm: String,
     pub hex: String,
 }
 
-#[derive(Deserialize, Clone, PartialEq, Eq, Debug)]
+#[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct GetRawTransactionResultVin {
     pub txid: Sha256dHash,
@@ -116,7 +115,7 @@ pub struct GetRawTransactionResultVin {
     pub txinwitness: Option<Vec<Vec<u8>>>,
 }
 
-#[derive(Deserialize, Clone, PartialEq, Eq, Debug)]
+#[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct GetRawTransactionResultVoutScriptPubKey {
     pub asm: String,
@@ -127,7 +126,7 @@ pub struct GetRawTransactionResultVoutScriptPubKey {
     pub addresses: Vec<Address>,
 }
 
-#[derive(Deserialize, Clone, PartialEq, Eq, Debug)]
+#[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct GetRawTransactionResultVout {
     #[serde(deserialize_with = "deserialize_amount")]
@@ -136,7 +135,7 @@ pub struct GetRawTransactionResultVout {
     pub script_pub_key: GetRawTransactionResultVoutScriptPubKey,
 }
 
-#[derive(Deserialize, Clone, PartialEq, Eq, Debug)]
+#[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct GetRawTransactionResult {
     #[serde(rename = "in_active_chain")]
@@ -200,7 +199,7 @@ impl<'de> ::serde::Deserialize<'de> for GetTransactionResultDetailCategory {
     }
 }
 
-#[derive(Deserialize, Clone, PartialEq, Eq, Debug)]
+#[derive(Clone, PartialEq, Eq, Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct GetTransactionResultDetail {
     pub address: Address,
@@ -214,7 +213,7 @@ pub struct GetTransactionResultDetail {
     pub abandoned: Option<bool>,
 }
 
-#[derive(Deserialize, Clone, PartialEq, Eq, Debug)]
+#[derive(Clone, PartialEq, Eq, Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct GetTransactionResult {
     #[serde(deserialize_with = "deserialize_amount")]
@@ -234,7 +233,7 @@ pub struct GetTransactionResult {
     pub hex: String,
 }
 
-#[derive(Deserialize, Clone, PartialEq, Eq, Debug)]
+#[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct GetTxOutResult {
     pub bestblock: Sha256dHash,
@@ -245,7 +244,7 @@ pub struct GetTxOutResult {
     pub coinbase: bool,
 }
 
-#[derive(Deserialize, Clone, PartialEq, Eq, Debug)]
+#[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ListUnspentResult {
     pub txid: Sha256dHash,
@@ -261,7 +260,7 @@ pub struct ListUnspentResult {
     pub safe: bool,
 }
 
-#[derive(Deserialize, Clone, PartialEq, Eq, Debug)]
+#[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct SignRawTransactionResultError {
     pub txid: Sha256dHash,
@@ -271,7 +270,7 @@ pub struct SignRawTransactionResultError {
     pub error: String,
 }
 
-#[derive(Deserialize, Clone, PartialEq, Eq, Debug)]
+#[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct SignRawTransactionResult {
     pub hex: String,
@@ -281,8 +280,8 @@ pub struct SignRawTransactionResult {
 }
 
 /// Models the result of "getblockchaininfo"
-#[derive(Debug, Clone, Deserialize, Serialize)]
-pub struct BlockchainInfo {
+#[derive(Clone, Debug, Deserialize, Serialize)]
+pub struct GetBlockchainInfoResult {
     // TODO: Use Network from rust-bitcoin
     /// Current network name as defined in BIP70 (main, test, regtest)
     pub chain: String,
@@ -290,9 +289,8 @@ pub struct BlockchainInfo {
     pub blocks: u64,
     /// The current number of headers we have validated
     pub headers: u64,
-    // TODO: Use Sha256dHash from rust-bitcoin
     /// The hash of the currently best block
-    pub bestblockhash: String,
+    pub bestblockhash: Sha256dHash,
     /// The current difficulty
     pub difficulty: f64,
     /// Median time for the current best block
@@ -323,7 +321,7 @@ pub struct BlockchainInfo {
 }
 
 /// Status of a softfork
-#[derive(Debug, Clone, Deserialize, Serialize)]
+#[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
 pub struct Softfork {
     /// Name of softfork
     pub id: String,
@@ -334,15 +332,15 @@ pub struct Softfork {
 }
 
 /// Progress toward rejecting pre-softfork blocks
-#[derive(Debug, Clone, Deserialize, Serialize)]
+#[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
 pub struct RejectStatus {
     /// `true` if threshold reached
     pub status: bool,
 }
 
 /// Models the result of "getpeerinfo"
-#[derive(Debug, Clone, Deserialize, Serialize)]
-pub struct PeerInfo {
+#[derive(Clone, Debug, Deserialize, Serialize)]
+pub struct GetPeerInfoResult {
     /// Peer index
     pub id: u64,
     /// The IP address and port of the peer
@@ -407,8 +405,8 @@ pub struct PeerInfo {
 }
 
 /// Models the result of "estimatesmartfee"
-#[derive(Debug, Clone, Deserialize, Serialize)]
-pub struct EstimateSmartFee {
+#[derive(Clone, Debug, Deserialize, Serialize)]
+pub struct EstimateSmartFeeResult {
     /// Estimate fee rate in BTC/kB.
     pub feerate: Option<Value>,
     /// Errors encountered during processing.
@@ -416,6 +414,8 @@ pub struct EstimateSmartFee {
     /// Block number where estimate was found.
     pub blocks: i64,
 }
+
+// Custom types for input arguments.
 
 #[derive(Debug, Clone, Copy, Eq, PartialEq, Hash)]
 pub enum EstimateMode {
@@ -437,47 +437,6 @@ impl FromStr for EstimateMode {
     }
 }
 
-impl<'de> ::serde::Deserialize<'de> for EstimateMode {
-    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
-    where
-        D: ::serde::Deserializer<'de>,
-    {
-        struct Visitor;
-
-        impl<'de> ::serde::de::Visitor<'de> for Visitor {
-            type Value = EstimateMode;
-
-            fn expecting(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
-                write!(fmt, "estimate mode")
-            }
-
-            fn visit_str<E>(self, v: &str) -> Result<Self::Value, E>
-            where
-                E: ::serde::de::Error,
-            {
-                EstimateMode::from_str(v).map_err(|_e| ::serde::de::Error::custom("invalid string"))
-            }
-
-            fn visit_borrowed_str<E>(self, v: &'de str) -> Result<Self::Value, E>
-            where
-                E: ::serde::de::Error,
-            {
-                EstimateMode::from_str(v).map_err(|_e| ::serde::de::Error::custom("invalid string"))
-            }
-
-            fn visit_string<E>(self, v: String) -> Result<Self::Value, E>
-            where
-                E: ::serde::de::Error,
-            {
-                EstimateMode::from_str(&*v)
-                    .map_err(|_e| ::serde::de::Error::custom("invalid string"))
-            }
-        }
-
-        deserializer.deserialize_str(Visitor)
-    }
-}
-
 impl ::serde::Serialize for EstimateMode {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
@@ -494,29 +453,11 @@ impl ::serde::Serialize for EstimateMode {
 }
 
 /// Models the result of "waitfornewblock", and "waitforblock"
-#[derive(Debug, Clone)]
+#[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
 pub struct BlockRef {
     pub hash: Sha256dHash,
     pub height: u64,
 }
-
-impl From<SerdeBlockRef> for BlockRef {
-    fn from(v: SerdeBlockRef) -> BlockRef {
-        BlockRef {
-            hash: Sha256dHash::from_hex(&v.hash).unwrap(),
-            height: v.height,
-        }
-    }
-}
-
-#[doc(hidden)]
-#[derive(Debug, Clone, Deserialize, Serialize)]
-pub struct SerdeBlockRef {
-    pub hash: String,
-    pub height: u64,
-}
-
-// Custom types for input arguments.
 
 /// A wrapper around &[u8] that will be serialized as hexadecimal.
 /// If you have an `&[u8]`, you can `.into()` it into `HexBytes`.
