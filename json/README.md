@@ -1,4 +1,4 @@
-rust-bitcoindrpc-json
-=====================
+bitcoincore-rpc-json
+====================
 
-A collection of JSON-compatible data types used in rust-bitcoindrpc.
+A collection of JSON-enabled data types used in the `bitcoincore-rpc` crate.
