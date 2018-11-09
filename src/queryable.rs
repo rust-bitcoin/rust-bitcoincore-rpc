@@ -42,7 +42,7 @@ impl Queryable for bitcoin::blockdata::transaction::Transaction {
     }
 }
 
-impl Queryable for ::json::GetTxOutResult {
+impl Queryable for Option<::json::GetTxOutResult> {
     type Id = bitcoin::OutPoint;
 
     fn query(rpc: &mut Client, id: &Self::Id) -> Result<Self> {
