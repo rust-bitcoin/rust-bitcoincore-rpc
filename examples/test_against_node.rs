@@ -2,19 +2,15 @@
 //! Core node.
 extern crate bitcoin;
 extern crate bitcoincore_rpc;
-#[macro_use]
-extern crate failure;
 
-use bitcoincore_rpc::Client;
+use bitcoincore_rpc::{Client, Error};
 
-type Result<T> = std::result::Result<T, failure::Error>;
-
-fn main() -> Result<()> {
+fn main() -> Result<(), Error> {
     let mut args = std::env::args();
 
     let _exe_name = args.next().unwrap();
 
-    let url = args.next().ok_or_else(|| format_err!("Usage: <rpc_url> [username] [password]"))?;
+    let url = args.next().expect("Usage: <rpc_url> [username] [password]");
     let user = args.next();
     let pass = args.next();
 
