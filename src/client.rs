@@ -78,10 +78,8 @@ fn handle_defaults<'a, 'b>(
                 }
                 args[args_i] = defaults[defaults_i].clone();
             }
-        } else {
-            if first_non_null_optional_idx.is_none() {
-                first_non_null_optional_idx = Some(args_i);
-            }
+        } else if first_non_null_optional_idx.is_none() {
+            first_non_null_optional_idx = Some(args_i);
         }
     }
 
