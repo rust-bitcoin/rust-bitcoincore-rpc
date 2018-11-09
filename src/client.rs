@@ -303,7 +303,7 @@ impl Client {
         txid: &Sha256dHash,
         vout: u32,
         include_mempool: Option<bool>,
-    ) -> Result<json::GetTxOutResult> {
+    ) -> Result<Option<json::GetTxOutResult>> {
         let mut args = [into_json(txid)?, into_json(vout)?, opt_into_json(include_mempool)?];
         self.call("gettxout", handle_defaults(&mut args, &[null()]))
     }
