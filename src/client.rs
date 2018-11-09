@@ -21,15 +21,6 @@ use json;
 
 pub type Result<T> = result::Result<T, Error>;
 
-/// empty quickly creates an empty Vec<serde_json::Value>.
-/// Used because using vec![] as default value lacks type annotation.
-macro_rules! empty {
-    () => {{
-        let v: Vec<serde_json::Value> = Vec::new();
-        v
-    }};
-}
-
 macro_rules! result {
     // `json:` converts a JSON response into the provided type.
     ($resp:ident, json:$_:tt) => {
@@ -402,25 +393,24 @@ impl Client {
         self.call("encryptwallet", &[into_json(passphrase)?])
     }
 
-    methods! {
+    //TODO(stevenroose) verify if return type works
+    pub fn get_difficulty(&mut self) -> Result<BigUint> {
+        self.call("getdifficulty", &[])
+    }
 
+    pub fn get_connection_count(&mut self) -> Result<usize> {
+        self.call("getconnectioncount", &[])
+    }
 
-
+    // TODO: I run out of patience/energy to convert these
+    /* {
         pub fn getblock_raw(self, hash: Sha256dHash, !0) -> raw:Block;
-
         pub fn getblock_info(self, hash: Sha256dHash, !1) -> json:json::GetBlockResult;
         //TODO(stevenroose) add getblock_txs
-
         pub fn getblockheader_raw(self, hash: Sha256dHash, !false) -> raw:BlockHeader;
-
         pub fn getblockheader_verbose(self, hash: Sha256dHash, !true) -> json:json::GetBlockHeaderResult;
-
-        //TODO(stevenroose) verify if return type works
-        pub fn getdifficulty(self) -> json:BigUint;
-
-        pub fn getconnectioncount(self) -> json:usize;
-
     }
+    */
 
     pub fn get_mining_info(&mut self) -> Result<json::GetMiningInfoResult> {
         self.call("getmininginfo", &[])
@@ -535,30 +525,45 @@ impl Client {
         self.call("listunspent", handle_defaults(&mut args, &defaults))
     }
 
-    methods!{
+    pub fn sign_raw_transaction(
+        &mut self,
+        tx: json::HexBytes,
+        utxos: Option<&[json::UTXO]>,
+        private_keys: Option<&[String]>,
+        sighash_type: Option<json::SigHashType>,
+    ) -> Result<json::SignRawTransactionResult> {
+        let mut args = [
+            into_json(tx)?,
+            opt_into_json(utxos)?,
+            opt_into_json(private_keys)?,
+            opt_into_json(sighash_type)?,
+        ];
+        let defaults = [into_json::<&[json::UTXO]>(&[])?, into_json::<&[String]>(&[])?, null()];
+        self.call("signrawtransaction", handle_defaults(&mut args, &defaults))
+    }
 
-        //TODO(stevenroose) update with privkey type
-        // dep: https://github.com/rust-bitcoin/rust-bitcoin/pull/183
-        #[doc="private_keys are not yet implemented."]
-        pub fn signrawtransaction(self,
-            tx: json::HexBytes,
-            ?utxos: Vec<json::UTXO> = empty!(),
-            ?private_keys: Vec<String> = empty!(),
-            ?sighash_type: json::SigHashType = ""
-        ) -> json:json::SignRawTransactionResult;
+    pub fn stop(&mut self) -> Result<()> {
+        self.call("stop", &[])
+    }
 
-        pub fn signrawtransactionwithwallet(self,
-            tx: json::HexBytes,
-            ?utxos: Vec<json::UTXO> = empty!(),
-            ?sighash_type: json::SigHashType = ""
-        ) -> json:json::SignRawTransactionResult;
+    pub fn sign_raw_transaction_with_wallet(
+        &mut self,
+        tx: json::HexBytes,
+        utxos: Option<&[json::UTXO]>,
+        sighash_type: Option<json::SigHashType>,
+    ) -> Result<json::SignRawTransactionResult> {
+        let mut args = [into_json(tx)?, opt_into_json(utxos)?, opt_into_json(sighash_type)?];
+        let defaults = [into_json::<&[json::UTXO]>(&[])?, null()];
+        self.call("signrawtransactionwithwallet", handle_defaults(&mut args, &defaults))
+    }
 
-        pub fn stop(self) -> json:();
-
-        pub fn verifymessage(self,
-            address: Address,
-            signature: Signature,
-            message: &str
-        ) -> json:bool;
+    pub fn verify_message(
+        &mut self,
+        address: &Address,
+        signature: &Signature,
+        message: &str,
+    ) -> Result<bool> {
+        let args = [into_json(address)?, into_json(signature)?, into_json(message)?];
+        self.call("verifymessage", &args)
     }
 }
