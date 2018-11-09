@@ -382,13 +382,29 @@ impl Client {
         self.call("addmultisigaddress", handle_defaults(&mut args, &[into_json("")?, null()]))
     }
 
+    pub fn backup_wallet(&mut self, destination: Option<&str>) -> Result<()> {
+        let mut args = [opt_into_json(destination)?];
+
+        self.call("backupwallet", handle_defaults(&mut args, &[null()]))
+    }
+
+    // TODO(stevenroose) use Privkey type
+    // TODO(dpc): should we convert? Or maybe we should have two methods?
+    //            just like with `getrawtransaction` it is sometimes useful
+    //            to just get the string dump, without converting it into
+    //            `bitcoin` type; Maybe we should made it `Queryable` by
+    //            `Address`!
+    pub fn dump_priv_key(&mut self, address: &Address) -> Result<String> {
+        self.call("dumpprivkey", &[into_json(address)?])
+    }
+
+    pub fn encrypt_wallet(&mut self, passphrase: &str) -> Result<()> {
+        self.call("encryptwallet", &[into_json(passphrase)?])
+    }
+
     methods! {
-        pub fn backupwallet(self, ?destination: &str = "") -> json:();
 
-        //TODO(stevenroose) use Privkey type
-        pub fn dumpprivkey(self, address: Address) -> json:String;
 
-        pub fn encryptwallet(self, passphrase: String) -> json:();
 
         pub fn getblock_raw(self, hash: Sha256dHash, !0) -> raw:Block;
 
@@ -451,7 +467,7 @@ impl Client {
         self.call("getrawtransaction", handle_defaults(&mut args, &[null()]))
     }
 
-    pub fn getreceivedbyaddress(
+    pub fn get_received_by_address(
         &mut self,
         address: Address,
         minconf: Option<u32>,
@@ -460,36 +476,66 @@ impl Client {
         self.call("getreceivedbyaddress", handle_defaults(&mut args, &[null()]))
     }
 
+    pub fn get_transaction(
+        &mut self,
+        txid: Sha256dHash,
+        include_watchonly: Option<bool>,
+    ) -> Result<json::GetTransactionResult> {
+        let mut args = [into_json(txid)?, opt_into_json(include_watchonly)?];
+        self.call("getrawtransaction", handle_defaults(&mut args, &[null()]))
+    }
+
+    pub fn get_tx_out(
+        &mut self,
+        txid: Sha256dHash,
+        vout: u32,
+        include_mempool: Option<bool>,
+    ) -> Result<json::GetTxOutResult> {
+        let mut args = [into_json(txid)?, into_json(vout)?, opt_into_json(include_mempool)?];
+        self.call("gettxout", handle_defaults(&mut args, &[null()]))
+    }
+
+    pub fn import_priv_key(
+        &mut self,
+        privkey: &str,
+        label: Option<&str>,
+        rescan: Option<bool>,
+    ) -> Result<()> {
+        let mut args = [into_json(privkey)?, into_json(label)?, opt_into_json(rescan)?];
+        self.call("importprivkey", handle_defaults(&mut args, &[into_json("")?, null()]))
+    }
+
+    pub fn key_pool_refill(&mut self, new_size: Option<usize>) -> Result<()> {
+        let mut args = [opt_into_json(new_size)?];
+        self.call("keypoolrefill", handle_defaults(&mut args, &[null()]))
+    }
+
+    pub fn list_unspent(
+        &mut self,
+        minconf: Option<usize>,
+        maxconf: Option<usize>,
+        addresses: Option<Vec<Address>>,
+        include_unsafe: Option<bool>,
+        query_options: Option<HashMap<String, String>>,
+    ) -> Result<Vec<json::ListUnspentResult>> {
+        let mut args = [
+            opt_into_json(minconf)?,
+            opt_into_json(maxconf)?,
+            opt_into_json(addresses)?,
+            opt_into_json(include_unsafe)?,
+            opt_into_json(query_options)?,
+        ];
+        let defaults = [
+            into_json(0)?,
+            into_json(9999999)?,
+            into_json::<&[Address]>(&[])?,
+            into_json(true)?,
+            null(),
+        ];
+        self.call("listunspent", handle_defaults(&mut args, &defaults))
+    }
+
     methods!{
-
-        pub fn gettransaction(self,
-            txid: Sha256dHash,
-            ?include_watchonly: bool = true
-        ) -> json:json::GetTransactionResult;
-
-        pub fn gettxout(self,
-            txid: Sha256dHash,
-            vout: u32,
-            ?include_mempool: bool = true
-        ) -> json:Option<json::GetTxOutResult>;
-
-        //TODO(stevenroose) use Privkey type
-        // dep: https://github.com/rust-bitcoin/rust-bitcoin/pull/183
-        pub fn importprivkey(self,
-            privkey: &str,
-            ?label: &str = "",
-            ?rescan: bool = true
-        ) -> json:();
-
-        pub fn keypoolrefill(self, ?new_size: usize = 0) -> json:();
-
-        pub fn listunspent(self,
-            ?minconf: usize = 0,
-            ?maxconf: usize = 9999999,
-            ?addresses: Vec<Address> = empty!(),
-            ?include_unsafe: bool = true,
-            ?query_options: HashMap<String, String> = ""
-        ) -> json:Vec<json::ListUnspentResult>;
 
         //TODO(stevenroose) update with privkey type
         // dep: https://github.com/rust-bitcoin/rust-bitcoin/pull/183
