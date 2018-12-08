@@ -514,14 +514,26 @@ impl serde::Serialize for SigHashType {
     }
 }
 
-// Used for signrawtransaction argument.
+// Used for createrawtransaction argument.
 #[derive(Serialize, Clone, PartialEq, Eq, Debug)]
 #[serde(rename_all = "camelCase")]
-pub struct UTXO<'a> {
-    pub txid: &'a Sha256dHash,
+pub struct CreateRawTransactionInput {
+    pub txid: Sha256dHash,
     pub vout: u32,
-    pub script_pub_key: &'a Script,
-    pub redeem_script: &'a Script,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub sequence: Option<u32>,
+}
+
+// Used for signrawtransaction argument.
+#[derive(Serialize, Clone, PartialEq, Debug)]
+#[serde(rename_all = "camelCase")]
+pub struct SignRawTransactionInput {
+    pub txid: Sha256dHash,
+    pub vout: u32,
+    pub script_pub_key: Script,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub redeem_script: Option<Script>,
+    pub amount: f64,
 }
 
 /// Used to represent an address type.

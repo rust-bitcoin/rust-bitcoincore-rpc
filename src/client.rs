@@ -348,10 +348,40 @@ impl Client {
         self.call("listunspent", handle_defaults(&mut args, &defaults))
     }
 
+    pub fn create_raw_transaction_hex(
+        &mut self,
+        utxos: &[json::CreateRawTransactionInput],
+        outs: Option<&std::collections::HashMap<String, f64>>,
+        locktime: Option<i64>,
+        replaceable: Option<bool>,
+    ) -> Result<String> {
+        let mut args = [
+            into_json(utxos)?,
+            opt_into_json(outs)?,
+            opt_into_json(locktime)?,
+            opt_into_json(replaceable)?,
+        ];
+        let defaults =
+            [into_json::<&[json::CreateRawTransactionInput]>(&[])?, into_json(0i64)?, null()];
+        self.call("createrawtransaction", handle_defaults(&mut args, &defaults))
+    }
+
+    pub fn create_raw_transaction(
+        &mut self,
+        utxos: &[json::CreateRawTransactionInput],
+        outs: Option<&std::collections::HashMap<String, f64>>,
+        locktime: Option<i64>,
+        replaceable: Option<bool>,
+    ) -> Result<Transaction> {
+        let hex: String = self.create_raw_transaction_hex(utxos, outs, locktime, replaceable)?;
+        let bytes = hex::decode(hex)?;
+        Ok(bitcoin::consensus::encode::deserialize(&bytes)?)
+    }
+
     pub fn sign_raw_transaction(
         &mut self,
         tx: json::HexBytes,
-        utxos: Option<&[json::UTXO]>,
+        utxos: Option<&[json::SignRawTransactionInput]>,
         private_keys: Option<&[&str]>,
         sighash_type: Option<json::SigHashType>,
     ) -> Result<json::SignRawTransactionResult> {
@@ -361,7 +391,11 @@ impl Client {
             opt_into_json(private_keys)?,
             opt_into_json(sighash_type)?,
         ];
-        let defaults = [into_json::<&[json::UTXO]>(&[])?, into_json::<&[&str]>(&[])?, null()];
+        let defaults = [
+            into_json::<&[json::SignRawTransactionInput]>(&[])?,
+            into_json::<&[&str]>(&[])?,
+            null(),
+        ];
         self.call("signrawtransaction", handle_defaults(&mut args, &defaults))
     }
 
@@ -372,11 +406,11 @@ impl Client {
     pub fn sign_raw_transaction_with_wallet(
         &mut self,
         tx: json::HexBytes,
-        utxos: Option<&[json::UTXO]>,
+        utxos: Option<&[json::SignRawTransactionInput]>,
         sighash_type: Option<json::SigHashType>,
     ) -> Result<json::SignRawTransactionResult> {
         let mut args = [into_json(tx)?, opt_into_json(utxos)?, opt_into_json(sighash_type)?];
-        let defaults = [into_json::<&[json::UTXO]>(&[])?, null()];
+        let defaults = [into_json::<&[json::SignRawTransactionInput]>(&[])?, null()];
         self.call("signrawtransactionwithwallet", handle_defaults(&mut args, &defaults))
     }
 
