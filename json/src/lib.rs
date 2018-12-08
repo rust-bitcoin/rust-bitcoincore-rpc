@@ -517,11 +517,11 @@ impl serde::Serialize for SigHashType {
 // Used for signrawtransaction argument.
 #[derive(Serialize, Clone, PartialEq, Eq, Debug)]
 #[serde(rename_all = "camelCase")]
-pub struct UTXO<'a> {
-    pub txid: &'a Sha256dHash,
+pub struct UTXO {
+    pub txid: Sha256dHash,
     pub vout: u32,
-    pub script_pub_key: &'a Script,
-    pub redeem_script: &'a Script,
+    pub script_pub_key: Script,
+    pub redeem_script: Script,
 }
 
 /// Used to represent an address type.
