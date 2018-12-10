@@ -26,6 +26,9 @@ extern crate secp256k1;
 extern crate serde;
 extern crate serde_json;
 
+pub mod getters;
+pub use getters::*;
+
 use std::str::FromStr;
 
 use bitcoin::blockdata::script::Script;

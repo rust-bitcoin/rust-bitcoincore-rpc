@@ -1,0 +1,35 @@
+[package]
+name = "bitcoincore-rpc"
+version = "0.1.1"
+authors = [
+    "Steven Roose <steven@stevenroose.org>",
+    "Jean Pierre Dudey <jeandudey@hotmail.com>",
+    "Dawid Ciężarkiewicz <dpc@dpc.pw>"
+]
+license = "CC0-1.0"
+homepage = "https://github.com/rust-bitcoin/rust-bitcoincore-rpc/"
+repository = "https://github.com/rust-bitcoin/rust-bitcoincore-rpc/"
+description = "RPC client library for the Bitcoin Core JSON-RPC API."
+keywords = [ "crypto", "bitcoin", "bitcoin-core", "rpc" ]
+readme = "README.md"
+
+[lib]
+name = "bitcoincore_rpc"
+path = "src/lib.rs"
+
+[dependencies]
+bitcoincore-rpc-json = "0.1"
+
+log = "0.4.5"
+jsonrpc = "0.10"
+
+# Used for deserialization of JSON.
+serde = "1"
+serde_json = "1"
+hex = "0.3"
+
+# Used for Bitcoin-specific types.
+bitcoin = { version = "0.15", features = [ "serde-decimal" ] }
+bitcoin-amount = { version = "0.1.4", features = [ "serde" ] }
+secp256k1 = { version = "0.11", features = [ "serde" ] }
+num-bigint = { version = "0.2", features = [ "serde" ] }
