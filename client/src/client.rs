@@ -126,7 +126,7 @@ impl Client {
 
     /// Query an object implementing `Querable` type
     pub fn get_by_id<T: queryable::Queryable>(
-        &mut self,
+        &self,
         id: &<T as queryable::Queryable>::Id,
     ) -> Result<T> {
         T::query(self, &id)
@@ -134,7 +134,7 @@ impl Client {
 
     /// Call an `cmd` rpc with given `args` list
     pub fn call<T: for<'a> serde::de::Deserialize<'a>>(
-        &mut self,
+        &self,
         cmd: &str,
         args: &[serde_json::Value],
     ) -> Result<T> {
@@ -155,7 +155,7 @@ impl Client {
     }
 
     pub fn add_multisig_address(
-        &mut self,
+        &self,
         nrequired: usize,
         keys: Vec<json::PubKeyOrAddress>,
         label: Option<&str>,
@@ -170,7 +170,7 @@ impl Client {
         self.call("addmultisigaddress", handle_defaults(&mut args, &[into_json("")?, null()]))
     }
 
-    pub fn backup_wallet(&mut self, destination: Option<&str>) -> Result<()> {
+    pub fn backup_wallet(&self, destination: Option<&str>) -> Result<()> {
         let mut args = [opt_into_json(destination)?];
         self.call("backupwallet", handle_defaults(&mut args, &[null()]))
     }
@@ -181,78 +181,78 @@ impl Client {
     //            to just get the string dump, without converting it into
     //            `bitcoin` type; Maybe we should made it `Queryable` by
     //            `Address`!
-    pub fn dump_priv_key(&mut self, address: &Address) -> Result<String> {
+    pub fn dump_priv_key(&self, address: &Address) -> Result<String> {
         self.call("dumpprivkey", &[into_json(address)?])
     }
 
-    pub fn encrypt_wallet(&mut self, passphrase: &str) -> Result<()> {
+    pub fn encrypt_wallet(&self, passphrase: &str) -> Result<()> {
         self.call("encryptwallet", &[into_json(passphrase)?])
     }
 
     //TODO(stevenroose) verify if return type works
-    pub fn get_difficulty(&mut self) -> Result<BigUint> {
+    pub fn get_difficulty(&self) -> Result<BigUint> {
         self.call("getdifficulty", &[])
     }
 
-    pub fn get_connection_count(&mut self) -> Result<usize> {
+    pub fn get_connection_count(&self) -> Result<usize> {
         self.call("getconnectioncount", &[])
     }
 
-    pub fn get_block(&mut self, hash: &Sha256dHash) -> Result<Block> {
+    pub fn get_block(&self, hash: &Sha256dHash) -> Result<Block> {
         let hex: String = self.call("getblock", &[into_json(hash)?, 0.into()])?;
         let bytes = hex::decode(hex)?;
         Ok(bitcoin::consensus::encode::deserialize(&bytes)?)
     }
 
-    pub fn get_block_hex(&mut self, hash: &Sha256dHash) -> Result<String> {
+    pub fn get_block_hex(&self, hash: &Sha256dHash) -> Result<String> {
         self.call("getblock", &[into_json(hash)?, 0.into()])
     }
 
-    pub fn get_block_info(&mut self, hash: &Sha256dHash) -> Result<json::GetBlockResult> {
+    pub fn get_block_info(&self, hash: &Sha256dHash) -> Result<json::GetBlockResult> {
         self.call("getblock", &[into_json(hash)?, 1.into()])
     }
     //TODO(stevenroose) add getblock_txs
 
-    pub fn get_block_header_raw(&mut self, hash: &Sha256dHash) -> Result<BlockHeader> {
+    pub fn get_block_header_raw(&self, hash: &Sha256dHash) -> Result<BlockHeader> {
         let hex: String = self.call("getblockheader", &[into_json(hash)?, false.into()])?;
         let bytes = hex::decode(hex)?;
         Ok(bitcoin::consensus::encode::deserialize(&bytes)?)
     }
 
     pub fn get_block_header_verbose(
-        &mut self,
+        &self,
         hash: &Sha256dHash,
     ) -> Result<json::GetBlockHeaderResult> {
         self.call("getblockheader", &[into_json(hash)?, true.into()])
     }
 
-    pub fn get_mining_info(&mut self) -> Result<json::GetMiningInfoResult> {
+    pub fn get_mining_info(&self) -> Result<json::GetMiningInfoResult> {
         self.call("getmininginfo", &[])
     }
 
     /// Returns a data structure containing various state info regarding
     /// blockchain processing.
-    pub fn get_blockchain_info(&mut self) -> Result<json::GetBlockchainInfoResult> {
+    pub fn get_blockchain_info(&self) -> Result<json::GetBlockchainInfoResult> {
         self.call("getblockchaininfo", &[])
     }
 
     /// Returns the numbers of block in the longest chain.
-    pub fn get_block_count(&mut self) -> Result<u64> {
+    pub fn get_block_count(&self) -> Result<u64> {
         self.call("getblockcount", &[])
     }
 
     /// Returns the hash of the best (tip) block in the longest blockchain.
-    pub fn get_best_block_hash(&mut self) -> Result<Sha256dHash> {
+    pub fn get_best_block_hash(&self) -> Result<Sha256dHash> {
         self.call("getbestblockhash", &[])
     }
 
     /// Get block hash at a given height
-    pub fn get_block_hash(&mut self, height: u64) -> Result<Sha256dHash> {
+    pub fn get_block_hash(&self, height: u64) -> Result<Sha256dHash> {
         self.call("getblockhash", &[height.into()])
     }
 
     pub fn get_raw_transaction(
-        &mut self,
+        &self,
         txid: &Sha256dHash,
         block_hash: Option<&Sha256dHash>,
     ) -> Result<Transaction> {
@@ -263,7 +263,7 @@ impl Client {
     }
 
     pub fn get_raw_transaction_hex(
-        &mut self,
+        &self,
         txid: &Sha256dHash,
         block_hash: Option<&Sha256dHash>,
     ) -> Result<String> {
@@ -272,7 +272,7 @@ impl Client {
     }
 
     pub fn get_raw_transaction_verbose(
-        &mut self,
+        &self,
         txid: &Sha256dHash,
         block_hash: Option<&Sha256dHash>,
     ) -> Result<json::GetRawTransactionResult> {
@@ -281,7 +281,7 @@ impl Client {
     }
 
     pub fn get_received_by_address(
-        &mut self,
+        &self,
         address: &Address,
         minconf: Option<u32>,
     ) -> Result<Amount> {
@@ -290,7 +290,7 @@ impl Client {
     }
 
     pub fn get_transaction(
-        &mut self,
+        &self,
         txid: &Sha256dHash,
         include_watchonly: Option<bool>,
     ) -> Result<json::GetTransactionResult> {
@@ -299,7 +299,7 @@ impl Client {
     }
 
     pub fn get_tx_out(
-        &mut self,
+        &self,
         txid: &Sha256dHash,
         vout: u32,
         include_mempool: Option<bool>,
@@ -309,7 +309,7 @@ impl Client {
     }
 
     pub fn import_priv_key(
-        &mut self,
+        &self,
         privkey: &str,
         label: Option<&str>,
         rescan: Option<bool>,
@@ -318,13 +318,13 @@ impl Client {
         self.call("importprivkey", handle_defaults(&mut args, &[into_json("")?, null()]))
     }
 
-    pub fn key_pool_refill(&mut self, new_size: Option<usize>) -> Result<()> {
+    pub fn key_pool_refill(&self, new_size: Option<usize>) -> Result<()> {
         let mut args = [opt_into_json(new_size)?];
         self.call("keypoolrefill", handle_defaults(&mut args, &[null()]))
     }
 
     pub fn list_unspent(
-        &mut self,
+        &self,
         minconf: Option<usize>,
         maxconf: Option<usize>,
         addresses: Option<Vec<&Address>>,
@@ -349,7 +349,7 @@ impl Client {
     }
 
     pub fn sign_raw_transaction(
-        &mut self,
+        &self,
         tx: json::HexBytes,
         utxos: Option<&[json::UTXO]>,
         private_keys: Option<&[&str]>,
@@ -365,12 +365,12 @@ impl Client {
         self.call("signrawtransaction", handle_defaults(&mut args, &defaults))
     }
 
-    pub fn stop(&mut self) -> Result<()> {
+    pub fn stop(&self) -> Result<()> {
         self.call("stop", &[])
     }
 
     pub fn sign_raw_transaction_with_wallet(
-        &mut self,
+        &self,
         tx: json::HexBytes,
         utxos: Option<&[json::UTXO]>,
         sighash_type: Option<json::SigHashType>,
@@ -381,7 +381,7 @@ impl Client {
     }
 
     pub fn verify_message(
-        &mut self,
+        &self,
         address: &Address,
         signature: &Signature,
         message: &str,
@@ -391,7 +391,7 @@ impl Client {
     }
 
     /// Generate new address under own control
-    pub fn get_new_address(&mut self, account: &str) -> Result<String> {
+    pub fn get_new_address(&self, account: &str) -> Result<String> {
         self.call("getnewaddress", &[into_json(account)?])
     }
 
@@ -399,7 +399,7 @@ impl Client {
     ///
     /// Returns hashes of the generated blocks
     pub fn generate_to_address(
-        &mut self,
+        &self,
         block_num: u64,
         address: &str,
     ) -> Result<Vec<Sha256dHash>> {
@@ -407,7 +407,7 @@ impl Client {
     }
 
     /// Mark a block as invalid by `block_hash`
-    pub fn invalidate_block(&mut self, block_hash: &Sha256dHash) -> Result<()> {
+    pub fn invalidate_block(&self, block_hash: &Sha256dHash) -> Result<()> {
         self.call("invalidateblock", &[into_json(block_hash)?])
     }
 
@@ -415,7 +415,7 @@ impl Client {
     /// [`PeerInfo`][]
     ///
     /// [`PeerInfo`]: net/struct.PeerInfo.html
-    pub fn get_peer_info(&mut self) -> Result<Vec<json::GetPeerInfoResult>> {
+    pub fn get_peer_info(&self) -> Result<Vec<json::GetPeerInfoResult>> {
         self.call("getpeerinfo", &[])
     }
 
@@ -427,16 +427,16 @@ impl Client {
     ///
     /// Ping command is handled in queue with all other commands, so it
     /// measures processing backlog, not just network ping.
-    pub fn ping(&mut self) -> Result<()> {
+    pub fn ping(&self) -> Result<()> {
         self.call("ping", &[])
     }
 
-    pub fn send_raw_transaction(&mut self, tx: &str) -> Result<String> {
+    pub fn send_raw_transaction(&self, tx: &str) -> Result<String> {
         self.call("sendrawtransaction", &[into_json(tx)?])
     }
 
     pub fn estimate_smartfee<E>(
-        &mut self,
+        &self,
         conf_target: u16,
         estimate_mode: Option<json::EstimateMode>,
     ) -> Result<json::EstimateSmartFeeResult> {
@@ -451,7 +451,7 @@ impl Client {
     ///
     /// 1. `timeout`: Time in milliseconds to wait for a response. 0
     /// indicates no timeout.
-    pub fn wait_for_new_block(&mut self, timeout: u64) -> Result<json::BlockRef> {
+    pub fn wait_for_new_block(&self, timeout: u64) -> Result<json::BlockRef> {
         self.call("waitfornewblock", &[into_json(timeout)?])
     }
 
@@ -464,7 +464,7 @@ impl Client {
     /// 2. `timeout`: Time in milliseconds to wait for a response. 0
     /// indicates no timeout.
     pub fn wait_for_block(
-        &mut self,
+        &self,
         blockhash: &Sha256dHash,
         timeout: u64,
     ) -> Result<json::BlockRef> {
