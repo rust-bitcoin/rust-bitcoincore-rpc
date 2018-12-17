@@ -349,7 +349,7 @@ impl Client {
     }
 
     pub fn create_raw_transaction_hex(
-        &mut self,
+        &self,
         utxos: &[json::CreateRawTransactionInput],
         outs: Option<&std::collections::HashMap<String, f64>>,
         locktime: Option<i64>,
@@ -367,7 +367,7 @@ impl Client {
     }
 
     pub fn create_raw_transaction(
-        &mut self,
+        &self,
         utxos: &[json::CreateRawTransactionInput],
         outs: Option<&std::collections::HashMap<String, f64>>,
         locktime: Option<i64>,
