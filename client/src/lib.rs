@@ -29,13 +29,12 @@ extern crate serde_json;
 
 pub extern crate bitcoincore_rpc_json;
 pub use bitcoincore_rpc_json as json;
+pub use bitcoincore_rpc_json::getters::*;
 
 mod client;
 mod error;
-mod getters;
 mod queryable;
 
 pub use client::*;
 pub use error::Error;
-pub use getters::*;
 pub use queryable::*;
