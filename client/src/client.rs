@@ -445,7 +445,7 @@ impl Client {
         self.call("invalidateblock", &[into_json(block_hash)?])
     }
 
-    pub fn send_to_addr(
+    pub fn send_to_address(
         &self,
         addr: &str,
         amount: f64,
