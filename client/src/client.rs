@@ -461,7 +461,7 @@ impl Client {
             opt_into_json(comment_to)?,
             opt_into_json(substract_fee)?
         ];
-        self.call("sendtoaddr", handle_defaults(&mut args, &["".into(), "".into(), null()]))
+        self.call("sendtoaddress", handle_defaults(&mut args, &["".into(), "".into(), null()]))
     }
     /// Returns data about each connected network node as an array of
     /// [`PeerInfo`][]
