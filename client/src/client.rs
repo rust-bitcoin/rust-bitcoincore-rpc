@@ -445,6 +445,24 @@ impl Client {
         self.call("invalidateblock", &[into_json(block_hash)?])
     }
 
+    pub fn send_to_addr(
+        &self,
+        addr: &str,
+        amount: f64,
+        comment: Option<&str>,
+        comment_to: Option<&str>,
+        substract_fee: Option<bool>,
+    ) -> Result<String> {
+
+        let mut args = [
+            into_json(addr)?,
+            into_json(amount)?,
+            opt_into_json(comment)?,
+            opt_into_json(comment_to)?,
+            opt_into_json(substract_fee)?
+        ];
+        self.call("sendtoaddr", handle_defaults(&mut args, &["".into(), "".into(), null()]))
+    }
     /// Returns data about each connected network node as an array of
     /// [`PeerInfo`][]
     ///
