@@ -349,7 +349,7 @@ impl Client {
     }
 
     pub fn create_raw_transaction_hex(
-        &mut self,
+        &self,
         utxos: &[json::CreateRawTransactionInput],
         outs: Option<&std::collections::HashMap<String, f64>>,
         locktime: Option<i64>,
@@ -367,7 +367,7 @@ impl Client {
     }
 
     pub fn create_raw_transaction(
-        &mut self,
+        &self,
         utxos: &[json::CreateRawTransactionInput],
         outs: Option<&std::collections::HashMap<String, f64>>,
         locktime: Option<i64>,
@@ -445,6 +445,24 @@ impl Client {
         self.call("invalidateblock", &[into_json(block_hash)?])
     }
 
+    pub fn send_to_address(
+        &self,
+        addr: &str,
+        amount: f64,
+        comment: Option<&str>,
+        comment_to: Option<&str>,
+        substract_fee: Option<bool>,
+    ) -> Result<String> {
+
+        let mut args = [
+            into_json(addr)?,
+            into_json(amount)?,
+            opt_into_json(comment)?,
+            opt_into_json(comment_to)?,
+            opt_into_json(substract_fee)?
+        ];
+        self.call("sendtoaddress", handle_defaults(&mut args, &["".into(), "".into(), null()]))
+    }
     /// Returns data about each connected network node as an array of
     /// [`PeerInfo`][]
     ///
