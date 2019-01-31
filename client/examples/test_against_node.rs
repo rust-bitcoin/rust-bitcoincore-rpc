@@ -24,7 +24,7 @@ fn main() -> Result<(), Error> {
     let user = args.next();
     let pass = args.next();
 
-    let mut rpc = Client::new(url, user, pass);
+    let rpc = Client::new(url, user, pass);
 
     let _blockchain_info = rpc.get_blockchain_info()?;
 
