@@ -1,6 +1,6 @@
 [package]
 name = "bitcoincore-rpc-json"
-version = "0.1.1"
+version = "0.2.0"
 authors = [
     "Steven Roose <steven@stevenroose.org>",
     "Jean Pierre Dudey <jeandudey@hotmail.com>",
