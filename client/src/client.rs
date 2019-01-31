@@ -452,8 +452,7 @@ impl Client {
         comment: Option<&str>,
         comment_to: Option<&str>,
         substract_fee: Option<bool>,
-    ) -> Result<String> {
-
+    ) -> Result<Sha256dHash> {
         let mut args = [
             into_json(addr)?,
             into_json(amount)?,
