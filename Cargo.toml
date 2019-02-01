@@ -4,6 +4,3 @@ members = [
     "json",
     "client",
 ]
-
-[patch.crates-io]
-bitcoincore-rpc-json = { path = "./json" }
