@@ -15,7 +15,7 @@ extern crate bitcoincore_rpc;
 
 use bitcoincore_rpc::{Client, Error};
 
-fn main() -> Result<(), Error> {
+fn main_result() -> Result<(), Error> {
     let mut args = std::env::args();
 
     let _exe_name = args.next().unwrap();
@@ -42,4 +42,8 @@ fn main() -> Result<(), Error> {
     println!("tx by `get`: {}", bitcoin_tx.txid());
 
     Ok(())
+}
+
+fn main() {
+    main_result().unwrap();
 }

@@ -551,7 +551,7 @@ impl serde::Serialize for AddressType {
     where
         S: serde::Serializer,
     {
-        serializer.serialize_str(match self {
+        serializer.serialize_str(match *self {
             AddressType::Legacy => "legacy",
             AddressType::P2shSegwit => "p2sh-segwit",
             AddressType::Bech32 => "bech32",
@@ -571,7 +571,7 @@ impl<'a> serde::Serialize for PubKeyOrAddress<'a> {
     where
         S: serde::Serializer,
     {
-        match self {
+        match *self {
             PubKeyOrAddress::Address(a) => serde::Serialize::serialize(a, serializer),
             PubKeyOrAddress::PubKey(k) => serde::Serialize::serialize(k, serializer),
         }

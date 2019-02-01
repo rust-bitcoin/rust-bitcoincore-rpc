@@ -10,7 +10,10 @@
 
 use std::result;
 
+use hex;
+use bitcoin;
 use jsonrpc;
+use serde;
 use serde_json;
 
 use bitcoin::util::hash::Sha256dHash;
@@ -96,7 +99,7 @@ fn handle_defaults<'a, 'b>(
     let required_num = args.len() - defaults.len();
 
     if let Some(i) = first_non_null_optional_idx {
-        &args[..=i]
+        &args[..i+1]
     } else {
         &args[..required_num]
     }
@@ -351,7 +354,7 @@ impl Client {
     pub fn create_raw_transaction_hex(
         &self,
         utxos: &[json::CreateRawTransactionInput],
-        outs: Option<&std::collections::HashMap<String, f64>>,
+        outs: Option<&HashMap<String, f64>>,
         locktime: Option<i64>,
         replaceable: Option<bool>,
     ) -> Result<String> {
@@ -369,7 +372,7 @@ impl Client {
     pub fn create_raw_transaction(
         &self,
         utxos: &[json::CreateRawTransactionInput],
-        outs: Option<&std::collections::HashMap<String, f64>>,
+        outs: Option<&HashMap<String, f64>>,
         locktime: Option<i64>,
         replaceable: Option<bool>,
     ) -> Result<Transaction> {
@@ -527,6 +530,7 @@ impl Client {
 #[cfg(tests)]
 mod tests {
     use super::*;
+    use serde_json;
 
     #[test]
     fn test_handle_defaults() -> Result<()> {

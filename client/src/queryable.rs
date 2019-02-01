@@ -8,6 +8,9 @@
 // If not, see <http://creativecommons.org/publicdomain/zero/1.0/>.
 //
 
+use bitcoin;
+use serde_json;
+
 use bitcoin::util::hash::Sha256dHash;
 use client::Client;
 use client::Result;

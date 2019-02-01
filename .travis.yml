@@ -3,7 +3,7 @@ rust:
   - stable
   - beta
   - nightly
-  - 1.21.0 # first cargo that supports [patch]
+  - 1.24.0
 
 script:
   - cargo build --verbose
