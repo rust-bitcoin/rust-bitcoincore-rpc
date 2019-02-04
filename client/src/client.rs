@@ -436,11 +436,7 @@ impl Client {
         account: Option<&str>,
         address_type: Option<json::AddressType>
     ) -> Result<String> {
-        let mut args = [
-            opt_into_json(account)?,
-            opt_into_json(address_type)?,
-        ];
-        self.call("getnewaddress", handle_defaults(&mut args, &[null(), null()]))
+        self.call("getnewaddress", &[opt_into_json(account)?, opt_into_json(address_type)?])
     }
 
     /// Mine `block_num` blocks and pay coinbase to `address`
