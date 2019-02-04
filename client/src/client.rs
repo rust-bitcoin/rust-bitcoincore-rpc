@@ -428,8 +428,19 @@ impl Client {
     }
 
     /// Generate new address under own control
-    pub fn get_new_address(&self, account: &str) -> Result<String> {
-        self.call("getnewaddress", &[into_json(account)?])
+    ///
+    /// If 'account' is specified (DEPRECATED), it is added to the address book
+    /// so payments received with the address will be credited to 'account'.
+    pub fn get_new_address(
+        &self,
+        account: Option<&str>,
+        address_type: Option<json::AddressType>
+    ) -> Result<String> {
+        let mut args = [
+            opt_into_json(account)?,
+            opt_into_json(address_type)?,
+        ];
+        self.call("getnewaddress", handle_defaults(&mut args, &[null(), null()]))
     }
 
     /// Mine `block_num` blocks and pay coinbase to `address`
