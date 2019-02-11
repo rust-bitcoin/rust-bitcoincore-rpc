@@ -18,7 +18,7 @@ name = "bitcoincore_rpc"
 path = "src/lib.rs"
 
 [dependencies]
-bitcoincore-rpc-json = "0.2"
+bitcoincore-rpc-json = { version = "0.2", path = "../json" }
 
 log = "0.4.5"
 jsonrpc = "0.10"
