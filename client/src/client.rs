@@ -402,6 +402,26 @@ impl Client {
         self.call("signrawtransaction", handle_defaults(&mut args, &defaults))
     }
 
+    pub fn sign_raw_transaction_with_key(
+        &self,
+        tx: json::HexBytes,
+        privkeys: &[&str],
+        prevtxs: Option<&[json::SignRawTransactionInput]>,
+        sighash_type: Option<json::SigHashType>,
+    ) -> Result<json::SignRawTransactionResult> {
+        let mut args = [
+            into_json(tx)?,
+            into_json(privkeys)?,
+            opt_into_json(prevtxs)?,
+            opt_into_json(sighash_type)?,
+        ];
+        let defaults = [
+            into_json::<&[json::SignRawTransactionInput]>(&[])?,
+            null(),
+        ];
+        self.call("signrawtransactionwithkey", handle_defaults(&mut args, &defaults))
+    }
+
     pub fn stop(&self) -> Result<()> {
         self.call("stop", &[])
     }
