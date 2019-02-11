@@ -422,6 +422,13 @@ impl Client {
         self.call("signrawtransactionwithkey", handle_defaults(&mut args, &defaults))
     }
 
+    pub fn test_mempool_accept(
+        &self,
+        rawtxs: &[&str],
+    ) -> Result<Vec<json::TestMempoolAccept>> {
+        self.call("testmempoolaccept", &[into_json(rawtxs)?])
+    }
+
     pub fn stop(&self) -> Result<()> {
         self.call("stop", &[])
     }

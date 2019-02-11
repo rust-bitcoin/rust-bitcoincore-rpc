@@ -292,6 +292,15 @@ pub struct SignRawTransactionResult {
     pub errors: Vec<SignRawTransactionResultError>,
 }
 
+#[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct TestMempoolAccept {
+    pub txid: String,
+    pub allowed: bool,
+    #[serde(rename = "reject-reason")]
+    pub reject_reason: String,
+}
+
 /// Models the result of "getblockchaininfo"
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct GetBlockchainInfoResult {
