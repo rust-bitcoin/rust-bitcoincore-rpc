@@ -12,21 +12,21 @@ use bitcoin;
 use serde_json;
 
 use bitcoin::util::hash::Sha256dHash;
-use client::Client;
+use client::RpcApi;
 use client::Result;
 
 /// A type that can be queried from Bitcoin Core.
-pub trait Queryable: Sized {
+pub trait Queryable<C: RpcApi>: Sized {
     /// Type of the ID used to query the item.
     type Id;
     /// Query the item using `rpc` and convert to `Self`.
-    fn query(rpc: &Client, id: &Self::Id) -> Result<Self>;
+    fn query(rpc: &C, id: &Self::Id) -> Result<Self>;
 }
 
-impl Queryable for bitcoin::blockdata::block::Block {
+impl<C: RpcApi> Queryable<C> for bitcoin::blockdata::block::Block {
     type Id = Sha256dHash;
 
-    fn query(rpc: &Client, id: &Self::Id) -> Result<Self> {
+    fn query(rpc: &C, id: &Self::Id) -> Result<Self> {
         let rpc_name = "getblock";
         let hex: String = rpc.call(rpc_name, &[serde_json::to_value(id)?, 0.into()])?;
         let bytes = bitcoin::util::misc::hex_bytes(&hex)?;
@@ -34,10 +34,10 @@ impl Queryable for bitcoin::blockdata::block::Block {
     }
 }
 
-impl Queryable for bitcoin::blockdata::transaction::Transaction {
+impl<C: RpcApi> Queryable<C> for bitcoin::blockdata::transaction::Transaction {
     type Id = Sha256dHash;
 
-    fn query(rpc: &Client, id: &Self::Id) -> Result<Self> {
+    fn query(rpc: &C, id: &Self::Id) -> Result<Self> {
         let rpc_name = "getrawtransaction";
         let hex: String = rpc.call(rpc_name, &[serde_json::to_value(id)?])?;
         let bytes = bitcoin::util::misc::hex_bytes(&hex)?;
@@ -45,10 +45,10 @@ impl Queryable for bitcoin::blockdata::transaction::Transaction {
     }
 }
 
-impl Queryable for Option<::json::GetTxOutResult> {
+impl<C: RpcApi> Queryable<C> for Option<::json::GetTxOutResult> {
     type Id = bitcoin::OutPoint;
 
-    fn query(rpc: &Client, id: &Self::Id) -> Result<Self> {
+    fn query(rpc: &C, id: &Self::Id) -> Result<Self> {
         rpc.get_tx_out(&id.txid, id.vout, Some(true))
     }
 }

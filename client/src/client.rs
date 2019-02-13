@@ -105,59 +105,23 @@ fn handle_defaults<'a, 'b>(
     }
 }
 
-/// Client implements a JSON-RPC client for the Bitcoin Core daemon or compatible APIs.
-pub struct Client {
-    client: jsonrpc::client::Client,
-}
-
-impl Client {
-    /// Creates a client to a bitcoind JSON-RPC server.
-    pub fn new(url: String, user: Option<String>, pass: Option<String>) -> Self {
-        debug_assert!(pass.is_none() || user.is_some());
-
-        Client {
-            client: jsonrpc::client::Client::new(url, user, pass),
-        }
-    }
-
-    /// Create a new Client.
-    pub fn from_jsonrpc(client: jsonrpc::client::Client) -> Client {
-        Client {
-            client: client,
-        }
-    }
-
-    /// Query an object implementing `Querable` type
-    pub fn get_by_id<T: queryable::Queryable>(
-        &self,
-        id: &<T as queryable::Queryable>::Id,
-    ) -> Result<T> {
-        T::query(self, &id)
-    }
-
-    /// Call an `cmd` rpc with given `args` list
-    pub fn call<T: for<'a> serde::de::Deserialize<'a>>(
+pub trait RpcApi: Sized {
+    /// Call a `cmd` rpc with given `args` list
+    fn call<T: for<'a> serde::de::Deserialize<'a>>(
         &self,
         cmd: &str,
         args: &[serde_json::Value],
-    ) -> Result<T> {
-        // Get rid of to_owned after
-        // https://github.com/apoelstra/rust-jsonrpc/pull/19
-        // lands
-        let req = self.client.build_request(cmd.to_owned(), args.to_owned());
-        if log_enabled!(Trace) {
-            trace!("JSON-RPC request: {}", serde_json::to_string(&req).unwrap());
-        }
+    ) -> Result<T>;
 
-        let resp = self.client.send_request(&req).map_err(Error::from);
-        if log_enabled!(Trace) && resp.is_ok() {
-            let resp = resp.as_ref().unwrap();
-            trace!("JSON-RPC response: {}", serde_json::to_string(resp).unwrap());
-        }
-        Ok(resp?.into_result()?)
+    /// Query an object implementing `Querable` type
+    fn get_by_id<T: queryable::Queryable<Self>>(
+        &self,
+        id: &<T as queryable::Queryable<Self>>::Id,
+    ) -> Result<T> {
+        T::query(&self, &id)
     }
 
-    pub fn add_multisig_address(
+    fn add_multisig_address(
         &self,
         nrequired: usize,
         keys: Vec<json::PubKeyOrAddress>,
@@ -173,7 +137,7 @@ impl Client {
         self.call("addmultisigaddress", handle_defaults(&mut args, &[into_json("")?, null()]))
     }
 
-    pub fn backup_wallet(&self, destination: Option<&str>) -> Result<()> {
+    fn backup_wallet(&self, destination: Option<&str>) -> Result<()> {
         let mut args = [opt_into_json(destination)?];
         self.call("backupwallet", handle_defaults(&mut args, &[null()]))
     }
@@ -184,77 +148,77 @@ impl Client {
     //            to just get the string dump, without converting it into
     //            `bitcoin` type; Maybe we should made it `Queryable` by
     //            `Address`!
-    pub fn dump_priv_key(&self, address: &Address) -> Result<String> {
+    fn dump_priv_key(&self, address: &Address) -> Result<String> {
         self.call("dumpprivkey", &[into_json(address)?])
     }
 
-    pub fn encrypt_wallet(&self, passphrase: &str) -> Result<()> {
+    fn encrypt_wallet(&self, passphrase: &str) -> Result<()> {
         self.call("encryptwallet", &[into_json(passphrase)?])
     }
 
     //TODO(stevenroose) verify if return type works
-    pub fn get_difficulty(&self) -> Result<BigUint> {
+    fn get_difficulty(&self) -> Result<BigUint> {
         self.call("getdifficulty", &[])
     }
 
-    pub fn get_connection_count(&self) -> Result<usize> {
+    fn get_connection_count(&self) -> Result<usize> {
         self.call("getconnectioncount", &[])
     }
 
-    pub fn get_block(&self, hash: &Sha256dHash) -> Result<Block> {
+    fn get_block(&self, hash: &Sha256dHash) -> Result<Block> {
         let hex: String = self.call("getblock", &[into_json(hash)?, 0.into()])?;
         let bytes = hex::decode(hex)?;
         Ok(bitcoin::consensus::encode::deserialize(&bytes)?)
     }
 
-    pub fn get_block_hex(&self, hash: &Sha256dHash) -> Result<String> {
+    fn get_block_hex(&self, hash: &Sha256dHash) -> Result<String> {
         self.call("getblock", &[into_json(hash)?, 0.into()])
     }
 
-    pub fn get_block_info(&self, hash: &Sha256dHash) -> Result<json::GetBlockResult> {
+    fn get_block_info(&self, hash: &Sha256dHash) -> Result<json::GetBlockResult> {
         self.call("getblock", &[into_json(hash)?, 1.into()])
     }
     //TODO(stevenroose) add getblock_txs
 
-    pub fn get_block_header_raw(&self, hash: &Sha256dHash) -> Result<BlockHeader> {
+    fn get_block_header_raw(&self, hash: &Sha256dHash) -> Result<BlockHeader> {
         let hex: String = self.call("getblockheader", &[into_json(hash)?, false.into()])?;
         let bytes = hex::decode(hex)?;
         Ok(bitcoin::consensus::encode::deserialize(&bytes)?)
     }
 
-    pub fn get_block_header_verbose(
+    fn get_block_header_verbose(
         &self,
         hash: &Sha256dHash,
     ) -> Result<json::GetBlockHeaderResult> {
         self.call("getblockheader", &[into_json(hash)?, true.into()])
     }
 
-    pub fn get_mining_info(&self) -> Result<json::GetMiningInfoResult> {
+    fn get_mining_info(&self) -> Result<json::GetMiningInfoResult> {
         self.call("getmininginfo", &[])
     }
 
     /// Returns a data structure containing various state info regarding
     /// blockchain processing.
-    pub fn get_blockchain_info(&self) -> Result<json::GetBlockchainInfoResult> {
+    fn get_blockchain_info(&self) -> Result<json::GetBlockchainInfoResult> {
         self.call("getblockchaininfo", &[])
     }
 
     /// Returns the numbers of block in the longest chain.
-    pub fn get_block_count(&self) -> Result<u64> {
+    fn get_block_count(&self) -> Result<u64> {
         self.call("getblockcount", &[])
     }
 
     /// Returns the hash of the best (tip) block in the longest blockchain.
-    pub fn get_best_block_hash(&self) -> Result<Sha256dHash> {
+    fn get_best_block_hash(&self) -> Result<Sha256dHash> {
         self.call("getbestblockhash", &[])
     }
 
     /// Get block hash at a given height
-    pub fn get_block_hash(&self, height: u64) -> Result<Sha256dHash> {
+    fn get_block_hash(&self, height: u64) -> Result<Sha256dHash> {
         self.call("getblockhash", &[height.into()])
     }
 
-    pub fn get_raw_transaction(
+    fn get_raw_transaction(
         &self,
         txid: &Sha256dHash,
         block_hash: Option<&Sha256dHash>,
@@ -265,7 +229,7 @@ impl Client {
         Ok(bitcoin::consensus::encode::deserialize(&bytes)?)
     }
 
-    pub fn get_raw_transaction_hex(
+    fn get_raw_transaction_hex(
         &self,
         txid: &Sha256dHash,
         block_hash: Option<&Sha256dHash>,
@@ -274,7 +238,7 @@ impl Client {
         self.call("getrawtransaction", handle_defaults(&mut args, &[null()]))
     }
 
-    pub fn get_raw_transaction_verbose(
+    fn get_raw_transaction_verbose(
         &self,
         txid: &Sha256dHash,
         block_hash: Option<&Sha256dHash>,
@@ -283,7 +247,7 @@ impl Client {
         self.call("getrawtransaction", handle_defaults(&mut args, &[null()]))
     }
 
-    pub fn get_received_by_address(
+    fn get_received_by_address(
         &self,
         address: &Address,
         minconf: Option<u32>,
@@ -292,7 +256,7 @@ impl Client {
         self.call("getreceivedbyaddress", handle_defaults(&mut args, &[null()]))
     }
 
-    pub fn get_transaction(
+    fn get_transaction(
         &self,
         txid: &Sha256dHash,
         include_watchonly: Option<bool>,
@@ -301,7 +265,7 @@ impl Client {
         self.call("getrawtransaction", handle_defaults(&mut args, &[null()]))
     }
 
-    pub fn get_tx_out(
+    fn get_tx_out(
         &self,
         txid: &Sha256dHash,
         vout: u32,
@@ -311,7 +275,7 @@ impl Client {
         self.call("gettxout", handle_defaults(&mut args, &[null()]))
     }
 
-    pub fn import_priv_key(
+    fn import_priv_key(
         &self,
         privkey: &str,
         label: Option<&str>,
@@ -321,12 +285,12 @@ impl Client {
         self.call("importprivkey", handle_defaults(&mut args, &[into_json("")?, null()]))
     }
 
-    pub fn key_pool_refill(&self, new_size: Option<usize>) -> Result<()> {
+    fn key_pool_refill(&self, new_size: Option<usize>) -> Result<()> {
         let mut args = [opt_into_json(new_size)?];
         self.call("keypoolrefill", handle_defaults(&mut args, &[null()]))
     }
 
-    pub fn list_unspent(
+    fn list_unspent(
         &self,
         minconf: Option<usize>,
         maxconf: Option<usize>,
@@ -351,7 +315,7 @@ impl Client {
         self.call("listunspent", handle_defaults(&mut args, &defaults))
     }
 
-    pub fn create_raw_transaction_hex(
+    fn create_raw_transaction_hex(
         &self,
         utxos: &[json::CreateRawTransactionInput],
         outs: Option<&HashMap<String, f64>>,
@@ -369,7 +333,7 @@ impl Client {
         self.call("createrawtransaction", handle_defaults(&mut args, &defaults))
     }
 
-    pub fn create_raw_transaction(
+    fn create_raw_transaction(
         &self,
         utxos: &[json::CreateRawTransactionInput],
         outs: Option<&HashMap<String, f64>>,
@@ -381,7 +345,7 @@ impl Client {
         Ok(bitcoin::consensus::encode::deserialize(&bytes)?)
     }
 
-    pub fn sign_raw_transaction(
+    fn sign_raw_transaction(
         &self,
         tx: json::HexBytes,
         utxos: Option<&[json::SignRawTransactionInput]>,
@@ -402,7 +366,7 @@ impl Client {
         self.call("signrawtransaction", handle_defaults(&mut args, &defaults))
     }
 
-    pub fn sign_raw_transaction_with_key(
+    fn sign_raw_transaction_with_key(
         &self,
         tx: json::HexBytes,
         privkeys: &[&str],
@@ -422,18 +386,18 @@ impl Client {
         self.call("signrawtransactionwithkey", handle_defaults(&mut args, &defaults))
     }
 
-    pub fn test_mempool_accept(
+    fn test_mempool_accept(
         &self,
         rawtxs: &[&str],
     ) -> Result<Vec<json::TestMempoolAccept>> {
         self.call("testmempoolaccept", &[into_json(rawtxs)?])
     }
 
-    pub fn stop(&self) -> Result<()> {
+    fn stop(&self) -> Result<()> {
         self.call("stop", &[])
     }
 
-    pub fn sign_raw_transaction_with_wallet(
+    fn sign_raw_transaction_with_wallet(
         &self,
         tx: json::HexBytes,
         utxos: Option<&[json::SignRawTransactionInput]>,
@@ -444,7 +408,7 @@ impl Client {
         self.call("signrawtransactionwithwallet", handle_defaults(&mut args, &defaults))
     }
 
-    pub fn verify_message(
+    fn verify_message(
         &self,
         address: &Address,
         signature: &Signature,
@@ -458,7 +422,7 @@ impl Client {
     ///
     /// If 'account' is specified (DEPRECATED), it is added to the address book
     /// so payments received with the address will be credited to 'account'.
-    pub fn get_new_address(
+    fn get_new_address(
         &self,
         account: Option<&str>,
         address_type: Option<json::AddressType>
@@ -469,7 +433,7 @@ impl Client {
     /// Mine `block_num` blocks and pay coinbase to `address`
     ///
     /// Returns hashes of the generated blocks
-    pub fn generate_to_address(
+    fn generate_to_address(
         &self,
         block_num: u64,
         address: &str,
@@ -479,7 +443,7 @@ impl Client {
 
     /// Mine up to block_num blocks immediately (before the RPC call returns)
     /// to an address in the wallet.
-    pub fn generate(
+    fn generate(
         &self,
         block_num: u64,
         maxtries: Option<u64>,
@@ -488,11 +452,11 @@ impl Client {
     }
 
     /// Mark a block as invalid by `block_hash`
-    pub fn invalidate_block(&self, block_hash: &Sha256dHash) -> Result<()> {
+    fn invalidate_block(&self, block_hash: &Sha256dHash) -> Result<()> {
         self.call("invalidateblock", &[into_json(block_hash)?])
     }
 
-    pub fn send_to_address(
+    fn send_to_address(
         &self,
         addr: &str,
         amount: f64,
@@ -513,7 +477,7 @@ impl Client {
     /// [`PeerInfo`][]
     ///
     /// [`PeerInfo`]: net/struct.PeerInfo.html
-    pub fn get_peer_info(&self) -> Result<Vec<json::GetPeerInfoResult>> {
+    fn get_peer_info(&self) -> Result<Vec<json::GetPeerInfoResult>> {
         self.call("getpeerinfo", &[])
     }
 
@@ -525,15 +489,15 @@ impl Client {
     ///
     /// Ping command is handled in queue with all other commands, so it
     /// measures processing backlog, not just network ping.
-    pub fn ping(&self) -> Result<()> {
+    fn ping(&self) -> Result<()> {
         self.call("ping", &[])
     }
 
-    pub fn send_raw_transaction(&self, tx: &str) -> Result<String> {
+    fn send_raw_transaction(&self, tx: &str) -> Result<String> {
         self.call("sendrawtransaction", &[into_json(tx)?])
     }
 
-    pub fn estimate_smartfee<E>(
+    fn estimate_smartfee<E>(
         &self,
         conf_target: u16,
         estimate_mode: Option<json::EstimateMode>,
@@ -549,7 +513,7 @@ impl Client {
     ///
     /// 1. `timeout`: Time in milliseconds to wait for a response. 0
     /// indicates no timeout.
-    pub fn wait_for_new_block(&self, timeout: u64) -> Result<json::BlockRef> {
+    fn wait_for_new_block(&self, timeout: u64) -> Result<json::BlockRef> {
         self.call("waitfornewblock", &[into_json(timeout)?])
     }
 
@@ -561,13 +525,60 @@ impl Client {
     /// 1. `blockhash`: Block hash to wait for.
     /// 2. `timeout`: Time in milliseconds to wait for a response. 0
     /// indicates no timeout.
-    pub fn wait_for_block(
+    fn wait_for_block(
         &self,
         blockhash: &Sha256dHash,
         timeout: u64,
     ) -> Result<json::BlockRef> {
         let args = [into_json(blockhash)?, into_json(timeout)?];
         self.call("waitforblock", &args)
+    }
+}
+
+/// Client implements a JSON-RPC client for the Bitcoin Core daemon or compatible APIs.
+pub struct Client {
+    client: jsonrpc::client::Client,
+}
+
+impl Client {
+    /// Creates a client to a bitcoind JSON-RPC server.
+    pub fn new(url: String, user: Option<String>, pass: Option<String>) -> Self {
+        debug_assert!(pass.is_none() || user.is_some());
+
+        Client {
+            client: jsonrpc::client::Client::new(url, user, pass),
+        }
+    }
+
+    /// Create a new Client.
+    pub fn from_jsonrpc(client: jsonrpc::client::Client) -> Client {
+        Client {
+            client: client,
+        }
+    }
+}
+
+impl RpcApi for Client {
+    /// Call an `cmd` rpc with given `args` list
+    fn call<T: for<'a> serde::de::Deserialize<'a>>(
+        &self,
+        cmd: &str,
+        args: &[serde_json::Value],
+    ) -> Result<T> {
+        // Get rid of to_owned after
+        // https://github.com/apoelstra/rust-jsonrpc/pull/19
+        // lands
+        let req = self.client.build_request(cmd.to_owned(), args.to_owned());
+        if log_enabled!(Trace) {
+            trace!("JSON-RPC request: {}", serde_json::to_string(&req).unwrap());
+        }
+
+        let resp = self.client.send_request(&req).map_err(Error::from);
+        if log_enabled!(Trace) && resp.is_ok() {
+            let resp = resp.as_ref().unwrap();
+            trace!("JSON-RPC response: {}", serde_json::to_string(resp).unwrap());
+        }
+        Ok(resp?.into_result()?)
     }
 }
 
