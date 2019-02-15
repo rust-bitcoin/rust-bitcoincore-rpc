@@ -477,6 +477,16 @@ impl Client {
         self.call("generatetoaddress", &[block_num.into(), address.into()])
     }
 
+    /// Mine up to nblocks blocks immediately (before the RPC call returns)
+    /// to an address in the wallet.
+    pub fn generate(
+        &self,
+        block_num: u64,
+        maxtries: Option<u64>,
+    ) -> Result<Vec<Sha256dHash>> {
+        self.call("generate", &[block_num.into(), opt_into_json(maxtries)?])
+    }
+
     /// Mark a block as invalid by `block_hash`
     pub fn invalidate_block(&self, block_hash: &Sha256dHash) -> Result<()> {
         self.call("invalidateblock", &[into_json(block_hash)?])
