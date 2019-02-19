@@ -402,6 +402,33 @@ impl Client {
         self.call("signrawtransaction", handle_defaults(&mut args, &defaults))
     }
 
+    pub fn sign_raw_transaction_with_key(
+        &self,
+        tx: json::HexBytes,
+        privkeys: &[&str],
+        prevtxs: Option<&[json::SignRawTransactionInput]>,
+        sighash_type: Option<json::SigHashType>,
+    ) -> Result<json::SignRawTransactionResult> {
+        let mut args = [
+            into_json(tx)?,
+            into_json(privkeys)?,
+            opt_into_json(prevtxs)?,
+            opt_into_json(sighash_type)?,
+        ];
+        let defaults = [
+            into_json::<&[json::SignRawTransactionInput]>(&[])?,
+            null(),
+        ];
+        self.call("signrawtransactionwithkey", handle_defaults(&mut args, &defaults))
+    }
+
+    pub fn test_mempool_accept(
+        &self,
+        rawtxs: &[&str],
+    ) -> Result<Vec<json::TestMempoolAccept>> {
+        self.call("testmempoolaccept", &[into_json(rawtxs)?])
+    }
+
     pub fn stop(&self) -> Result<()> {
         self.call("stop", &[])
     }
@@ -448,6 +475,16 @@ impl Client {
         address: &str,
     ) -> Result<Vec<Sha256dHash>> {
         self.call("generatetoaddress", &[block_num.into(), address.into()])
+    }
+
+    /// Mine up to block_num blocks immediately (before the RPC call returns)
+    /// to an address in the wallet.
+    pub fn generate(
+        &self,
+        block_num: u64,
+        maxtries: Option<u64>,
+    ) -> Result<Vec<Sha256dHash>> {
+        self.call("generate", &[block_num.into(), opt_into_json(maxtries)?])
     }
 
     /// Mark a block as invalid by `block_hash`
