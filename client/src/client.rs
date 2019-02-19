@@ -477,7 +477,7 @@ impl Client {
         self.call("generatetoaddress", &[block_num.into(), address.into()])
     }
 
-    /// Mine up to nblocks blocks immediately (before the RPC call returns)
+    /// Mine up to block_num blocks immediately (before the RPC call returns)
     /// to an address in the wallet.
     pub fn generate(
         &self,
