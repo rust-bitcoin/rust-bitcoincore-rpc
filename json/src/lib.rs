@@ -293,7 +293,6 @@ pub struct SignRawTransactionResult {
 }
 
 #[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
-#[serde(rename_all = "camelCase")]
 pub struct TestMempoolAccept {
     pub txid: String,
     pub allowed: bool,
