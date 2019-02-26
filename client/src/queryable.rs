@@ -11,7 +11,7 @@
 use bitcoin;
 use serde_json;
 
-use bitcoin::util::hash::Sha256dHash;
+use bitcoin_hashes::sha256d;
 use client::RpcApi;
 use client::Result;
 
@@ -24,7 +24,7 @@ pub trait Queryable<C: RpcApi>: Sized {
 }
 
 impl<C: RpcApi> Queryable<C> for bitcoin::blockdata::block::Block {
-    type Id = Sha256dHash;
+    type Id = sha256d::Hash;
 
     fn query(rpc: &C, id: &Self::Id) -> Result<Self> {
         let rpc_name = "getblock";
@@ -35,7 +35,7 @@ impl<C: RpcApi> Queryable<C> for bitcoin::blockdata::block::Block {
 }
 
 impl<C: RpcApi> Queryable<C> for bitcoin::blockdata::transaction::Transaction {
-    type Id = Sha256dHash;
+    type Id = sha256d::Hash;
 
     fn query(rpc: &C, id: &Self::Id) -> Result<Self> {
         let rpc_name = "getrawtransaction";

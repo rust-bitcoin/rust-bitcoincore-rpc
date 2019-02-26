@@ -20,6 +20,7 @@
 extern crate log;
 extern crate bitcoin;
 extern crate bitcoin_amount;
+extern crate bitcoin_hashes;
 extern crate hex;
 extern crate jsonrpc;
 extern crate num_bigint;
