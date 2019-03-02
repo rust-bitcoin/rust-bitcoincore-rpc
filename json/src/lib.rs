@@ -648,6 +648,7 @@ where
 mod tests {
     use super::*;
     use serde_json;
+    use bitcoin_hashes::hex::FromHex;
 
     macro_rules! deserializer {
         ($j:expr) => {
@@ -922,7 +923,7 @@ mod tests {
         assert!(expected.transaction().is_ok());
         assert_eq!(
             expected.transaction().unwrap().input[0].previous_output.txid,
-            "f04a336cb0fac5611e625827bd89e0be5dd2504e6a98ecbfaa5fcf1528d06b58".parse().unwrap()
+            hash!("f04a336cb0fac5611e625827bd89e0be5dd2504e6a98ecbfaa5fcf1528d06b58")
         );
         assert!(expected.vin[0].script_sig.script().is_ok());
         assert!(expected.vout[0].script_pub_key.script().is_ok());
