@@ -20,6 +20,7 @@
 extern crate serde_derive;
 extern crate bitcoin;
 extern crate bitcoin_amount;
+extern crate bitcoin_hashes;
 extern crate hex;
 extern crate num_bigint;
 extern crate secp256k1;
@@ -33,7 +34,7 @@ use std::str::FromStr;
 
 use bitcoin::blockdata::script::Script;
 use bitcoin::util::address::Address;
-use bitcoin::util::hash::Sha256dHash;
+use bitcoin_hashes::sha256d;
 use bitcoin_amount::Amount;
 use num_bigint::BigUint;
 use secp256k1::PublicKey;
@@ -53,7 +54,7 @@ pub struct AddMultiSigAddressResult {
 #[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct GetBlockResult {
-    pub hash: Sha256dHash,
+    pub hash: sha256d::Hash,
     pub confirmations: usize,
     pub size: usize,
     pub strippedsize: Option<usize>,
@@ -61,8 +62,8 @@ pub struct GetBlockResult {
     pub height: usize,
     pub version: u32,
     pub version_hex: Option<String>,
-    pub merkleroot: Sha256dHash,
-    pub tx: Vec<Sha256dHash>,
+    pub merkleroot: sha256d::Hash,
+    pub tx: Vec<sha256d::Hash>,
     pub time: usize,
     pub mediantime: Option<usize>,
     pub nonce: u32,
@@ -71,19 +72,19 @@ pub struct GetBlockResult {
     pub difficulty: BigUint,
     pub chainwork: String,
     pub n_tx: usize,
-    pub previousblockhash: Option<Sha256dHash>,
-    pub nextblockhash: Option<Sha256dHash>,
+    pub previousblockhash: Option<sha256d::Hash>,
+    pub nextblockhash: Option<sha256d::Hash>,
 }
 
 #[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct GetBlockHeaderResult {
-    pub hash: Sha256dHash,
+    pub hash: sha256d::Hash,
     pub confirmations: usize,
     pub height: usize,
     pub version: u32,
     pub version_hex: Option<String>,
-    pub merkleroot: Sha256dHash,
+    pub merkleroot: sha256d::Hash,
     pub time: usize,
     pub mediantime: Option<usize>,
     pub nonce: u32,
@@ -92,8 +93,8 @@ pub struct GetBlockHeaderResult {
     pub difficulty: BigUint,
     pub chainwork: String,
     pub n_tx: usize,
-    pub previousblockhash: Option<Sha256dHash>,
-    pub nextblockhash: Option<Sha256dHash>,
+    pub previousblockhash: Option<sha256d::Hash>,
+    pub nextblockhash: Option<sha256d::Hash>,
 }
 
 #[derive(Clone, PartialEq, Debug, Deserialize, Serialize)]
@@ -120,7 +121,7 @@ pub struct GetRawTransactionResultVinScriptSig {
 #[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct GetRawTransactionResultVin {
-    pub txid: Sha256dHash,
+    pub txid: sha256d::Hash,
     pub vout: u32,
     pub script_sig: GetRawTransactionResultVinScriptSig,
     pub sequence: u32,
@@ -154,15 +155,15 @@ pub struct GetRawTransactionResult {
     #[serde(rename = "in_active_chain")]
     pub in_active_chain: Option<bool>,
     pub hex: String,
-    pub txid: Sha256dHash,
-    pub hash: Sha256dHash,
+    pub txid: sha256d::Hash,
+    pub hash: sha256d::Hash,
     pub size: usize,
     pub vsize: usize,
     pub version: u32,
     pub locktime: u32,
     pub vin: Vec<GetRawTransactionResultVin>,
     pub vout: Vec<GetRawTransactionResultVout>,
-    pub blockhash: Sha256dHash,
+    pub blockhash: sha256d::Hash,
     pub confirmations: usize,
     pub time: usize,
     pub blocktime: usize,
@@ -234,10 +235,10 @@ pub struct GetTransactionResult {
     #[serde(default, deserialize_with = "deserialize_amount_opt")]
     pub fee: Option<Amount>,
     pub confirmations: usize,
-    pub blockhash: Sha256dHash,
+    pub blockhash: sha256d::Hash,
     pub blockindex: usize,
     pub blocktime: u64,
-    pub txid: Sha256dHash,
+    pub txid: sha256d::Hash,
     pub time: u64,
     pub timereceived: u64,
     #[serde(rename = "bip125-replaceable")]
@@ -249,7 +250,7 @@ pub struct GetTransactionResult {
 #[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct GetTxOutResult {
-    pub bestblock: Sha256dHash,
+    pub bestblock: sha256d::Hash,
     pub confirmations: usize,
     #[serde(deserialize_with = "deserialize_amount")]
     pub value: Amount,
@@ -260,7 +261,7 @@ pub struct GetTxOutResult {
 #[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ListUnspentResult {
-    pub txid: Sha256dHash,
+    pub txid: sha256d::Hash,
     pub vout: u32,
     pub address: Address,
     pub script_pub_key: Script,
@@ -276,7 +277,7 @@ pub struct ListUnspentResult {
 #[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct SignRawTransactionResultError {
-    pub txid: Sha256dHash,
+    pub txid: sha256d::Hash,
     pub vout: u32,
     pub script_sig: Script,
     pub sequence: u32,
@@ -311,7 +312,7 @@ pub struct GetBlockchainInfoResult {
     /// The current number of headers we have validated
     pub headers: u64,
     /// The hash of the currently best block
-    pub bestblockhash: Sha256dHash,
+    pub bestblockhash: sha256d::Hash,
     /// The current difficulty
     pub difficulty: f64,
     /// Median time for the current best block
@@ -439,7 +440,7 @@ pub struct EstimateSmartFeeResult {
 /// Models the result of "waitfornewblock", and "waitforblock"
 #[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
 pub struct BlockRef {
-    pub hash: Sha256dHash,
+    pub hash: sha256d::Hash,
     pub height: u64,
 }
 
@@ -529,7 +530,7 @@ impl serde::Serialize for SigHashType {
 #[derive(Serialize, Clone, PartialEq, Eq, Debug)]
 #[serde(rename_all = "camelCase")]
 pub struct CreateRawTransactionInput {
-    pub txid: Sha256dHash,
+    pub txid: sha256d::Hash,
     pub vout: u32,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub sequence: Option<u32>,
@@ -539,7 +540,7 @@ pub struct CreateRawTransactionInput {
 #[derive(Serialize, Clone, PartialEq, Debug)]
 #[serde(rename_all = "camelCase")]
 pub struct SignRawTransactionInput {
-    pub txid: Sha256dHash,
+    pub txid: sha256d::Hash,
     pub vout: u32,
     pub script_pub_key: Script,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -647,6 +648,7 @@ where
 mod tests {
     use super::*;
     use serde_json;
+    use bitcoin_hashes::hex::FromHex;
 
     macro_rules! deserializer {
         ($j:expr) => {
@@ -656,7 +658,7 @@ mod tests {
 
     macro_rules! hash {
         ($h:expr) => {
-            Sha256dHash::from_hex($h).unwrap()
+            sha256d::Hash::from_hex($h).unwrap()
         };
     }
 
@@ -921,7 +923,7 @@ mod tests {
         assert!(expected.transaction().is_ok());
         assert_eq!(
             expected.transaction().unwrap().input[0].previous_output.txid,
-            "f04a336cb0fac5611e625827bd89e0be5dd2504e6a98ecbfaa5fcf1528d06b58".parse().unwrap()
+            hash!("f04a336cb0fac5611e625827bd89e0be5dd2504e6a98ecbfaa5fcf1528d06b58")
         );
         assert!(expected.vin[0].script_sig.script().is_ok());
         assert!(expected.vout[0].script_pub_key.script().is_ok());
@@ -1102,7 +1104,7 @@ mod tests {
     //	let vectors = vec![
     //		(r#""01020304a1ff""#, vec![1,2,3,4,161,255]),
     //		(r#""5df6e0e2761359d30a8275058e299fcc0381534545f55cf43e41983f5d4c9456""#,
-    //			Sha256dHash::from_data(&[]).as_bytes()[..].into()),
+    //			sha256d::Hash::from_data(&[]).as_bytes()[..].into()),
     //	];
     //	for vector in vectors.into_iter() {
     //		let d = deserialize_hex(deserializer!(vector.0)).unwrap();
