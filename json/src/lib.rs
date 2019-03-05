@@ -170,26 +170,12 @@ pub struct GetRawTransactionResult {
 }
 
 /// Enum to represent the BIP125 replacable status for a transaction.
-#[derive(Clone, PartialEq, Eq, Debug)]
+#[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
+#[serde(rename_all = "lowercase")]
 pub enum Bip125Replaceable {
     Yes,
     No,
     Unknown,
-}
-
-impl<'de> ::serde::Deserialize<'de> for Bip125Replaceable {
-    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
-    where
-        D: ::serde::Deserializer<'de>,
-    {
-        let s = String::deserialize(deserializer)?;
-        match s.as_ref() {
-            "yes" => Ok(Bip125Replaceable::Yes),
-            "no" => Ok(Bip125Replaceable::No),
-            "unknown" => Ok(Bip125Replaceable::Unknown),
-            v => Err(D::Error::custom(&format!("wrong value for bip125-replacable: {}", v))),
-        }
-    }
 }
 
 /// Enum to represent the BIP125 replacable status for a transaction.
