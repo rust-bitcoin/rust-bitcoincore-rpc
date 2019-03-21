@@ -12,6 +12,7 @@ use jsonrpc;
 use serde;
 use serde_json;
 
+use std::sync::Arc;
 
 use log::Level::Trace;
 
@@ -19,7 +20,7 @@ use super::*;
 
 /// Client implements a JSON-RPC client for the Bitcoin Core daemon or compatible APIs.
 pub struct Client {
-    client: jsonrpc::client::Client,
+    client: Arc<jsonrpc::client::Client>,
 }
 
 impl Client {
@@ -28,15 +29,20 @@ impl Client {
         debug_assert!(pass.is_none() || user.is_some());
 
         Client {
-            client: jsonrpc::client::Client::new(url, user, pass),
+            client: Arc::new(jsonrpc::client::Client::new(url, user, pass)),
         }
     }
 
     /// Create a new Client.
     pub fn from_jsonrpc(client: jsonrpc::client::Client) -> Client {
         Client {
-            client: client,
+            client: Arc::new(client),
         }
+    }
+
+    /// Start a batch of requests.
+    pub fn start_batch(&self) -> Batch {
+        Batch::new(self.client.clone())
     }
 }
 
@@ -47,10 +53,7 @@ impl RpcApi for Client {
         cmd: &str,
         args: &[serde_json::Value],
     ) -> Result<T> {
-        // Get rid of to_owned after
-        // https://github.com/apoelstra/rust-jsonrpc/pull/19
-        // lands
-        let req = self.client.build_request(cmd.to_owned(), args.to_owned());
+        let req = self.client.build_request(cmd, args);
         if log_enabled!(Trace) {
             trace!("JSON-RPC request: {}", serde_json::to_string(&req).unwrap());
         }

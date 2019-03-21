@@ -32,11 +32,13 @@ pub extern crate bitcoincore_rpc_json;
 pub use bitcoincore_rpc_json as json;
 pub use bitcoincore_rpc_json::getters::*;
 
+mod batch;
 mod client;
 mod error;
 mod queryable;
 mod util;
 
+pub use batch::*;
 pub use client::*;
 pub use error::Error;
 pub use queryable::*;
