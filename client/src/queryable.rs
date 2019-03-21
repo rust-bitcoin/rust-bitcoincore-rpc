@@ -12,8 +12,8 @@ use bitcoin;
 use serde_json;
 
 use bitcoin_hashes::sha256d;
-use client::RpcApi;
-use client::Result;
+
+use super::*;
 
 /// A type that can be queried from Bitcoin Core.
 pub trait Queryable<C: RpcApi>: Sized {
