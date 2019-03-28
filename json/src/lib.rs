@@ -16,8 +16,6 @@
 #![crate_name = "bitcoincore_rpc_json"]
 #![crate_type = "rlib"]
 
-#[macro_use]
-extern crate serde_derive;
 extern crate bitcoin;
 extern crate bitcoin_amount;
 extern crate bitcoin_hashes;
@@ -34,15 +32,51 @@ use std::str::FromStr;
 
 use bitcoin::blockdata::script::Script;
 use bitcoin::util::address::Address;
-use bitcoin_hashes::sha256d;
 use bitcoin_amount::Amount;
+use bitcoin_hashes::sha256d;
 use num_bigint::BigUint;
 use secp256k1::PublicKey;
 use serde::de::Error as SerdeError;
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
 //TODO(stevenroose) consider using a Time type
+
+/// A module used for serde serialization of bytes in hexadecimal format.
+///
+/// The module is compatible with the serde attribute.
+pub mod serde_hex {
+    use hex;
+    use serde::{Deserializer, Serializer};
+
+    pub fn serialize<S: Serializer>(b: &Vec<u8>, s: S) -> Result<S::Ok, S::Error> {
+        s.serialize_str(&hex::encode(&b))
+    }
+
+    pub fn deserialize<'de, D: Deserializer<'de>>(d: D) -> Result<Vec<u8>, D::Error> {
+        use serde::de::Error;
+
+        let hex_str: String = ::serde::Deserialize::deserialize(d)?;
+        Ok(hex::decode(hex_str).map_err(D::Error::custom)?)
+    }
+
+    pub mod opt {
+        use hex;
+        use serde::{de::Error, Deserializer, Serializer};
+
+        pub fn serialize<S: Serializer>(b: &Option<Vec<u8>>, s: S) -> Result<S::Ok, S::Error> {
+            match b {
+                None => s.serialize_none(),
+                Some(b) => s.serialize_str(&hex::encode(&b)),
+            }
+        }
+
+        pub fn deserialize<'de, D: Deserializer<'de>>(d: D) -> Result<Option<Vec<u8>>, D::Error> {
+            let hex_str: String = ::serde::Deserialize::deserialize(d)?;
+            Ok(Some(hex::decode(hex_str).map_err(D::Error::custom)?))
+        }
+    }
+}
 
 #[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -61,7 +95,8 @@ pub struct GetBlockResult {
     pub weight: usize,
     pub height: usize,
     pub version: u32,
-    pub version_hex: Option<String>,
+    #[serde(with = "::serde_hex::opt")]
+    pub version_hex: Option<Vec<u8>>,
     pub merkleroot: sha256d::Hash,
     pub tx: Vec<sha256d::Hash>,
     pub time: usize,
@@ -70,7 +105,8 @@ pub struct GetBlockResult {
     pub bits: String,
     #[serde(deserialize_with = "deserialize_difficulty")]
     pub difficulty: BigUint,
-    pub chainwork: String,
+    #[serde(with = "::serde_hex")]
+    pub chainwork: Vec<u8>,
     pub n_tx: usize,
     pub previousblockhash: Option<sha256d::Hash>,
     pub nextblockhash: Option<sha256d::Hash>,
@@ -83,7 +119,8 @@ pub struct GetBlockHeaderResult {
     pub confirmations: usize,
     pub height: usize,
     pub version: u32,
-    pub version_hex: Option<String>,
+    #[serde(with = "::serde_hex::opt")]
+    pub version_hex: Option<Vec<u8>>,
     pub merkleroot: sha256d::Hash,
     pub time: usize,
     pub mediantime: Option<usize>,
@@ -91,7 +128,8 @@ pub struct GetBlockHeaderResult {
     pub bits: String,
     #[serde(deserialize_with = "deserialize_difficulty")]
     pub difficulty: BigUint,
-    pub chainwork: String,
+    #[serde(with = "::serde_hex")]
+    pub chainwork: Vec<u8>,
     pub n_tx: usize,
     pub previousblockhash: Option<sha256d::Hash>,
     pub nextblockhash: Option<sha256d::Hash>,
@@ -115,7 +153,8 @@ pub struct GetMiningInfoResult {
 #[serde(rename_all = "camelCase")]
 pub struct GetRawTransactionResultVinScriptSig {
     pub asm: String,
-    pub hex: String,
+    #[serde(with = "::serde_hex")]
+    pub hex: Vec<u8>,
 }
 
 #[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
@@ -133,7 +172,8 @@ pub struct GetRawTransactionResultVin {
 #[serde(rename_all = "camelCase")]
 pub struct GetRawTransactionResultVoutScriptPubKey {
     pub asm: String,
-    pub hex: String,
+    #[serde(with = "::serde_hex")]
+    pub hex: Vec<u8>,
     pub req_sigs: usize,
     #[serde(rename = "type")]
     pub type_: String, //TODO(stevenroose) consider enum
@@ -154,7 +194,8 @@ pub struct GetRawTransactionResultVout {
 pub struct GetRawTransactionResult {
     #[serde(rename = "in_active_chain")]
     pub in_active_chain: Option<bool>,
-    pub hex: String,
+    #[serde(with = "::serde_hex")]
+    pub hex: Vec<u8>,
     pub txid: sha256d::Hash,
     pub hash: sha256d::Hash,
     pub size: usize,
@@ -230,7 +271,8 @@ pub struct GetTransactionResult {
     #[serde(rename = "bip125-replaceable")]
     pub bip125_replaceable: Bip125Replaceable,
     pub details: Vec<GetTransactionResultDetail>,
-    pub hex: String,
+    #[serde(with = "::serde_hex")]
+    pub hex: Vec<u8>,
 }
 
 #[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
@@ -273,7 +315,8 @@ pub struct SignRawTransactionResultError {
 #[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct SignRawTransactionResult {
-    pub hex: String,
+    #[serde(with = "::serde_hex")]
+    pub hex: Vec<u8>,
     pub complete: bool,
     #[serde(default)]
     pub errors: Vec<SignRawTransactionResultError>,
@@ -308,7 +351,8 @@ pub struct GetBlockchainInfoResult {
     /// Estimate of whether this node is in Initial Block Download mode
     pub initialblockdownload: bool,
     /// Total amount of work in active chain, in hexadecimal
-    pub chainwork: String,
+    #[serde(with = "::serde_hex")]
+    pub chainwork: Vec<u8>,
     /// The estimated size of the block and undo files on disk
     pub size_on_disk: u64,
     /// If the blocks are subject to pruning
@@ -467,25 +511,6 @@ impl ::serde::Serialize for EstimateMode {
     }
 }
 
-/// A wrapper around &[u8] that will be serialized as hexadecimal.
-/// If you have an `&[u8]`, you can `.into()` it into `HexBytes`.
-pub struct HexBytes<'a>(&'a [u8]);
-
-impl<'a> From<&'a [u8]> for HexBytes<'a> {
-    fn from(b: &'a [u8]) -> HexBytes<'a> {
-        HexBytes(b)
-    }
-}
-
-impl<'a> serde::Serialize for HexBytes<'a> {
-    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: serde::Serializer,
-    {
-        serializer.serialize_str(&hex::encode(self.0))
-    }
-}
-
 /// A wrapper around bitcoin::SigHashType that will be serialized
 /// according to what the RPC expects.
 pub struct SigHashType(bitcoin::SigHashType);
@@ -606,13 +631,6 @@ where
         .map_err(|_| D::Error::custom(&format!("error parsing difficulty: {}", s)))
 }
 
-///// deserialize_hex deserializes a hex-encoded byte array.
-//fn deserialize_hex<'de, D>(deserializer: D) -> Result<Vec<u8>, D::Error>
-//		where D: serde::Deserializer<'de> {
-//	let h = String::deserialize(deserializer)?;
-//	hex::decode(&h).map_err(|_| D::Error::custom(&format!("error parsing hex: {}", h)))
-//}
-
 /// deserialize_hex_array_opt deserializes a vector of hex-encoded byte arrays.
 fn deserialize_hex_array_opt<'de, D>(deserializer: D) -> Result<Option<Vec<Vec<u8>>>, D::Error>
 where
@@ -633,8 +651,14 @@ where
 #[cfg(test)]
 mod tests {
     use super::*;
-    use serde_json;
     use bitcoin_hashes::hex::FromHex;
+    use serde_json;
+
+    macro_rules! hex {
+        ($h:expr) => {
+            hex::decode(&$h).unwrap()
+        };
+    }
 
     macro_rules! deserializer {
         ($j:expr) => {
@@ -685,7 +709,7 @@ mod tests {
             weight: 760,
             height: 2,
             version: 1,
-            version_hex: Some("00000001".into()),
+            version_hex: Some(hex!("00000001")),
             merkleroot: hash!("20222eb90f5895556926c112bb5aa0df4ab5abc3107e21a6950aec3b2e3541e2"),
             tx: vec![hash!("20222eb90f5895556926c112bb5aa0df4ab5abc3107e21a6950aec3b2e3541e2")],
             time: 1296688946,
@@ -693,7 +717,7 @@ mod tests {
             nonce: 875942400,
             bits: "1d00ffff".into(),
             difficulty: 1u64.into(),
-            chainwork: "0000000000000000000000000000000000000000000000000000000300030003".into(),
+            chainwork: hex!("0000000000000000000000000000000000000000000000000000000300030003"),
             n_tx: 1,
             previousblockhash: Some(hash!(
                 "00000000b873e79784647a6c82962c70d228557d24a747ea4d1b8bbe878e1206"
@@ -737,14 +761,14 @@ mod tests {
             confirmations: 29341,
             height: 1384958,
             version: 536870912,
-            version_hex: Some("20000000".into()),
+            version_hex: Some(hex!("20000000")),
             merkleroot: hash!("33d8a6f622182a4e844022bbc8aa51c63f6476708ad5cc5c451f2933753440d7"),
             time: 1534935138,
             mediantime: Some(1534932055),
             nonce: 871182973,
             bits: "1959273b".into(),
             difficulty: 48174374u64.into(),
-            chainwork: "0000000000000000000000000000000000000000000000a3c78921878ecbafd4".into(),
+            chainwork: hex!("0000000000000000000000000000000000000000000000a3c78921878ecbafd4"),
             n_tx: 2647,
             previousblockhash: Some(hash!(
                 "000000000000002937dcaffd8367cfb05cd9ef2e3bd7a081de82696f70e719d9"
@@ -802,11 +826,12 @@ mod tests {
         assert_eq!(expected, serde_json::from_str(json).unwrap());
     }
 
+    //TODO(stevenroose) coinbase variant
     #[test]
     fn test_GetRawTransactionResult() {
         let expected = GetRawTransactionResult {
 			in_active_chain: None,
-			hex: "0200000001586bd02815cf5faabfec986a4e50d25dbee089bd2758621e61c5fab06c334af0000000006b483045022100e85425f6d7c589972ee061413bcf08dc8c8e589ce37b217535a42af924f0e4d602205c9ba9cb14ef15513c9d946fa1c4b797883e748e8c32171bdf6166583946e35c012103dae30a4d7870cd87b45dd53e6012f71318fdd059c1c2623b8cc73f8af287bb2dfeffffff021dc4260c010000001976a914f602e88b2b5901d8aab15ebe4a97cf92ec6e03b388ac00e1f505000000001976a914687ffeffe8cf4e4c038da46a9b1d37db385a472d88acfd211500".into(),
+			hex: hex!("0200000001586bd02815cf5faabfec986a4e50d25dbee089bd2758621e61c5fab06c334af0000000006b483045022100e85425f6d7c589972ee061413bcf08dc8c8e589ce37b217535a42af924f0e4d602205c9ba9cb14ef15513c9d946fa1c4b797883e748e8c32171bdf6166583946e35c012103dae30a4d7870cd87b45dd53e6012f71318fdd059c1c2623b8cc73f8af287bb2dfeffffff021dc4260c010000001976a914f602e88b2b5901d8aab15ebe4a97cf92ec6e03b388ac00e1f505000000001976a914687ffeffe8cf4e4c038da46a9b1d37db385a472d88acfd211500"),
 			txid: hash!("4a5b5266e1750488395ac15c0376c9d48abf45e4df620777fe8cff096f57aa91"),
 			hash: hash!("4a5b5266e1750488395ac15c0376c9d48abf45e4df620777fe8cff096f57aa91"),
 			size: 226,
@@ -818,7 +843,7 @@ mod tests {
 				vout: 0,
 				script_sig: GetRawTransactionResultVinScriptSig{
 					asm: "3045022100e85425f6d7c589972ee061413bcf08dc8c8e589ce37b217535a42af924f0e4d602205c9ba9cb14ef15513c9d946fa1c4b797883e748e8c32171bdf6166583946e35c[ALL] 03dae30a4d7870cd87b45dd53e6012f71318fdd059c1c2623b8cc73f8af287bb2d".into(),
-					hex: "483045022100e85425f6d7c589972ee061413bcf08dc8c8e589ce37b217535a42af924f0e4d602205c9ba9cb14ef15513c9d946fa1c4b797883e748e8c32171bdf6166583946e35c012103dae30a4d7870cd87b45dd53e6012f71318fdd059c1c2623b8cc73f8af287bb2d".into(),
+					hex: hex!("483045022100e85425f6d7c589972ee061413bcf08dc8c8e589ce37b217535a42af924f0e4d602205c9ba9cb14ef15513c9d946fa1c4b797883e748e8c32171bdf6166583946e35c012103dae30a4d7870cd87b45dd53e6012f71318fdd059c1c2623b8cc73f8af287bb2d"),
 				},
 				sequence: 4294967294,
 				txinwitness: None,
@@ -829,7 +854,7 @@ mod tests {
 				n: 0,
 				script_pub_key: GetRawTransactionResultVoutScriptPubKey{
 					asm: "OP_DUP OP_HASH160 f602e88b2b5901d8aab15ebe4a97cf92ec6e03b3 OP_EQUALVERIFY OP_CHECKSIG".into(),
-					hex: "76a914f602e88b2b5901d8aab15ebe4a97cf92ec6e03b388ac".into(),
+					hex: hex!("76a914f602e88b2b5901d8aab15ebe4a97cf92ec6e03b388ac"),
 					req_sigs: 1,
 					type_: "pubkeyhash".into(),
 					addresses: vec![addr!("n3wk1KcFnVibGdqQa6jbwoR8gbVtRbYM4M")],
@@ -839,7 +864,7 @@ mod tests {
 				n: 1,
 				script_pub_key: GetRawTransactionResultVoutScriptPubKey{
 					asm: "OP_DUP OP_HASH160 687ffeffe8cf4e4c038da46a9b1d37db385a472d OP_EQUALVERIFY OP_CHECKSIG".into(),
-					hex: "76a914687ffeffe8cf4e4c038da46a9b1d37db385a472d88ac".into(),
+					hex: hex!("76a914687ffeffe8cf4e4c038da46a9b1d37db385a472d88ac"),
 					req_sigs: 1,
 					type_: "pubkeyhash".into(),
 					addresses: vec![addr!("mq3VuL2K63VKWkp8vvqRiJPre4h9awrHfA")],
@@ -939,7 +964,7 @@ mod tests {
 					abandoned: None,
 				},
 			],
-			hex: "0200000001586bd02815cf5faabfec986a4e50d25dbee089bd2758621e61c5fab06c334af0000000006b483045022100e85425f6d7c589972ee061413bcf08dc8c8e589ce37b217535a42af924f0e4d602205c9ba9cb14ef15513c9d946fa1c4b797883e748e8c32171bdf6166583946e35c012103dae30a4d7870cd87b45dd53e6012f71318fdd059c1c2623b8cc73f8af287bb2dfeffffff021dc4260c010000001976a914f602e88b2b5901d8aab15ebe4a97cf92ec6e03b388ac00e1f505000000001976a914687ffeffe8cf4e4c038da46a9b1d37db385a472d88acfd211500".into(),
+			hex: hex!("0200000001586bd02815cf5faabfec986a4e50d25dbee089bd2758621e61c5fab06c334af0000000006b483045022100e85425f6d7c589972ee061413bcf08dc8c8e589ce37b217535a42af924f0e4d602205c9ba9cb14ef15513c9d946fa1c4b797883e748e8c32171bdf6166583946e35c012103dae30a4d7870cd87b45dd53e6012f71318fdd059c1c2623b8cc73f8af287bb2dfeffffff021dc4260c010000001976a914f602e88b2b5901d8aab15ebe4a97cf92ec6e03b388ac00e1f505000000001976a914687ffeffe8cf4e4c038da46a9b1d37db385a472d88acfd211500"),
 		};
         let json = r#"
 			{
@@ -978,7 +1003,7 @@ mod tests {
 			value: Amount::from_btc(1.0),
 			script_pub_key: GetRawTransactionResultVoutScriptPubKey{
 				asm: "OP_DUP OP_HASH160 687ffeffe8cf4e4c038da46a9b1d37db385a472d OP_EQUALVERIFY OP_CHECKSIG".into(),
-				hex: "76a914687ffeffe8cf4e4c038da46a9b1d37db385a472d88ac".into(),
+				hex: hex!("76a914687ffeffe8cf4e4c038da46a9b1d37db385a472d88ac"),
 				req_sigs: 1,
 				type_: "pubkeyhash".into(),
 				addresses: vec![addr!("mq3VuL2K63VKWkp8vvqRiJPre4h9awrHfA")],
@@ -1084,19 +1109,6 @@ mod tests {
             assert_eq!(d, vector.1);
         }
     }
-
-    //#[test]
-    //fn test_deserialize_hex() {
-    //	let vectors = vec![
-    //		(r#""01020304a1ff""#, vec![1,2,3,4,161,255]),
-    //		(r#""5df6e0e2761359d30a8275058e299fcc0381534545f55cf43e41983f5d4c9456""#,
-    //			sha256d::Hash::from_data(&[]).as_bytes()[..].into()),
-    //	];
-    //	for vector in vectors.into_iter() {
-    //		let d = deserialize_hex(deserializer!(vector.0)).unwrap();
-    //		assert_eq!(d, vector.1);
-    //	}
-    //}
 
     #[test]
     fn test_deserialize_hex_array_opt() {
