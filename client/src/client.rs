@@ -259,7 +259,7 @@ pub trait RpcApi: Sized {
         include_watchonly: Option<bool>,
     ) -> Result<json::GetTransactionResult> {
         let mut args = [into_json(txid)?, opt_into_json(include_watchonly)?];
-        self.call("getrawtransaction", handle_defaults(&mut args, &[null()]))
+        self.call("gettransaction", handle_defaults(&mut args, &[null()]))
     }
 
     fn get_tx_out(
