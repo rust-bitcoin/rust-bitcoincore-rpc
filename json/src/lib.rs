@@ -22,6 +22,9 @@ extern crate bitcoin_hashes;
 extern crate hex;
 extern crate num_bigint;
 extern crate secp256k1;
+// `macro_use` is needed for v1.24.0 compilation.
+#[allow(unused)]
+#[macro_use]
 extern crate serde;
 extern crate serde_json;
 
@@ -62,12 +65,13 @@ pub mod serde_hex {
 
     pub mod opt {
         use hex;
-        use serde::{de::Error, Deserializer, Serializer};
+        use serde::de::Error;
+        use serde::{Deserializer, Serializer};
 
         pub fn serialize<S: Serializer>(b: &Option<Vec<u8>>, s: S) -> Result<S::Ok, S::Error> {
-            match b {
+            match *b {
                 None => s.serialize_none(),
-                Some(b) => s.serialize_str(&hex::encode(&b)),
+                Some(ref b) => s.serialize_str(&hex::encode(&b)),
             }
         }
 
