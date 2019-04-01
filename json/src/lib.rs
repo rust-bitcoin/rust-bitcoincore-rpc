@@ -22,9 +22,8 @@ extern crate bitcoin_hashes;
 extern crate hex;
 extern crate num_bigint;
 extern crate secp256k1;
-// `macro_use` is needed for v1.24.0 compilation.
 #[allow(unused)]
-#[macro_use]
+#[macro_use] // `macro_use` is needed for v1.24.0 compilation.
 extern crate serde;
 extern crate serde_json;
 

@@ -57,7 +57,6 @@ where
 }
 
 /// Shorthand for `serde_json::Value::Null`.
-#[allow(unused)]
 fn null() -> serde_json::Value {
     serde_json::Value::Null
 }
