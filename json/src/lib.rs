@@ -46,6 +46,7 @@ use serde_json::Value;
 /// The module is compatible with the serde attribute.
 pub mod serde_hex {
     use hex;
+    use serde::de::Error;
     use serde::{Deserializer, Serializer};
 
     pub fn serialize<S: Serializer>(b: &Vec<u8>, s: S) -> Result<S::Ok, S::Error> {
@@ -53,8 +54,6 @@ pub mod serde_hex {
     }
 
     pub fn deserialize<'de, D: Deserializer<'de>>(d: D) -> Result<Vec<u8>, D::Error> {
-        use serde::de::Error;
-
         let hex_str: String = ::serde::Deserialize::deserialize(d)?;
         Ok(hex::decode(hex_str).map_err(D::Error::custom)?)
     }
@@ -95,7 +94,7 @@ pub struct GetBlockResult {
     pub weight: usize,
     pub height: usize,
     pub version: u32,
-    #[serde(with = "::serde_hex::opt")]
+    #[serde(default, with = "::serde_hex::opt")]
     pub version_hex: Option<Vec<u8>>,
     pub merkleroot: sha256d::Hash,
     pub tx: Vec<sha256d::Hash>,
@@ -119,7 +118,7 @@ pub struct GetBlockHeaderResult {
     pub confirmations: usize,
     pub height: usize,
     pub version: u32,
-    #[serde(with = "::serde_hex::opt")]
+    #[serde(default, with = "::serde_hex::opt")]
     pub version_hex: Option<Vec<u8>>,
     pub merkleroot: sha256d::Hash,
     pub time: usize,
@@ -168,7 +167,8 @@ impl GetRawTransactionResultVinScriptSig {
 pub struct GetRawTransactionResultVin {
     pub sequence: u32,
     /// The raw scriptSig in case of a coinbase tx.
-    pub coinbase: Option<String>,
+    #[serde(default, with = "::serde_hex::opt")]
+    pub coinbase: Option<Vec<u8>>,
     /// Not provided for coinbase txs.
     pub txid: Option<sha256d::Hash>,
     /// Not provided for coinbase txs.
