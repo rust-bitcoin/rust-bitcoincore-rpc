@@ -21,7 +21,6 @@ extern crate bitcoin_amount;
 extern crate bitcoin_hashes;
 extern crate hex;
 extern crate num_bigint;
-extern crate secp256k1;
 // `macro_use` is needed for v1.24.0 compilation.
 #[allow(unused)]
 #[macro_use]
@@ -33,12 +32,10 @@ pub use getters::*;
 
 use std::str::FromStr;
 
-use bitcoin::blockdata::script::Script;
-use bitcoin::util::address::Address;
+use bitcoin::{Address, Script, PublicKey};
 use bitcoin_amount::Amount;
 use bitcoin_hashes::sha256d;
 use num_bigint::BigUint;
-use secp256k1::PublicKey;
 use serde::de::Error as SerdeError;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
