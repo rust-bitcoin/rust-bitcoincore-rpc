@@ -16,8 +16,6 @@ use hex;
 use jsonrpc;
 use serde_json;
 
-use json::GetterError;
-
 /// The error type for errors produced in this library.
 #[derive(Debug)]
 pub enum Error {
@@ -48,15 +46,6 @@ impl From<serde_json::error::Error> for Error {
 impl From<bitcoin::consensus::encode::Error> for Error {
     fn from(e: bitcoin::consensus::encode::Error) -> Error {
         Error::BitcoinSerialization(e)
-    }
-}
-
-impl From<GetterError> for Error {
-    fn from(e: GetterError) -> Error {
-        match e {
-            GetterError::FromHex(e) => Error::FromHex(e),
-            GetterError::BitcoinSerialization(e) => Error::BitcoinSerialization(e),
-        }
     }
 }
 

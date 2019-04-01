@@ -10,15 +10,15 @@
 
 use std::result;
 
-use hex;
 use bitcoin;
+use hex;
 use jsonrpc;
 use serde;
 use serde_json;
 
-use bitcoin_hashes::sha256d;
 use bitcoin::{Address, Block, BlockHeader, Transaction};
 use bitcoin_amount::Amount;
+use bitcoin_hashes::sha256d;
 use log::Level::Trace;
 use num_bigint::BigUint;
 use secp256k1::Signature;
@@ -38,6 +38,11 @@ where
     T: serde::ser::Serialize,
 {
     Ok(serde_json::to_value(val)?)
+}
+
+/// Shorthand for converting bytes into a serde_json::Value.
+fn into_json_hex<T: AsRef<[u8]>>(val: T) -> Result<serde_json::Value> {
+    Ok(serde_json::to_value(hex::encode(val))?)
 }
 
 /// Shorthand for converting an Option into an Option<serde_json::Value>.
@@ -99,7 +104,7 @@ fn handle_defaults<'a, 'b>(
     let required_num = args.len() - defaults.len();
 
     if let Some(i) = first_non_null_optional_idx {
-        &args[..i+1]
+        &args[..i + 1]
     } else {
         &args[..required_num]
     }
@@ -186,10 +191,7 @@ pub trait RpcApi: Sized {
         Ok(bitcoin::consensus::encode::deserialize(&bytes)?)
     }
 
-    fn get_block_header_verbose(
-        &self,
-        hash: &sha256d::Hash,
-    ) -> Result<json::GetBlockHeaderResult> {
+    fn get_block_header_verbose(&self, hash: &sha256d::Hash) -> Result<json::GetBlockHeaderResult> {
         self.call("getblockheader", &[into_json(hash)?, true.into()])
     }
 
@@ -247,11 +249,7 @@ pub trait RpcApi: Sized {
         self.call("getrawtransaction", handle_defaults(&mut args, &[null()]))
     }
 
-    fn get_received_by_address(
-        &self,
-        address: &Address,
-        minconf: Option<u32>,
-    ) -> Result<Amount> {
+    fn get_received_by_address(&self, address: &Address, minconf: Option<u32>) -> Result<Amount> {
         let mut args = [into_json(address)?, opt_into_json(minconf)?];
         self.call("getreceivedbyaddress", handle_defaults(&mut args, &[null()]))
     }
@@ -345,15 +343,15 @@ pub trait RpcApi: Sized {
         Ok(bitcoin::consensus::encode::deserialize(&bytes)?)
     }
 
-    fn sign_raw_transaction(
+    fn sign_raw_transaction<B: AsRef<[u8]>>(
         &self,
-        tx: json::HexBytes,
+        tx: B,
         utxos: Option<&[json::SignRawTransactionInput]>,
         private_keys: Option<&[&str]>,
         sighash_type: Option<json::SigHashType>,
     ) -> Result<json::SignRawTransactionResult> {
         let mut args = [
-            into_json(tx)?,
+            into_json_hex(tx)?,
             opt_into_json(utxos)?,
             opt_into_json(private_keys)?,
             opt_into_json(sighash_type)?,
@@ -366,30 +364,24 @@ pub trait RpcApi: Sized {
         self.call("signrawtransaction", handle_defaults(&mut args, &defaults))
     }
 
-    fn sign_raw_transaction_with_key(
+    fn sign_raw_transaction_with_key<B: AsRef<[u8]>>(
         &self,
-        tx: json::HexBytes,
+        tx: B,
         privkeys: &[&str],
         prevtxs: Option<&[json::SignRawTransactionInput]>,
         sighash_type: Option<json::SigHashType>,
     ) -> Result<json::SignRawTransactionResult> {
         let mut args = [
-            into_json(tx)?,
+            into_json_hex(tx)?,
             into_json(privkeys)?,
             opt_into_json(prevtxs)?,
             opt_into_json(sighash_type)?,
         ];
-        let defaults = [
-            into_json::<&[json::SignRawTransactionInput]>(&[])?,
-            null(),
-        ];
+        let defaults = [into_json::<&[json::SignRawTransactionInput]>(&[])?, null()];
         self.call("signrawtransactionwithkey", handle_defaults(&mut args, &defaults))
     }
 
-    fn test_mempool_accept(
-        &self,
-        rawtxs: &[&str],
-    ) -> Result<Vec<json::TestMempoolAccept>> {
+    fn test_mempool_accept(&self, rawtxs: &[&str]) -> Result<Vec<json::TestMempoolAccept>> {
         self.call("testmempoolaccept", &[into_json(rawtxs)?])
     }
 
@@ -397,13 +389,13 @@ pub trait RpcApi: Sized {
         self.call("stop", &[])
     }
 
-    fn sign_raw_transaction_with_wallet(
+    fn sign_raw_transaction_with_wallet<B: AsRef<[u8]>>(
         &self,
-        tx: json::HexBytes,
+        tx: B,
         utxos: Option<&[json::SignRawTransactionInput]>,
         sighash_type: Option<json::SigHashType>,
     ) -> Result<json::SignRawTransactionResult> {
-        let mut args = [into_json(tx)?, opt_into_json(utxos)?, opt_into_json(sighash_type)?];
+        let mut args = [into_json_hex(tx)?, opt_into_json(utxos)?, opt_into_json(sighash_type)?];
         let defaults = [into_json::<&[json::SignRawTransactionInput]>(&[])?, null()];
         self.call("signrawtransactionwithwallet", handle_defaults(&mut args, &defaults))
     }
@@ -425,7 +417,7 @@ pub trait RpcApi: Sized {
     fn get_new_address(
         &self,
         account: Option<&str>,
-        address_type: Option<json::AddressType>
+        address_type: Option<json::AddressType>,
     ) -> Result<String> {
         self.call("getnewaddress", &[opt_into_json(account)?, opt_into_json(address_type)?])
     }
@@ -433,21 +425,13 @@ pub trait RpcApi: Sized {
     /// Mine `block_num` blocks and pay coinbase to `address`
     ///
     /// Returns hashes of the generated blocks
-    fn generate_to_address(
-        &self,
-        block_num: u64,
-        address: &str,
-    ) -> Result<Vec<sha256d::Hash>> {
+    fn generate_to_address(&self, block_num: u64, address: &str) -> Result<Vec<sha256d::Hash>> {
         self.call("generatetoaddress", &[block_num.into(), address.into()])
     }
 
     /// Mine up to block_num blocks immediately (before the RPC call returns)
     /// to an address in the wallet.
-    fn generate(
-        &self,
-        block_num: u64,
-        maxtries: Option<u64>,
-    ) -> Result<Vec<sha256d::Hash>> {
+    fn generate(&self, block_num: u64, maxtries: Option<u64>) -> Result<Vec<sha256d::Hash>> {
         self.call("generate", &[block_num.into(), opt_into_json(maxtries)?])
     }
 
@@ -469,7 +453,7 @@ pub trait RpcApi: Sized {
             into_json(amount)?,
             opt_into_json(comment)?,
             opt_into_json(comment_to)?,
-            opt_into_json(substract_fee)?
+            opt_into_json(substract_fee)?,
         ];
         self.call("sendtoaddress", handle_defaults(&mut args, &["".into(), "".into(), null()]))
     }
@@ -525,11 +509,7 @@ pub trait RpcApi: Sized {
     /// 1. `blockhash`: Block hash to wait for.
     /// 2. `timeout`: Time in milliseconds to wait for a response. 0
     /// indicates no timeout.
-    fn wait_for_block(
-        &self,
-        blockhash: &sha256d::Hash,
-        timeout: u64,
-    ) -> Result<json::BlockRef> {
+    fn wait_for_block(&self, blockhash: &sha256d::Hash, timeout: u64) -> Result<json::BlockRef> {
         let args = [into_json(blockhash)?, into_json(timeout)?];
         self.call("waitforblock", &args)
     }
