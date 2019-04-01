@@ -46,6 +46,7 @@ use serde_json::Value;
 /// The module is compatible with the serde attribute.
 pub mod serde_hex {
     use hex;
+    use serde::de::Error;
     use serde::{Deserializer, Serializer};
 
     pub fn serialize<S: Serializer>(b: &Vec<u8>, s: S) -> Result<S::Ok, S::Error> {
@@ -53,8 +54,6 @@ pub mod serde_hex {
     }
 
     pub fn deserialize<'de, D: Deserializer<'de>>(d: D) -> Result<Vec<u8>, D::Error> {
-        use serde::de::Error;
-
         let hex_str: String = ::serde::Deserialize::deserialize(d)?;
         Ok(hex::decode(hex_str).map_err(D::Error::custom)?)
     }
@@ -95,7 +94,7 @@ pub struct GetBlockResult {
     pub weight: usize,
     pub height: usize,
     pub version: u32,
-    #[serde(with = "::serde_hex::opt")]
+    #[serde(default, with = "::serde_hex::opt")]
     pub version_hex: Option<Vec<u8>>,
     pub merkleroot: sha256d::Hash,
     pub tx: Vec<sha256d::Hash>,
@@ -119,7 +118,7 @@ pub struct GetBlockHeaderResult {
     pub confirmations: usize,
     pub height: usize,
     pub version: u32,
-    #[serde(with = "::serde_hex::opt")]
+    #[serde(default, with = "::serde_hex::opt")]
     pub version_hex: Option<Vec<u8>>,
     pub merkleroot: sha256d::Hash,
     pub time: usize,
@@ -166,12 +165,28 @@ impl GetRawTransactionResultVinScriptSig {
 #[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct GetRawTransactionResultVin {
-    pub txid: sha256d::Hash,
-    pub vout: u32,
-    pub script_sig: GetRawTransactionResultVinScriptSig,
     pub sequence: u32,
+    /// The raw scriptSig in case of a coinbase tx.
+    #[serde(default, with = "::serde_hex::opt")]
+    pub coinbase: Option<Vec<u8>>,
+    /// Not provided for coinbase txs.
+    pub txid: Option<sha256d::Hash>,
+    /// Not provided for coinbase txs.
+    pub vout: Option<u32>,
+    /// The scriptSig in case of a non-coinbase tx.
+    pub script_sig: Option<GetRawTransactionResultVinScriptSig>,
+    /// Not provided for coinbase txs.
     #[serde(default, deserialize_with = "deserialize_hex_array_opt")]
     pub txinwitness: Option<Vec<Vec<u8>>>,
+}
+
+impl GetRawTransactionResultVin {
+    /// Whether this input is from a coinbase tx.
+    /// The [txid], [vout] and [script_sig] fields are not provided
+    /// for coinbase transactions.
+    pub fn is_coinbase(&self) -> bool {
+        self.coinbase.is_some()
+    }
 }
 
 #[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
@@ -223,6 +238,11 @@ pub struct GetRawTransactionResult {
 }
 
 impl GetRawTransactionResult {
+    /// Whether this tx is a coinbase tx.
+    pub fn is_coinbase(&self) -> bool {
+        self.vin.len() == 1 && self.vin[0].is_coinbase()
+    }
+
     pub fn transaction(&self) -> Result<Transaction, encode::Error> {
         Ok(encode::deserialize(&self.hex)?)
     }
@@ -869,12 +889,13 @@ mod tests {
 			version: 2,
 			locktime: 1384957,
 			vin: vec![GetRawTransactionResultVin{
-				txid: hash!("f04a336cb0fac5611e625827bd89e0be5dd2504e6a98ecbfaa5fcf1528d06b58"),
-				vout: 0,
-				script_sig: GetRawTransactionResultVinScriptSig{
+				txid: Some(hash!("f04a336cb0fac5611e625827bd89e0be5dd2504e6a98ecbfaa5fcf1528d06b58")),
+				vout: Some(0),
+				coinbase: None,
+				script_sig: Some(GetRawTransactionResultVinScriptSig{
 					asm: "3045022100e85425f6d7c589972ee061413bcf08dc8c8e589ce37b217535a42af924f0e4d602205c9ba9cb14ef15513c9d946fa1c4b797883e748e8c32171bdf6166583946e35c[ALL] 03dae30a4d7870cd87b45dd53e6012f71318fdd059c1c2623b8cc73f8af287bb2d".into(),
 					hex: hex!("483045022100e85425f6d7c589972ee061413bcf08dc8c8e589ce37b217535a42af924f0e4d602205c9ba9cb14ef15513c9d946fa1c4b797883e748e8c32171bdf6166583946e35c012103dae30a4d7870cd87b45dd53e6012f71318fdd059c1c2623b8cc73f8af287bb2d"),
-				},
+				}),
 				sequence: 4294967294,
 				txinwitness: None,
 
@@ -966,7 +987,7 @@ mod tests {
             expected.transaction().unwrap().input[0].previous_output.txid,
             hash!("f04a336cb0fac5611e625827bd89e0be5dd2504e6a98ecbfaa5fcf1528d06b58")
         );
-        assert!(expected.vin[0].script_sig.script().is_ok());
+        assert!(expected.vin[0].script_sig.as_ref().unwrap().script().is_ok());
         assert!(expected.vout[0].script_pub_key.script().is_ok());
     }
 
