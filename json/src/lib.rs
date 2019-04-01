@@ -163,10 +163,10 @@ pub struct GetRawTransactionResult {
     pub locktime: u32,
     pub vin: Vec<GetRawTransactionResultVin>,
     pub vout: Vec<GetRawTransactionResultVout>,
-    pub blockhash: sha256d::Hash,
-    pub confirmations: usize,
-    pub time: usize,
-    pub blocktime: usize,
+    pub blockhash: Option<sha256d::Hash>,
+    pub confirmations: Option<usize>,
+    pub time: Option<usize>,
+    pub blocktime: Option<usize>,
 }
 
 /// Enum to represent the BIP125 replacable status for a transaction.
@@ -845,10 +845,10 @@ mod tests {
 					addresses: vec![addr!("mq3VuL2K63VKWkp8vvqRiJPre4h9awrHfA")],
 				},
 			}],
-			blockhash: hash!("00000000000000039dc06adbd7666a8d1df9acf9d0329d73651b764167d63765"),
-			confirmations: 29446,
-			time: 1534935138,
-			blocktime: 1534935138,
+			blockhash: Some(hash!("00000000000000039dc06adbd7666a8d1df9acf9d0329d73651b764167d63765")),
+			confirmations: Some(29446),
+			time: Some(1534935138),
+			blocktime: Some(1534935138),
 		};
         let json = r#"
 			{
