@@ -28,13 +28,10 @@ extern crate secp256k1;
 extern crate serde;
 extern crate serde_json;
 
-pub mod getters;
-pub use getters::*;
-
 use std::str::FromStr;
 
-use bitcoin::blockdata::script::Script;
-use bitcoin::util::address::Address;
+use bitcoin::consensus::encode;
+use bitcoin::{Address, Script, Transaction};
 use bitcoin_amount::Amount;
 use bitcoin_hashes::sha256d;
 use num_bigint::BigUint;
@@ -161,6 +158,12 @@ pub struct GetRawTransactionResultVinScriptSig {
     pub hex: Vec<u8>,
 }
 
+impl GetRawTransactionResultVinScriptSig {
+    pub fn script(&self) -> Result<Script, encode::Error> {
+        Ok(Script::from(self.hex.clone()))
+    }
+}
+
 #[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct GetRawTransactionResultVin {
@@ -182,6 +185,12 @@ pub struct GetRawTransactionResultVoutScriptPubKey {
     #[serde(rename = "type")]
     pub type_: String, //TODO(stevenroose) consider enum
     pub addresses: Vec<Address>,
+}
+
+impl GetRawTransactionResultVoutScriptPubKey {
+    pub fn script(&self) -> Result<Script, encode::Error> {
+        Ok(Script::from(self.hex.clone()))
+    }
 }
 
 #[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
@@ -212,6 +221,12 @@ pub struct GetRawTransactionResult {
     pub confirmations: Option<usize>,
     pub time: Option<usize>,
     pub blocktime: Option<usize>,
+}
+
+impl GetRawTransactionResult {
+    pub fn transaction(&self) -> Result<Transaction, encode::Error> {
+        Ok(encode::deserialize(&self.hex)?)
+    }
 }
 
 /// Enum to represent the BIP125 replacable status for a transaction.
@@ -279,6 +294,12 @@ pub struct GetTransactionResult {
     pub hex: Vec<u8>,
 }
 
+impl GetTransactionResult {
+    pub fn transaction(&self) -> Result<Transaction, encode::Error> {
+        Ok(encode::deserialize(&self.hex)?)
+    }
+}
+
 #[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct GetTxOutResult {
@@ -324,6 +345,12 @@ pub struct SignRawTransactionResult {
     pub complete: bool,
     #[serde(default)]
     pub errors: Vec<SignRawTransactionResultError>,
+}
+
+impl SignRawTransactionResult {
+    pub fn transaction(&self) -> Result<Transaction, encode::Error> {
+        Ok(encode::deserialize(&self.hex)?)
+    }
 }
 
 #[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
