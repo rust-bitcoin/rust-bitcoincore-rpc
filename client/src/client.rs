@@ -450,21 +450,28 @@ pub trait RpcApi: Sized {
 
     fn send_to_address(
         &self,
-        addr: &str,
+        address: &Address,
         amount: f64,
         comment: Option<&str>,
         comment_to: Option<&str>,
         substract_fee: Option<bool>,
+        replaceable: Option<bool>,
+        confirmation_target: Option<u32>,
+        estimate_mode: Option<json::EstimateMode>,
     ) -> Result<sha256d::Hash> {
         let mut args = [
-            into_json(addr)?,
+            address.to_string().into(),
             into_json(amount)?,
             opt_into_json(comment)?,
             opt_into_json(comment_to)?,
             opt_into_json(substract_fee)?,
+            opt_into_json(replaceable)?,
+            opt_into_json(confirmation_target)?,
+            opt_into_json(estimate_mode)?,
         ];
-        self.call("sendtoaddress", handle_defaults(&mut args, &["".into(), "".into(), null()]))
+        self.call("sendtoaddress", handle_defaults(&mut args, &vec![null(); 6]))
     }
+
     /// Returns data about each connected network node as an array of
     /// [`PeerInfo`][]
     ///
