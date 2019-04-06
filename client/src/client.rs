@@ -21,7 +21,7 @@ use bitcoin_amount::Amount;
 use bitcoin_hashes::sha256d;
 use log::Level::Trace;
 use num_bigint::BigUint;
-use secp256k1::Signature;
+use secp256k1::{SecretKey, Signature};
 use std::collections::HashMap;
 
 use error::*;
@@ -146,14 +146,15 @@ pub trait RpcApi: Sized {
         self.call("backupwallet", handle_defaults(&mut args, &[null()]))
     }
 
-    // TODO(stevenroose) use Privkey type
     // TODO(dpc): should we convert? Or maybe we should have two methods?
     //            just like with `getrawtransaction` it is sometimes useful
     //            to just get the string dump, without converting it into
     //            `bitcoin` type; Maybe we should made it `Queryable` by
     //            `Address`!
-    fn dump_priv_key(&self, address: &Address) -> Result<String> {
-        self.call("dumpprivkey", &[into_json(address)?])
+    fn dump_priv_key(&self, address: &Address) -> Result<SecretKey> {
+        let hex: String = self.call("dumpprivkey", &[address.to_string().into()])?;
+        let bytes = hex::decode(hex)?;
+        Ok(secp256k1::SecretKey::from_slice(&bytes)?)
     }
 
     fn encrypt_wallet(&self, passphrase: &str) -> Result<()> {
@@ -274,11 +275,11 @@ pub trait RpcApi: Sized {
 
     fn import_priv_key(
         &self,
-        privkey: &str,
+        privkey: &SecretKey,
         label: Option<&str>,
         rescan: Option<bool>,
     ) -> Result<()> {
-        let mut args = [into_json(privkey)?, into_json(label)?, opt_into_json(rescan)?];
+        let mut args = [privkey.to_string().into(), into_json(label)?, opt_into_json(rescan)?];
         self.call("importprivkey", handle_defaults(&mut args, &[into_json("")?, null()]))
     }
 
