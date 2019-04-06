@@ -491,10 +491,10 @@ pub trait RpcApi: Sized {
         &self,
         minconf: Option<usize>,
         maxconf: Option<usize>,
-        addresses: Option<Vec<&Address>>,
+        addresses: Option<&[Address]>,
         include_unsafe: Option<bool>,
-        query_options: Option<HashMap<&str, &str>>,
-    ) -> Result<Vec<json::ListUnspentResult>> {
+        query_options: Option<json::ListUnspentQueryOptions>,
+    ) -> Result<Vec<json::ListUnspentResultEntry>> {
         let mut args = [
             opt_into_json(minconf)?,
             opt_into_json(maxconf)?,
