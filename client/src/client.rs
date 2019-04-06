@@ -109,6 +109,17 @@ fn handle_defaults<'a, 'b>(
     }
 }
 
+/// Convert a possible-null result into an Option.
+fn opt_result<T: for<'a> serde::de::Deserialize<'a>>(
+    result: serde_json::Value,
+) -> Result<Option<T>> {
+    if result == serde_json::Value::Null {
+        Ok(None)
+    } else {
+        Ok(serde_json::from_value(result)?)
+    }
+}
+
 pub trait RpcApi: Sized {
     /// Call a `cmd` rpc with given `args` list
     fn call<T: for<'a> serde::de::Deserialize<'a>>(
@@ -270,7 +281,7 @@ pub trait RpcApi: Sized {
         include_mempool: Option<bool>,
     ) -> Result<Option<json::GetTxOutResult>> {
         let mut args = [into_json(txid)?, into_json(vout)?, opt_into_json(include_mempool)?];
-        self.call("gettxout", handle_defaults(&mut args, &[null()]))
+        opt_result(self.call("gettxout", handle_defaults(&mut args, &[null()]))?)
     }
 
     fn import_priv_key(
