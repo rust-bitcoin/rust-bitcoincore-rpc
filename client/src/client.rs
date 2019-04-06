@@ -327,25 +327,24 @@ pub trait RpcApi: Sized {
     fn create_raw_transaction_hex(
         &self,
         utxos: &[json::CreateRawTransactionInput],
-        outs: Option<&HashMap<String, f64>>,
+        outs: &HashMap<String, f64>,
         locktime: Option<i64>,
         replaceable: Option<bool>,
     ) -> Result<String> {
         let mut args = [
             into_json(utxos)?,
-            opt_into_json(outs)?,
+            into_json(outs)?,
             opt_into_json(locktime)?,
             opt_into_json(replaceable)?,
         ];
-        let defaults =
-            [into_json::<&[json::CreateRawTransactionInput]>(&[])?, into_json(0i64)?, null()];
+        let defaults = [into_json(0i64)?, null()];
         self.call("createrawtransaction", handle_defaults(&mut args, &defaults))
     }
 
     fn create_raw_transaction(
         &self,
         utxos: &[json::CreateRawTransactionInput],
-        outs: Option<&HashMap<String, f64>>,
+        outs: &HashMap<String, f64>,
         locktime: Option<i64>,
         replaceable: Option<bool>,
     ) -> Result<Transaction> {
