@@ -13,7 +13,7 @@
 extern crate bitcoin;
 extern crate bitcoincore_rpc;
 
-use bitcoincore_rpc::{RpcApi, Client, Error};
+use bitcoincore_rpc::{Client, Error, RpcApi};
 
 fn main_result() -> Result<(), Error> {
     let mut args = std::env::args();
