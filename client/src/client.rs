@@ -139,7 +139,7 @@ pub trait RpcApi: Sized {
     fn add_multisig_address(
         &self,
         nrequired: usize,
-        keys: Vec<json::PubKeyOrAddress>,
+        keys: &[json::PubKeyOrAddress],
         label: Option<&str>,
         address_type: Option<json::AddressType>,
     ) -> Result<json::AddMultiSigAddressResult> {
@@ -261,7 +261,7 @@ pub trait RpcApi: Sized {
     }
 
     fn get_received_by_address(&self, address: &Address, minconf: Option<u32>) -> Result<Amount> {
-        let mut args = [into_json(address)?, opt_into_json(minconf)?];
+        let mut args = [address.to_string().into(), opt_into_json(minconf)?];
         self.call("getreceivedbyaddress", handle_defaults(&mut args, &[null()]))
     }
 
@@ -416,7 +416,7 @@ pub trait RpcApi: Sized {
         signature: &Signature,
         message: &str,
     ) -> Result<bool> {
-        let args = [into_json(address)?, into_json(signature)?, into_json(message)?];
+        let args = [address.to_string().into(), signature.to_string().into(), into_json(message)?];
         self.call("verifymessage", &args)
     }
 
