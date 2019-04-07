@@ -559,10 +559,7 @@ impl RpcApi for Client {
         cmd: &str,
         args: &[serde_json::Value],
     ) -> Result<T> {
-        // Get rid of to_owned after
-        // https://github.com/apoelstra/rust-jsonrpc/pull/19
-        // lands
-        let req = self.client.build_request(cmd.to_owned(), args.to_owned());
+        let req = self.client.build_request(&cmd, &args);
         if log_enabled!(Trace) {
             trace!("JSON-RPC request: {}", serde_json::to_string(&req).unwrap());
         }
