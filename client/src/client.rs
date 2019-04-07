@@ -15,6 +15,7 @@ use hex;
 use jsonrpc;
 use serde;
 use serde_json;
+use secp256k1;
 
 use bitcoin::{Address, Block, BlockHeader, Transaction};
 use bitcoin_amount::Amount;
