@@ -1,4 +1,15 @@
 
+# v0.4.0
+
+- add RawTx trait for commands that take raw transactions
+- update jsonrpc dependency to v0.11.0
+- fix for create_raw_transaction
+- fix for send_to_address
+- fix for get_new_address
+- fix for get_tx_out
+- fix for get_raw_transaction_verbose
+- use `secp256k1::SecretKey` type in API
+
 # v0.3.0
 
 - removed the GetTransaction and GetScript traits
