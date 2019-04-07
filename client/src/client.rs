@@ -15,13 +15,14 @@ use hex;
 use jsonrpc;
 use serde;
 use serde_json;
+use secp256k1;
 
 use bitcoin::{Address, Block, BlockHeader, Transaction};
 use bitcoin_amount::Amount;
 use bitcoin_hashes::sha256d;
 use log::Level::Trace;
 use num_bigint::BigUint;
-use secp256k1::Signature;
+use secp256k1::{SecretKey, Signature};
 use std::collections::HashMap;
 
 use error::*;
@@ -109,6 +110,17 @@ fn handle_defaults<'a, 'b>(
     }
 }
 
+/// Convert a possible-null result into an Option.
+fn opt_result<T: for<'a> serde::de::Deserialize<'a>>(
+    result: serde_json::Value,
+) -> Result<Option<T>> {
+    if result == serde_json::Value::Null {
+        Ok(None)
+    } else {
+        Ok(serde_json::from_value(result)?)
+    }
+}
+
 pub trait RpcApi: Sized {
     /// Call a `cmd` rpc with given `args` list
     fn call<T: for<'a> serde::de::Deserialize<'a>>(
@@ -128,7 +140,7 @@ pub trait RpcApi: Sized {
     fn add_multisig_address(
         &self,
         nrequired: usize,
-        keys: Vec<json::PubKeyOrAddress>,
+        keys: &[json::PubKeyOrAddress],
         label: Option<&str>,
         address_type: Option<json::AddressType>,
     ) -> Result<json::AddMultiSigAddressResult> {
@@ -146,14 +158,15 @@ pub trait RpcApi: Sized {
         self.call("backupwallet", handle_defaults(&mut args, &[null()]))
     }
 
-    // TODO(stevenroose) use Privkey type
     // TODO(dpc): should we convert? Or maybe we should have two methods?
     //            just like with `getrawtransaction` it is sometimes useful
     //            to just get the string dump, without converting it into
     //            `bitcoin` type; Maybe we should made it `Queryable` by
     //            `Address`!
-    fn dump_priv_key(&self, address: &Address) -> Result<String> {
-        self.call("dumpprivkey", &[into_json(address)?])
+    fn dump_priv_key(&self, address: &Address) -> Result<SecretKey> {
+        let hex: String = self.call("dumpprivkey", &[address.to_string().into()])?;
+        let bytes = hex::decode(hex)?;
+        Ok(secp256k1::SecretKey::from_slice(&bytes)?)
     }
 
     fn encrypt_wallet(&self, passphrase: &str) -> Result<()> {
@@ -249,7 +262,7 @@ pub trait RpcApi: Sized {
     }
 
     fn get_received_by_address(&self, address: &Address, minconf: Option<u32>) -> Result<Amount> {
-        let mut args = [into_json(address)?, opt_into_json(minconf)?];
+        let mut args = [address.to_string().into(), opt_into_json(minconf)?];
         self.call("getreceivedbyaddress", handle_defaults(&mut args, &[null()]))
     }
 
@@ -269,16 +282,16 @@ pub trait RpcApi: Sized {
         include_mempool: Option<bool>,
     ) -> Result<Option<json::GetTxOutResult>> {
         let mut args = [into_json(txid)?, into_json(vout)?, opt_into_json(include_mempool)?];
-        self.call("gettxout", handle_defaults(&mut args, &[null()]))
+        opt_result(self.call("gettxout", handle_defaults(&mut args, &[null()]))?)
     }
 
     fn import_priv_key(
         &self,
-        privkey: &str,
+        privkey: &SecretKey,
         label: Option<&str>,
         rescan: Option<bool>,
     ) -> Result<()> {
-        let mut args = [into_json(privkey)?, into_json(label)?, opt_into_json(rescan)?];
+        let mut args = [privkey.to_string().into(), into_json(label)?, opt_into_json(rescan)?];
         self.call("importprivkey", handle_defaults(&mut args, &[into_json("")?, null()]))
     }
 
@@ -315,25 +328,24 @@ pub trait RpcApi: Sized {
     fn create_raw_transaction_hex(
         &self,
         utxos: &[json::CreateRawTransactionInput],
-        outs: Option<&HashMap<String, f64>>,
+        outs: &HashMap<String, f64>,
         locktime: Option<i64>,
         replaceable: Option<bool>,
     ) -> Result<String> {
         let mut args = [
             into_json(utxos)?,
-            opt_into_json(outs)?,
+            into_json(outs)?,
             opt_into_json(locktime)?,
             opt_into_json(replaceable)?,
         ];
-        let defaults =
-            [into_json::<&[json::CreateRawTransactionInput]>(&[])?, into_json(0i64)?, null()];
+        let defaults = [into_json(0i64)?, null()];
         self.call("createrawtransaction", handle_defaults(&mut args, &defaults))
     }
 
     fn create_raw_transaction(
         &self,
         utxos: &[json::CreateRawTransactionInput],
-        outs: Option<&HashMap<String, f64>>,
+        outs: &HashMap<String, f64>,
         locktime: Option<i64>,
         replaceable: Option<bool>,
     ) -> Result<Transaction> {
@@ -405,20 +417,17 @@ pub trait RpcApi: Sized {
         signature: &Signature,
         message: &str,
     ) -> Result<bool> {
-        let args = [into_json(address)?, into_json(signature)?, into_json(message)?];
+        let args = [address.to_string().into(), signature.to_string().into(), into_json(message)?];
         self.call("verifymessage", &args)
     }
 
     /// Generate new address under own control
-    ///
-    /// If 'account' is specified (DEPRECATED), it is added to the address book
-    /// so payments received with the address will be credited to 'account'.
     fn get_new_address(
         &self,
-        account: Option<&str>,
+        label: Option<&str>,
         address_type: Option<json::AddressType>,
     ) -> Result<String> {
-        self.call("getnewaddress", &[opt_into_json(account)?, opt_into_json(address_type)?])
+        self.call("getnewaddress", &[opt_into_json(label)?, opt_into_json(address_type)?])
     }
 
     /// Mine `block_num` blocks and pay coinbase to `address`
@@ -441,21 +450,28 @@ pub trait RpcApi: Sized {
 
     fn send_to_address(
         &self,
-        addr: &str,
+        address: &Address,
         amount: f64,
         comment: Option<&str>,
         comment_to: Option<&str>,
         substract_fee: Option<bool>,
+        replaceable: Option<bool>,
+        confirmation_target: Option<u32>,
+        estimate_mode: Option<json::EstimateMode>,
     ) -> Result<sha256d::Hash> {
         let mut args = [
-            into_json(addr)?,
+            address.to_string().into(),
             into_json(amount)?,
             opt_into_json(comment)?,
             opt_into_json(comment_to)?,
             opt_into_json(substract_fee)?,
+            opt_into_json(replaceable)?,
+            opt_into_json(confirmation_target)?,
+            opt_into_json(estimate_mode)?,
         ];
-        self.call("sendtoaddress", handle_defaults(&mut args, &["".into(), "".into(), null()]))
+        self.call("sendtoaddress", handle_defaults(&mut args, &vec![null(); 6]))
     }
+
     /// Returns data about each connected network node as an array of
     /// [`PeerInfo`][]
     ///
@@ -544,10 +560,7 @@ impl RpcApi for Client {
         cmd: &str,
         args: &[serde_json::Value],
     ) -> Result<T> {
-        // Get rid of to_owned after
-        // https://github.com/apoelstra/rust-jsonrpc/pull/19
-        // lands
-        let req = self.client.build_request(cmd.to_owned(), args.to_owned());
+        let req = self.client.build_request(&cmd, &args);
         if log_enabled!(Trace) {
             trace!("JSON-RPC request: {}", serde_json::to_string(&req).unwrap());
         }

@@ -21,7 +21,7 @@ path = "src/lib.rs"
 bitcoincore-rpc-json = { version = "0.3.0", path = "../json" }
 
 log = "0.4.5"
-jsonrpc = "0.10"
+jsonrpc = "0.11"
 
 # Used for deserialization of JSON.
 serde = "1"

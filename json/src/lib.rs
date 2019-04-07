@@ -526,39 +526,12 @@ pub struct BlockRef {
 
 // Custom types for input arguments.
 
-#[derive(Debug, Clone, Copy, Eq, PartialEq, Hash)]
+#[derive(Serialize, Deserialize, Debug, Clone, Copy, Eq, PartialEq, Hash)]
+#[serde(rename_all = "kebab-case")]
 pub enum EstimateMode {
     Unset,
     Economical,
     Conservative,
-}
-
-impl FromStr for EstimateMode {
-    type Err = ();
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        match s {
-            "UNSET" => Ok(EstimateMode::Unset),
-            "ECONOMICAL" => Ok(EstimateMode::Economical),
-            "CONSERVATIVE" => Ok(EstimateMode::Conservative),
-            _ => Err(()),
-        }
-    }
-}
-
-impl ::serde::Serialize for EstimateMode {
-    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: ::serde::Serializer,
-    {
-        let s = match *self {
-            EstimateMode::Unset => "UNSET",
-            EstimateMode::Economical => "ECONOMICAL",
-            EstimateMode::Conservative => "CONSERVATIVE",
-        };
-
-        serializer.serialize_str(s)
-    }
 }
 
 /// A wrapper around bitcoin::SigHashType that will be serialized
@@ -610,23 +583,12 @@ pub struct SignRawTransactionInput {
 }
 
 /// Used to represent an address type.
+#[derive(Serialize, Clone, PartialEq, Debug)]
+#[serde(rename_all = "kebab-case")]
 pub enum AddressType {
     Legacy,
     P2shSegwit,
     Bech32,
-}
-
-impl serde::Serialize for AddressType {
-    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: serde::Serializer,
-    {
-        serializer.serialize_str(match *self {
-            AddressType::Legacy => "legacy",
-            AddressType::P2shSegwit => "p2sh-segwit",
-            AddressType::Bech32 => "bech32",
-        })
-    }
 }
 
 /// Used to represent arguments that can either be an address or a public key.

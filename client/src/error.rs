@@ -14,6 +14,7 @@ use std::fmt;
 use bitcoin;
 use hex;
 use jsonrpc;
+use secp256k1;
 use serde_json;
 
 /// The error type for errors produced in this library.
@@ -23,6 +24,7 @@ pub enum Error {
     FromHex(hex::FromHexError),
     Json(serde_json::error::Error),
     BitcoinSerialization(bitcoin::consensus::encode::Error),
+    Secp256k1(secp256k1::Error),
 }
 
 impl From<jsonrpc::error::Error> for Error {
@@ -49,6 +51,12 @@ impl From<bitcoin::consensus::encode::Error> for Error {
     }
 }
 
+impl From<secp256k1::Error> for Error {
+    fn from(e: secp256k1::Error) -> Error {
+        Error::Secp256k1(e)
+    }
+}
+
 impl fmt::Display for Error {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match *self {
@@ -56,6 +64,7 @@ impl fmt::Display for Error {
             Error::FromHex(ref e) => write!(f, "hex decode error: {}", e),
             Error::Json(ref e) => write!(f, "JSON error: {}", e),
             Error::BitcoinSerialization(ref e) => write!(f, "Bitcoin serialization error: {}", e),
+            Error::Secp256k1(ref e) => write!(f, "secp256k1 error: {}", e),
         }
     }
 }
@@ -67,6 +76,7 @@ impl error::Error for Error {
             Error::FromHex(_) => "hex decode error",
             Error::Json(_) => "JSON error",
             Error::BitcoinSerialization(_) => "Bitcoin serialization error",
+            Error::Secp256k1(_) => "secp256k1 error",
         }
     }
 
@@ -76,6 +86,7 @@ impl error::Error for Error {
             Error::FromHex(ref e) => Some(e),
             Error::Json(ref e) => Some(e),
             Error::BitcoinSerialization(ref e) => Some(e),
+            Error::Secp256k1(ref e) => Some(e),
         }
     }
 }
