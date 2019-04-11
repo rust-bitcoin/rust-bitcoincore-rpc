@@ -362,8 +362,7 @@ pub struct SignRawTransactionResult {
     #[serde(with = "::serde_hex")]
     pub hex: Vec<u8>,
     pub complete: bool,
-    #[serde(default)]
-    pub errors: Vec<SignRawTransactionResultError>,
+    pub errors: Option<Vec<SignRawTransactionResultError>>,
 }
 
 impl SignRawTransactionResult {
@@ -579,7 +578,7 @@ pub struct SignRawTransactionInput {
     pub script_pub_key: Script,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub redeem_script: Option<Script>,
-    pub amount: f64,
+    pub amount: Option<f64>,
 }
 
 /// Used to represent an address type.
