@@ -17,7 +17,7 @@ use secp256k1;
 use serde;
 use serde_json;
 
-use bitcoin::{Address, Block, BlockHeader, Transaction};
+use bitcoin::{Address, Block, BlockHeader, PrivateKey, Transaction};
 use bitcoin_amount::Amount;
 use bitcoin_hashes::sha256d;
 use log::Level::Trace;
@@ -403,7 +403,7 @@ pub trait RpcApi: Sized {
         &self,
         tx: R,
         utxos: Option<&[json::SignRawTransactionInput]>,
-        private_keys: Option<&[&str]>,
+        private_keys: Option<&[&PrivateKey]>,
         sighash_type: Option<json::SigHashType>,
     ) -> Result<json::SignRawTransactionResult> {
         let mut args = [
@@ -419,7 +419,7 @@ pub trait RpcApi: Sized {
     fn sign_raw_transaction_with_key<R: RawTx>(
         &self,
         tx: R,
-        privkeys: &[&str],
+        privkeys: &[&PrivateKey],
         prevtxs: Option<&[json::SignRawTransactionInput]>,
         sighash_type: Option<json::SigHashType>,
     ) -> Result<json::SignRawTransactionResult> {
