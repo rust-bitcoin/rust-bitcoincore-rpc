@@ -58,7 +58,7 @@ fn null() -> serde_json::Value {
 }
 
 /// Shorthand for an empty serde_json::Value array.
-fn empty() -> serde_json::Value {
+fn empty_arr() -> serde_json::Value {
     serde_json::Value::Array(vec![])
 }
 
@@ -355,7 +355,7 @@ pub trait RpcApi: Sized {
             opt_into_json(include_unsafe)?,
             opt_into_json(query_options)?,
         ];
-        let defaults = [into_json(0)?, into_json(9999999)?, empty(), into_json(true)?, null()];
+        let defaults = [into_json(0)?, into_json(9999999)?, empty_arr(), into_json(true)?, null()];
         self.call("listunspent", handle_defaults(&mut args, &defaults))
     }
 
@@ -399,6 +399,7 @@ pub trait RpcApi: Sized {
         self.call("fundrawtransaction", handle_defaults(&mut args, &defaults))
     }
 
+    #[deprecated]
     fn sign_raw_transaction<R: RawTx>(
         &self,
         tx: R,
@@ -412,8 +413,19 @@ pub trait RpcApi: Sized {
             opt_into_json(private_keys)?,
             opt_into_json(sighash_type)?,
         ];
-        let defaults = [empty(), empty(), null()];
+        let defaults = [empty_arr(), empty_arr(), null()];
         self.call("signrawtransaction", handle_defaults(&mut args, &defaults))
+    }
+
+    fn sign_raw_transaction_with_wallet<R: RawTx>(
+        &self,
+        tx: R,
+        utxos: Option<&[json::SignRawTransactionInput]>,
+        sighash_type: Option<json::SigHashType>,
+    ) -> Result<json::SignRawTransactionResult> {
+        let mut args = [tx.raw_hex().into(), opt_into_json(utxos)?, opt_into_json(sighash_type)?];
+        let defaults = [empty_arr(), null()];
+        self.call("signrawtransactionwithwallet", handle_defaults(&mut args, &defaults))
     }
 
     fn sign_raw_transaction_with_key<R: RawTx>(
@@ -429,7 +441,7 @@ pub trait RpcApi: Sized {
             opt_into_json(prevtxs)?,
             opt_into_json(sighash_type)?,
         ];
-        let defaults = [empty(), null()];
+        let defaults = [empty_arr(), null()];
         self.call("signrawtransactionwithkey", handle_defaults(&mut args, &defaults))
     }
 
@@ -439,17 +451,6 @@ pub trait RpcApi: Sized {
 
     fn stop(&self) -> Result<()> {
         self.call("stop", &[])
-    }
-
-    fn sign_raw_transaction_with_wallet<R: RawTx>(
-        &self,
-        tx: R,
-        utxos: Option<&[json::SignRawTransactionInput]>,
-        sighash_type: Option<json::SigHashType>,
-    ) -> Result<json::SignRawTransactionResult> {
-        let mut args = [tx.raw_hex().into(), opt_into_json(utxos)?, opt_into_json(sighash_type)?];
-        let defaults = [empty(), null()];
-        self.call("signrawtransactionwithwallet", handle_defaults(&mut args, &defaults))
     }
 
     fn verify_message(
