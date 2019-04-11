@@ -622,8 +622,7 @@ mod tests {
         assert!(client.send_raw_transaction("deadbeef".to_owned()).is_err());
     }
 
-    #[test]
-    fn test_handle_defaults() -> Result<()> {
+    fn test_handle_defaults_inner() -> Result<()> {
         {
             let mut args = [into_json(0)?, null(), null()];
             let defaults = [into_json(1)?, into_json(2)?];
@@ -673,5 +672,10 @@ mod tests {
             assert_eq!(handle_defaults(&mut args, &defaults), &res);
         }
         Ok(())
+    }
+
+    #[test]
+    fn test_handle_defaults() {
+        test_handle_defaults_inner().unwrap();
     }
 }
