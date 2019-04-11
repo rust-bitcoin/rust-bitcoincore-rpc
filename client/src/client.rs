@@ -13,9 +13,9 @@ use std::result;
 use bitcoin;
 use hex;
 use jsonrpc;
+use secp256k1;
 use serde;
 use serde_json;
-use secp256k1;
 
 use bitcoin::{Address, Block, BlockHeader, Transaction};
 use bitcoin_amount::Amount;
@@ -39,11 +39,6 @@ where
     T: serde::ser::Serialize,
 {
     Ok(serde_json::to_value(val)?)
-}
-
-/// Shorthand for converting bytes into a serde_json::Value.
-fn into_json_hex<T: AsRef<[u8]>>(val: T) -> Result<serde_json::Value> {
-    Ok(serde_json::to_value(hex::encode(val))?)
 }
 
 /// Shorthand for converting an Option into an Option<serde_json::Value>.
@@ -118,6 +113,41 @@ fn opt_result<T: for<'a> serde::de::Deserialize<'a>>(
         Ok(None)
     } else {
         Ok(serde_json::from_value(result)?)
+    }
+}
+
+/// Used to pass raw txs into the API.
+pub trait RawTx: Sized {
+    fn raw_hex(self) -> String;
+}
+
+impl<'a> RawTx for &'a Transaction {
+    fn raw_hex(self) -> String {
+        hex::encode(bitcoin::consensus::encode::serialize(self))
+    }
+}
+
+impl<'a> RawTx for &'a [u8] {
+    fn raw_hex(self) -> String {
+        hex::encode(self)
+    }
+}
+
+impl<'a> RawTx for &'a Vec<u8> {
+    fn raw_hex(self) -> String {
+        hex::encode(self)
+    }
+}
+
+impl<'a> RawTx for &'a str {
+    fn raw_hex(self) -> String {
+        self.to_owned()
+    }
+}
+
+impl RawTx for String {
+    fn raw_hex(self) -> String {
+        self
     }
 }
 
@@ -354,15 +384,15 @@ pub trait RpcApi: Sized {
         Ok(bitcoin::consensus::encode::deserialize(&bytes)?)
     }
 
-    fn sign_raw_transaction<B: AsRef<[u8]>>(
+    fn sign_raw_transaction<R: RawTx>(
         &self,
-        tx: B,
+        tx: R,
         utxos: Option<&[json::SignRawTransactionInput]>,
         private_keys: Option<&[&str]>,
         sighash_type: Option<json::SigHashType>,
     ) -> Result<json::SignRawTransactionResult> {
         let mut args = [
-            into_json_hex(tx)?,
+            tx.raw_hex().into(),
             opt_into_json(utxos)?,
             opt_into_json(private_keys)?,
             opt_into_json(sighash_type)?,
@@ -375,15 +405,15 @@ pub trait RpcApi: Sized {
         self.call("signrawtransaction", handle_defaults(&mut args, &defaults))
     }
 
-    fn sign_raw_transaction_with_key<B: AsRef<[u8]>>(
+    fn sign_raw_transaction_with_key<R: RawTx>(
         &self,
-        tx: B,
+        tx: R,
         privkeys: &[&str],
         prevtxs: Option<&[json::SignRawTransactionInput]>,
         sighash_type: Option<json::SigHashType>,
     ) -> Result<json::SignRawTransactionResult> {
         let mut args = [
-            into_json_hex(tx)?,
+            tx.raw_hex().into(),
             into_json(privkeys)?,
             opt_into_json(prevtxs)?,
             opt_into_json(sighash_type)?,
@@ -400,13 +430,13 @@ pub trait RpcApi: Sized {
         self.call("stop", &[])
     }
 
-    fn sign_raw_transaction_with_wallet<B: AsRef<[u8]>>(
+    fn sign_raw_transaction_with_wallet<R: RawTx>(
         &self,
-        tx: B,
+        tx: R,
         utxos: Option<&[json::SignRawTransactionInput]>,
         sighash_type: Option<json::SigHashType>,
     ) -> Result<json::SignRawTransactionResult> {
-        let mut args = [into_json_hex(tx)?, opt_into_json(utxos)?, opt_into_json(sighash_type)?];
+        let mut args = [tx.raw_hex().into(), opt_into_json(utxos)?, opt_into_json(sighash_type)?];
         let defaults = [into_json::<&[json::SignRawTransactionInput]>(&[])?, null()];
         self.call("signrawtransactionwithwallet", handle_defaults(&mut args, &defaults))
     }
@@ -492,8 +522,8 @@ pub trait RpcApi: Sized {
         self.call("ping", &[])
     }
 
-    fn send_raw_transaction(&self, tx: &str) -> Result<String> {
-        self.call("sendrawtransaction", &[into_json(tx)?])
+    fn send_raw_transaction<R: RawTx>(&self, tx: R) -> Result<sha256d::Hash> {
+        self.call("sendrawtransaction", &[tx.raw_hex().into()])
     }
 
     fn estimate_smartfee<E>(
@@ -574,13 +604,25 @@ impl RpcApi for Client {
     }
 }
 
-#[cfg(tests)]
+#[cfg(test)]
 mod tests {
     use super::*;
     use serde_json;
+    use bitcoin;
 
     #[test]
-    fn test_handle_defaults() -> Result<()> {
+    fn test_raw_tx() {
+        use bitcoin::consensus::encode;
+        let client = Client::new("http://localhost/".into(), None, None);
+        let tx: bitcoin::Transaction = encode::deserialize(&hex::decode("0200000001586bd02815cf5faabfec986a4e50d25dbee089bd2758621e61c5fab06c334af0000000006b483045022100e85425f6d7c589972ee061413bcf08dc8c8e589ce37b217535a42af924f0e4d602205c9ba9cb14ef15513c9d946fa1c4b797883e748e8c32171bdf6166583946e35c012103dae30a4d7870cd87b45dd53e6012f71318fdd059c1c2623b8cc73f8af287bb2dfeffffff021dc4260c010000001976a914f602e88b2b5901d8aab15ebe4a97cf92ec6e03b388ac00e1f505000000001976a914687ffeffe8cf4e4c038da46a9b1d37db385a472d88acfd211500").unwrap()).unwrap();
+
+        assert!(client.send_raw_transaction(&tx).is_err());
+        assert!(client.send_raw_transaction(&encode::serialize(&tx)).is_err());
+        assert!(client.send_raw_transaction("deadbeef").is_err());
+        assert!(client.send_raw_transaction("deadbeef".to_owned()).is_err());
+    }
+
+    fn test_handle_defaults_inner() -> Result<()> {
         {
             let mut args = [into_json(0)?, null(), null()];
             let defaults = [into_json(1)?, into_json(2)?];
@@ -630,5 +672,10 @@ mod tests {
             assert_eq!(handle_defaults(&mut args, &defaults), &res);
         }
         Ok(())
+    }
+
+    #[test]
+    fn test_handle_defaults() {
+        test_handle_defaults_inner().unwrap();
     }
 }

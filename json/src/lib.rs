@@ -195,10 +195,10 @@ pub struct GetRawTransactionResultVoutScriptPubKey {
     pub asm: String,
     #[serde(with = "::serde_hex")]
     pub hex: Vec<u8>,
-    pub req_sigs: usize,
+    pub req_sigs: Option<usize>,
     #[serde(rename = "type")]
-    pub type_: String, //TODO(stevenroose) consider enum
-    pub addresses: Vec<Address>,
+    pub type_: Option<String>, //TODO(stevenroose) consider enum
+    pub addresses: Option<Vec<Address>>,
 }
 
 impl GetRawTransactionResultVoutScriptPubKey {
@@ -868,9 +868,9 @@ mod tests {
 				script_pub_key: GetRawTransactionResultVoutScriptPubKey{
 					asm: "OP_DUP OP_HASH160 f602e88b2b5901d8aab15ebe4a97cf92ec6e03b3 OP_EQUALVERIFY OP_CHECKSIG".into(),
 					hex: hex!("76a914f602e88b2b5901d8aab15ebe4a97cf92ec6e03b388ac"),
-					req_sigs: 1,
-					type_: "pubkeyhash".into(),
-					addresses: vec![addr!("n3wk1KcFnVibGdqQa6jbwoR8gbVtRbYM4M")],
+					req_sigs: Some(1),
+					type_: Some("pubkeyhash".into()),
+					addresses: Some(vec![addr!("n3wk1KcFnVibGdqQa6jbwoR8gbVtRbYM4M")]),
 				},
 			}, GetRawTransactionResultVout{
 				value: Amount::from_btc(1.0),
@@ -878,9 +878,9 @@ mod tests {
 				script_pub_key: GetRawTransactionResultVoutScriptPubKey{
 					asm: "OP_DUP OP_HASH160 687ffeffe8cf4e4c038da46a9b1d37db385a472d OP_EQUALVERIFY OP_CHECKSIG".into(),
 					hex: hex!("76a914687ffeffe8cf4e4c038da46a9b1d37db385a472d88ac"),
-					req_sigs: 1,
-					type_: "pubkeyhash".into(),
-					addresses: vec![addr!("mq3VuL2K63VKWkp8vvqRiJPre4h9awrHfA")],
+					req_sigs: Some(1),
+					type_: Some("pubkeyhash".into()),
+					addresses: Some(vec![addr!("mq3VuL2K63VKWkp8vvqRiJPre4h9awrHfA")]),
 				},
 			}],
 			blockhash: Some(hash!("00000000000000039dc06adbd7666a8d1df9acf9d0329d73651b764167d63765")),
@@ -1017,9 +1017,9 @@ mod tests {
 			script_pub_key: GetRawTransactionResultVoutScriptPubKey{
 				asm: "OP_DUP OP_HASH160 687ffeffe8cf4e4c038da46a9b1d37db385a472d OP_EQUALVERIFY OP_CHECKSIG".into(),
 				hex: hex!("76a914687ffeffe8cf4e4c038da46a9b1d37db385a472d88ac"),
-				req_sigs: 1,
-				type_: "pubkeyhash".into(),
-				addresses: vec![addr!("mq3VuL2K63VKWkp8vvqRiJPre4h9awrHfA")],
+				req_sigs: Some(1),
+				type_: Some("pubkeyhash".into()),
+				addresses: Some(vec![addr!("mq3VuL2K63VKWkp8vvqRiJPre4h9awrHfA")]),
 			},
 			coinbase: false,
 		};
