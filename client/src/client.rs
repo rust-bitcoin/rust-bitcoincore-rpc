@@ -57,6 +57,16 @@ fn null() -> serde_json::Value {
     serde_json::Value::Null
 }
 
+/// Shorthand for an empty serde_json::Value array.
+fn empty() -> serde_json::Value {
+    serde_json::Value::Array(vec![])
+}
+
+/// Shorthand for an empty serde_json object.
+fn empty_obj() -> serde_json::Value {
+    serde_json::Value::Object(Default::default())
+}
+
 /// Handle default values in the argument list
 ///
 /// Substitute `Value::Null`s with corresponding values from `defaults` table,
@@ -345,13 +355,7 @@ pub trait RpcApi: Sized {
             opt_into_json(include_unsafe)?,
             opt_into_json(query_options)?,
         ];
-        let defaults = [
-            into_json(0)?,
-            into_json(9999999)?,
-            into_json::<&[Address]>(&[])?,
-            into_json(true)?,
-            null(),
-        ];
+        let defaults = [into_json(0)?, into_json(9999999)?, empty(), into_json(true)?, null()];
         self.call("listunspent", handle_defaults(&mut args, &defaults))
     }
 
@@ -397,11 +401,7 @@ pub trait RpcApi: Sized {
             opt_into_json(private_keys)?,
             opt_into_json(sighash_type)?,
         ];
-        let defaults = [
-            into_json::<&[json::SignRawTransactionInput]>(&[])?,
-            into_json::<&[&str]>(&[])?,
-            null(),
-        ];
+        let defaults = [empty(), empty(), null()];
         self.call("signrawtransaction", handle_defaults(&mut args, &defaults))
     }
 
@@ -418,7 +418,7 @@ pub trait RpcApi: Sized {
             opt_into_json(prevtxs)?,
             opt_into_json(sighash_type)?,
         ];
-        let defaults = [into_json::<&[json::SignRawTransactionInput]>(&[])?, null()];
+        let defaults = [empty(), null()];
         self.call("signrawtransactionwithkey", handle_defaults(&mut args, &defaults))
     }
 
@@ -437,7 +437,7 @@ pub trait RpcApi: Sized {
         sighash_type: Option<json::SigHashType>,
     ) -> Result<json::SignRawTransactionResult> {
         let mut args = [tx.raw_hex().into(), opt_into_json(utxos)?, opt_into_json(sighash_type)?];
-        let defaults = [into_json::<&[json::SignRawTransactionInput]>(&[])?, null()];
+        let defaults = [empty(), null()];
         self.call("signrawtransactionwithwallet", handle_defaults(&mut args, &defaults))
     }
 
@@ -607,8 +607,8 @@ impl RpcApi for Client {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use serde_json;
     use bitcoin;
+    use serde_json;
 
     #[test]
     fn test_raw_tx() {
