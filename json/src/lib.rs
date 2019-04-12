@@ -362,8 +362,7 @@ pub struct SignRawTransactionResult {
     #[serde(with = "::serde_hex")]
     pub hex: Vec<u8>,
     pub complete: bool,
-    #[serde(default)]
-    pub errors: Vec<SignRawTransactionResultError>,
+    pub errors: Option<Vec<SignRawTransactionResultError>>,
 }
 
 impl SignRawTransactionResult {
@@ -527,7 +526,7 @@ pub struct BlockRef {
 // Custom types for input arguments.
 
 #[derive(Serialize, Deserialize, Debug, Clone, Copy, Eq, PartialEq, Hash)]
-#[serde(rename_all = "kebab-case")]
+#[serde(rename_all = "UPPERCASE")]
 pub enum EstimateMode {
     Unset,
     Economical,
@@ -570,6 +569,48 @@ pub struct CreateRawTransactionInput {
     pub sequence: Option<u32>,
 }
 
+#[derive(Serialize, Clone, PartialEq, Eq, Debug)]
+#[serde(rename_all = "camelCase")]
+pub struct FundRawTransactionOptions {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub change_address: Option<Address>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub change_position: Option<u32>,
+    #[serde(rename = "change_type", skip_serializing_if = "Option::is_none")]
+    pub change_type: Option<AddressType>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub include_watching: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub lock_unspents: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub fee_rate: Option<u64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub subtract_fee_from_outputs: Option<Vec<u32>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub replaceable: Option<bool>,
+    #[serde(rename = "conf_target", skip_serializing_if = "Option::is_none")]
+    pub conf_target: Option<u32>,
+    #[serde(rename = "estimate_mode", skip_serializing_if = "Option::is_none")]
+    pub estimate_mode: Option<EstimateMode>,
+}
+
+#[derive(Deserialize, Clone, PartialEq, Eq, Debug)]
+#[serde(rename_all = "camelCase")]
+pub struct FundRawTransactionResult {
+    #[serde(with = "::serde_hex")]
+    pub hex: Vec<u8>,
+    #[serde(deserialize_with = "deserialize_amount")]
+    pub fee: Amount,
+    #[serde(rename = "changepos")]
+    pub change_position: u32,
+}
+
+impl FundRawTransactionResult {
+    pub fn transaction(&self) -> Result<Transaction, encode::Error> {
+        encode::deserialize(&self.hex)
+    }
+}
+
 // Used for signrawtransaction argument.
 #[derive(Serialize, Clone, PartialEq, Debug)]
 #[serde(rename_all = "camelCase")]
@@ -579,11 +620,11 @@ pub struct SignRawTransactionInput {
     pub script_pub_key: Script,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub redeem_script: Option<Script>,
-    pub amount: f64,
+    pub amount: Option<f64>,
 }
 
 /// Used to represent an address type.
-#[derive(Serialize, Clone, PartialEq, Debug)]
+#[derive(Serialize, Clone, PartialEq, Eq, Debug)]
 #[serde(rename_all = "kebab-case")]
 pub enum AddressType {
     Legacy,

@@ -17,7 +17,7 @@ use secp256k1;
 use serde;
 use serde_json;
 
-use bitcoin::{Address, Block, BlockHeader, Transaction};
+use bitcoin::{Address, Block, BlockHeader, PrivateKey, Transaction};
 use bitcoin_amount::Amount;
 use bitcoin_hashes::sha256d;
 use log::Level::Trace;
@@ -55,6 +55,16 @@ where
 /// Shorthand for `serde_json::Value::Null`.
 fn null() -> serde_json::Value {
     serde_json::Value::Null
+}
+
+/// Shorthand for an empty serde_json::Value array.
+fn empty_arr() -> serde_json::Value {
+    serde_json::Value::Array(vec![])
+}
+
+/// Shorthand for an empty serde_json object.
+fn empty_obj() -> serde_json::Value {
+    serde_json::Value::Object(Default::default())
 }
 
 /// Handle default values in the argument list
@@ -345,13 +355,7 @@ pub trait RpcApi: Sized {
             opt_into_json(include_unsafe)?,
             opt_into_json(query_options)?,
         ];
-        let defaults = [
-            into_json(0)?,
-            into_json(9999999)?,
-            into_json::<&[Address]>(&[])?,
-            into_json(true)?,
-            null(),
-        ];
+        let defaults = [into_json(0)?, into_json(9999999)?, empty_arr(), into_json(true)?, null()];
         self.call("listunspent", handle_defaults(&mut args, &defaults))
     }
 
@@ -384,11 +388,23 @@ pub trait RpcApi: Sized {
         Ok(bitcoin::consensus::encode::deserialize(&bytes)?)
     }
 
+    fn fund_raw_transaction<R: RawTx>(
+        &self,
+        tx: R,
+        options: Option<json::FundRawTransactionOptions>,
+        is_witness: Option<bool>,
+    ) -> Result<json::FundRawTransactionResult> {
+        let mut args = [tx.raw_hex().into(), opt_into_json(options)?, opt_into_json(is_witness)?];
+        let defaults = [empty_obj(), null()];
+        self.call("fundrawtransaction", handle_defaults(&mut args, &defaults))
+    }
+
+    #[deprecated]
     fn sign_raw_transaction<R: RawTx>(
         &self,
         tx: R,
         utxos: Option<&[json::SignRawTransactionInput]>,
-        private_keys: Option<&[&str]>,
+        private_keys: Option<&[&PrivateKey]>,
         sighash_type: Option<json::SigHashType>,
     ) -> Result<json::SignRawTransactionResult> {
         let mut args = [
@@ -397,37 +413,8 @@ pub trait RpcApi: Sized {
             opt_into_json(private_keys)?,
             opt_into_json(sighash_type)?,
         ];
-        let defaults = [
-            into_json::<&[json::SignRawTransactionInput]>(&[])?,
-            into_json::<&[&str]>(&[])?,
-            null(),
-        ];
+        let defaults = [empty_arr(), empty_arr(), null()];
         self.call("signrawtransaction", handle_defaults(&mut args, &defaults))
-    }
-
-    fn sign_raw_transaction_with_key<R: RawTx>(
-        &self,
-        tx: R,
-        privkeys: &[&str],
-        prevtxs: Option<&[json::SignRawTransactionInput]>,
-        sighash_type: Option<json::SigHashType>,
-    ) -> Result<json::SignRawTransactionResult> {
-        let mut args = [
-            tx.raw_hex().into(),
-            into_json(privkeys)?,
-            opt_into_json(prevtxs)?,
-            opt_into_json(sighash_type)?,
-        ];
-        let defaults = [into_json::<&[json::SignRawTransactionInput]>(&[])?, null()];
-        self.call("signrawtransactionwithkey", handle_defaults(&mut args, &defaults))
-    }
-
-    fn test_mempool_accept(&self, rawtxs: &[&str]) -> Result<Vec<json::TestMempoolAccept>> {
-        self.call("testmempoolaccept", &[into_json(rawtxs)?])
-    }
-
-    fn stop(&self) -> Result<()> {
-        self.call("stop", &[])
     }
 
     fn sign_raw_transaction_with_wallet<R: RawTx>(
@@ -437,8 +424,33 @@ pub trait RpcApi: Sized {
         sighash_type: Option<json::SigHashType>,
     ) -> Result<json::SignRawTransactionResult> {
         let mut args = [tx.raw_hex().into(), opt_into_json(utxos)?, opt_into_json(sighash_type)?];
-        let defaults = [into_json::<&[json::SignRawTransactionInput]>(&[])?, null()];
+        let defaults = [empty_arr(), null()];
         self.call("signrawtransactionwithwallet", handle_defaults(&mut args, &defaults))
+    }
+
+    fn sign_raw_transaction_with_key<R: RawTx>(
+        &self,
+        tx: R,
+        privkeys: &[&PrivateKey],
+        prevtxs: Option<&[json::SignRawTransactionInput]>,
+        sighash_type: Option<json::SigHashType>,
+    ) -> Result<json::SignRawTransactionResult> {
+        let mut args = [
+            tx.raw_hex().into(),
+            into_json(privkeys)?,
+            opt_into_json(prevtxs)?,
+            opt_into_json(sighash_type)?,
+        ];
+        let defaults = [empty_arr(), null()];
+        self.call("signrawtransactionwithkey", handle_defaults(&mut args, &defaults))
+    }
+
+    fn test_mempool_accept(&self, rawtxs: &[&str]) -> Result<Vec<json::TestMempoolAccept>> {
+        self.call("testmempoolaccept", &[into_json(rawtxs)?])
+    }
+
+    fn stop(&self) -> Result<()> {
+        self.call("stop", &[])
     }
 
     fn verify_message(
@@ -607,8 +619,8 @@ impl RpcApi for Client {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use serde_json;
     use bitcoin;
+    use serde_json;
 
     #[test]
     fn test_raw_tx() {
