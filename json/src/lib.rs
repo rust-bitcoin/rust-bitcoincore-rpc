@@ -88,7 +88,7 @@ pub struct AddMultiSigAddressResult {
 #[serde(rename_all = "camelCase")]
 pub struct GetBlockResult {
     pub hash: sha256d::Hash,
-    pub confirmations: usize,
+    pub confirmations: u32,
     pub size: usize,
     pub strippedsize: Option<usize>,
     pub weight: usize,
@@ -115,7 +115,7 @@ pub struct GetBlockResult {
 #[serde(rename_all = "camelCase")]
 pub struct GetBlockHeaderResult {
     pub hash: sha256d::Hash,
-    pub confirmations: usize,
+    pub confirmations: u32,
     pub height: usize,
     pub version: u32,
     #[serde(default, with = "::serde_hex::opt")]
@@ -232,7 +232,7 @@ pub struct GetRawTransactionResult {
     pub vin: Vec<GetRawTransactionResultVin>,
     pub vout: Vec<GetRawTransactionResultVout>,
     pub blockhash: Option<sha256d::Hash>,
-    pub confirmations: Option<usize>,
+    pub confirmations: Option<u32>,
     pub time: Option<usize>,
     pub blocktime: Option<usize>,
 }
@@ -299,7 +299,7 @@ pub struct GetTransactionResult {
     pub amount: Amount,
     #[serde(default, deserialize_with = "deserialize_amount_opt")]
     pub fee: Option<Amount>,
-    pub confirmations: usize,
+    pub confirmations: i32,
     pub blockhash: sha256d::Hash,
     pub blockindex: usize,
     pub blocktime: u64,
@@ -323,7 +323,7 @@ impl GetTransactionResult {
 #[serde(rename_all = "camelCase")]
 pub struct GetTxOutResult {
     pub bestblock: sha256d::Hash,
-    pub confirmations: usize,
+    pub confirmations: u32,
     #[serde(deserialize_with = "deserialize_amount")]
     pub value: Amount,
     pub script_pub_key: GetRawTransactionResultVoutScriptPubKey,
@@ -339,7 +339,7 @@ pub struct ListUnspentResult {
     pub script_pub_key: Script,
     #[serde(deserialize_with = "deserialize_amount")]
     pub amount: Amount,
-    pub confirmations: usize,
+    pub confirmations: u32,
     pub redeem_script: Option<Script>,
     pub spendable: bool,
     pub solvable: bool,
