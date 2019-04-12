@@ -13,18 +13,18 @@
 extern crate bitcoin;
 extern crate bitcoincore_rpc;
 
-use bitcoincore_rpc::{Client, Error, RpcApi};
+use bitcoincore_rpc::{Client, Error, RpcApi, Auth};
 
 fn main_result() -> Result<(), Error> {
     let mut args = std::env::args();
 
     let _exe_name = args.next().unwrap();
 
-    let url = args.next().expect("Usage: <rpc_url> [username] [password]");
-    let user = args.next();
-    let pass = args.next();
+    let url = args.next().expect("Usage: <rpc_url> <username> <password>");
+    let user = args.next().expect("no user given");
+    let pass = args.next().expect("no pass given");
 
-    let rpc = Client::new(url, user, pass);
+    let rpc = Client::new(url, Auth::UserPass(user, pass)).unwrap();
 
     let _blockchain_info = rpc.get_blockchain_info()?;
 
