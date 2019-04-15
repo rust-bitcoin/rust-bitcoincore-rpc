@@ -8,6 +8,7 @@
 // If not, see <http://creativecommons.org/publicdomain/zero/1.0/>.
 //
 
+use std::fs::File;
 use std::result;
 
 use bitcoin;
@@ -158,6 +159,34 @@ impl<'a> RawTx for &'a str {
 impl RawTx for String {
     fn raw_hex(self) -> String {
         self
+    }
+}
+
+/// The different authentication methods for the client.
+pub enum Auth<'a> {
+    None,
+    UserPass(String, String),
+    CookieFile(&'a str),
+}
+
+impl<'a> Auth<'a> {
+    /// Convert into the arguments that jsonrpc::Client needs.
+    fn get_user_pass(self) -> Result<(Option<String>, Option<String>)> {
+        use std::io::Read;
+        match self {
+            Auth::None => Ok((None, None)),
+            Auth::UserPass(u, p) => Ok((Some(u), Some(p))),
+            Auth::CookieFile(path) => {
+                let mut file = File::open(path)?;
+                let mut contents = String::new();
+                file.read_to_string(&mut contents)?;
+                let mut split = contents.splitn(2, ":");
+                Ok((
+                    Some(split.next().ok_or(Error::InvalidCookieFile)?.into()),
+                    Some(split.next().ok_or(Error::InvalidCookieFile)?.into()),
+                ))
+            }
+        }
     }
 }
 
@@ -579,12 +608,13 @@ pub struct Client {
 
 impl Client {
     /// Creates a client to a bitcoind JSON-RPC server.
-    pub fn new(url: String, user: Option<String>, pass: Option<String>) -> Self {
-        debug_assert!(pass.is_none() || user.is_some());
-
-        Client {
+    ///
+    /// Can only return [Err] when using cookie authentication.
+    pub fn new(url: String, auth: Auth) -> Result<Self> {
+        let (user, pass) = auth.get_user_pass()?;
+        Ok(Client {
             client: jsonrpc::client::Client::new(url, user, pass),
-        }
+        })
     }
 
     /// Create a new Client.
@@ -625,7 +655,7 @@ mod tests {
     #[test]
     fn test_raw_tx() {
         use bitcoin::consensus::encode;
-        let client = Client::new("http://localhost/".into(), None, None);
+        let client = Client::new("http://localhost/".into(), Auth::None).unwrap();
         let tx: bitcoin::Transaction = encode::deserialize(&hex::decode("0200000001586bd02815cf5faabfec986a4e50d25dbee089bd2758621e61c5fab06c334af0000000006b483045022100e85425f6d7c589972ee061413bcf08dc8c8e589ce37b217535a42af924f0e4d602205c9ba9cb14ef15513c9d946fa1c4b797883e748e8c32171bdf6166583946e35c012103dae30a4d7870cd87b45dd53e6012f71318fdd059c1c2623b8cc73f8af287bb2dfeffffff021dc4260c010000001976a914f602e88b2b5901d8aab15ebe4a97cf92ec6e03b388ac00e1f505000000001976a914687ffeffe8cf4e4c038da46a9b1d37db385a472d88acfd211500").unwrap()).unwrap();
 
         assert!(client.send_raw_transaction(&tx).is_err());

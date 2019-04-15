@@ -8,8 +8,7 @@
 // If not, see <http://creativecommons.org/publicdomain/zero/1.0/>.
 //
 
-use std::error;
-use std::fmt;
+use std::{error, fmt, io};
 
 use bitcoin;
 use hex;
@@ -25,6 +24,8 @@ pub enum Error {
     Json(serde_json::error::Error),
     BitcoinSerialization(bitcoin::consensus::encode::Error),
     Secp256k1(secp256k1::Error),
+    Io(io::Error),
+    InvalidCookieFile,
 }
 
 impl From<jsonrpc::error::Error> for Error {
@@ -57,6 +58,12 @@ impl From<secp256k1::Error> for Error {
     }
 }
 
+impl From<io::Error> for Error {
+    fn from(e: io::Error) -> Error {
+        Error::Io(e)
+    }
+}
+
 impl fmt::Display for Error {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match *self {
@@ -65,6 +72,8 @@ impl fmt::Display for Error {
             Error::Json(ref e) => write!(f, "JSON error: {}", e),
             Error::BitcoinSerialization(ref e) => write!(f, "Bitcoin serialization error: {}", e),
             Error::Secp256k1(ref e) => write!(f, "secp256k1 error: {}", e),
+            Error::Io(ref e) => write!(f, "I/O error: {}", e),
+            ref e => f.write_str(error::Error::description(e)),
         }
     }
 }
@@ -77,6 +86,8 @@ impl error::Error for Error {
             Error::Json(_) => "JSON error",
             Error::BitcoinSerialization(_) => "Bitcoin serialization error",
             Error::Secp256k1(_) => "secp256k1 error",
+            Error::Io(_) => "I/O error",
+            Error::InvalidCookieFile => "invalid cookie file",
         }
     }
 
@@ -87,6 +98,8 @@ impl error::Error for Error {
             Error::Json(ref e) => Some(e),
             Error::BitcoinSerialization(ref e) => Some(e),
             Error::Secp256k1(ref e) => Some(e),
+            Error::Io(ref e) => Some(e),
+            _ => None,
         }
     }
 }
