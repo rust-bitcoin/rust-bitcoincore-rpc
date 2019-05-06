@@ -164,13 +164,13 @@ impl RawTx for String {
 
 /// The different authentication methods for the client.
 #[derive(Clone, Debug, Hash, Eq, PartialEq, Ord, PartialOrd)]
-pub enum Auth<'a> {
+pub enum Auth {
     None,
     UserPass(String, String),
-    CookieFile(&'a str),
+    CookieFile(String),
 }
 
-impl<'a> Auth<'a> {
+impl Auth {
     /// Convert into the arguments that jsonrpc::Client needs.
     fn get_user_pass(self) -> Result<(Option<String>, Option<String>)> {
         use std::io::Read;
