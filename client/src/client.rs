@@ -163,6 +163,7 @@ impl RawTx for String {
 }
 
 /// The different authentication methods for the client.
+#[derive(Clone, Debug, Hash, Eq, PartialEq, Ord, PartialOrd)]
 pub enum Auth<'a> {
     None,
     UserPass(String, String),
