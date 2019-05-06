@@ -417,6 +417,23 @@ pub trait RpcApi: Sized {
         self.call("listunspent", handle_defaults(&mut args, &defaults))
     }
 
+    fn list_received_by_address(
+        &self,
+        address_filter: Option<&Address>,
+        minconf: Option<u32>,
+        include_empty: Option<bool>,
+        include_watchonly: Option<bool>,
+    ) -> Result<Vec<json::ListReceivedByAddressResult>> {
+        let mut args = [
+            opt_into_json(minconf)?,
+            opt_into_json(include_empty)?,
+            opt_into_json(include_watchonly)?,
+            opt_into_json(address_filter)?,
+        ];
+        let defaults = [1.into(), false.into(), false.into(), null()];
+        self.call("listreceivedbyaddress", handle_defaults(&mut args, &defaults))
+    }
+
     fn create_raw_transaction_hex(
         &self,
         utxos: &[json::CreateRawTransactionInput],
