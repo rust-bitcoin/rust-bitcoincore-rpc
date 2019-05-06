@@ -25,6 +25,7 @@ use log::Level::Trace;
 use num_bigint::BigUint;
 use secp256k1::{SecretKey, Signature};
 use std::collections::HashMap;
+use std::path::PathBuf;
 
 use error::*;
 use json;
@@ -167,7 +168,7 @@ impl RawTx for String {
 pub enum Auth {
     None,
     UserPass(String, String),
-    CookieFile(String),
+    CookieFile(PathBuf),
 }
 
 impl Auth {
