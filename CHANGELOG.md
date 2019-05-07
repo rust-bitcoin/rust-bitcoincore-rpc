@@ -1,4 +1,10 @@
 
+# v0.5.1
+
+- add get_tx_out_proof
+- add import_address
+- add list_received_by_address
+
 # v0.5.0
 
 - add support for cookie authentication

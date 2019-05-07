@@ -348,6 +348,18 @@ pub struct ListUnspentResult {
 
 #[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
+pub struct ListReceivedByAddressResult {
+    #[serde(rename = "involvesWatchonly")]
+    pub involved_watch_only: bool,
+    pub address: Address,
+    pub amount: u64,
+    pub confirmations: u32,
+    pub label: String,
+    pub txids: Vec<sha256d::Hash>,
+}
+
+#[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct SignRawTransactionResultError {
     pub txid: sha256d::Hash,
     pub vout: u32,

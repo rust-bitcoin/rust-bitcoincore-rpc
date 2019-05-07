@@ -354,14 +354,43 @@ pub trait RpcApi: Sized {
         opt_result(self.call("gettxout", handle_defaults(&mut args, &[null()]))?)
     }
 
+    fn get_tx_out_proof(
+        &self,
+        txids: &[sha256d::Hash],
+        block_hash: Option<sha256d::Hash>,
+    ) -> Result<Vec<u8>> {
+        let mut args = [into_json(txids)?, opt_into_json(block_hash)?];
+        let hex: String = self.call("gettxoutproof", handle_defaults(&mut args, &[null()]))?;
+        Ok(hex::decode(&hex)?)
+    }
+
     fn import_priv_key(
         &self,
         privkey: &SecretKey,
         label: Option<&str>,
         rescan: Option<bool>,
     ) -> Result<()> {
-        let mut args = [privkey.to_string().into(), into_json(label)?, opt_into_json(rescan)?];
+        let mut args = [privkey.to_string().into(), opt_into_json(label)?, opt_into_json(rescan)?];
         self.call("importprivkey", handle_defaults(&mut args, &[into_json("")?, null()]))
+    }
+
+    fn import_address(
+        &self,
+        address: &Address,
+        label: Option<&str>,
+        rescan: Option<bool>,
+        p2sh: Option<bool>,
+    ) -> Result<()> {
+        let mut args = [
+            address.to_string().into(),
+            opt_into_json(label)?,
+            opt_into_json(rescan)?,
+            opt_into_json(p2sh)?,
+        ];
+        self.call(
+            "importaddress",
+            handle_defaults(&mut args, &[into_json("")?, true.into(), null()]),
+        )
     }
 
     fn key_pool_refill(&self, new_size: Option<usize>) -> Result<()> {
@@ -386,6 +415,23 @@ pub trait RpcApi: Sized {
         ];
         let defaults = [into_json(0)?, into_json(9999999)?, empty_arr(), into_json(true)?, null()];
         self.call("listunspent", handle_defaults(&mut args, &defaults))
+    }
+
+    fn list_received_by_address(
+        &self,
+        address_filter: Option<&Address>,
+        minconf: Option<u32>,
+        include_empty: Option<bool>,
+        include_watchonly: Option<bool>,
+    ) -> Result<Vec<json::ListReceivedByAddressResult>> {
+        let mut args = [
+            opt_into_json(minconf)?,
+            opt_into_json(include_empty)?,
+            opt_into_json(include_watchonly)?,
+            opt_into_json(address_filter)?,
+        ];
+        let defaults = [1.into(), false.into(), false.into(), null()];
+        self.call("listreceivedbyaddress", handle_defaults(&mut args, &defaults))
     }
 
     fn create_raw_transaction_hex(
