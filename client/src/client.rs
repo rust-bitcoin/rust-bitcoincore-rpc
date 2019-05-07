@@ -356,8 +356,8 @@ pub trait RpcApi: Sized {
 
     fn get_tx_out_proof(
         &self,
-        txids: &[sha256d::Hash],
-        block_hash: Option<sha256d::Hash>,
+        txids: &[&sha256d::Hash],
+        block_hash: Option<&sha256d::Hash>,
     ) -> Result<Vec<u8>> {
         let mut args = [into_json(txids)?, opt_into_json(block_hash)?];
         let hex: String = self.call("gettxoutproof", handle_defaults(&mut args, &[null()]))?;
