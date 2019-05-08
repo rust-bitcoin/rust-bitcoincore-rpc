@@ -1,4 +1,10 @@
 
+# v0.6.0
+
+- polish Auth to use owned Strings
+- fix using Amount type and Address types where needed
+- use references of sha256d::Hashes instead of owned/copied
+
 # v0.5.1
 
 - add get_tx_out_proof
