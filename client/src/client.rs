@@ -25,6 +25,7 @@ use log::Level::Trace;
 use num_bigint::BigUint;
 use secp256k1::{SecretKey, Signature};
 use std::collections::HashMap;
+use std::path::PathBuf;
 
 use error::*;
 use json;
@@ -163,13 +164,14 @@ impl RawTx for String {
 }
 
 /// The different authentication methods for the client.
-pub enum Auth<'a> {
+#[derive(Clone, Debug, Hash, Eq, PartialEq, Ord, PartialOrd)]
+pub enum Auth {
     None,
     UserPass(String, String),
-    CookieFile(&'a str),
+    CookieFile(PathBuf),
 }
 
-impl<'a> Auth<'a> {
+impl Auth {
     /// Convert into the arguments that jsonrpc::Client needs.
     fn get_user_pass(self) -> Result<(Option<String>, Option<String>)> {
         use std::io::Read;
