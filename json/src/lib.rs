@@ -352,7 +352,8 @@ pub struct ListReceivedByAddressResult {
     #[serde(rename = "involvesWatchonly")]
     pub involved_watch_only: bool,
     pub address: Address,
-    pub amount: u64,
+    #[serde(deserialize_with = "deserialize_amount")]
+    pub amount: Amount,
     pub confirmations: u32,
     pub label: String,
     pub txids: Vec<sha256d::Hash>,

@@ -543,15 +543,15 @@ pub trait RpcApi: Sized {
         &self,
         label: Option<&str>,
         address_type: Option<json::AddressType>,
-    ) -> Result<String> {
+    ) -> Result<Address> {
         self.call("getnewaddress", &[opt_into_json(label)?, opt_into_json(address_type)?])
     }
 
     /// Mine `block_num` blocks and pay coinbase to `address`
     ///
     /// Returns hashes of the generated blocks
-    fn generate_to_address(&self, block_num: u64, address: &str) -> Result<Vec<sha256d::Hash>> {
-        self.call("generatetoaddress", &[block_num.into(), address.into()])
+    fn generate_to_address(&self, block_num: u64, address: &Address) -> Result<Vec<sha256d::Hash>> {
+        self.call("generatetoaddress", &[block_num.into(), address.to_string().into()])
     }
 
     /// Mine up to block_num blocks immediately (before the RPC call returns)
