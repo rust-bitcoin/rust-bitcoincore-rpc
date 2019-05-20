@@ -19,7 +19,7 @@ and print out the hash of the latest block.
 It assumes that the node has password authentication setup, the RPC interface is enabled at port `8332` and the node
 is set up to accept RPC connections. 
 
-```
+```rust
 extern crate bitcoincore_rpc;
 
 use bitcoincore_rpc::{Auth, Client, RpcApi};
