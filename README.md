@@ -6,7 +6,7 @@ This is a Rust RPC client library for calling the Bitcoin Core JSON-RPC API. It 
 [rust-jsonrpc](https://github.com/apoelstra/rust-jsonrpc) and makes it easier to talk to the Bitcoin JSON-RPC interface 
 
 This git package compiles into two crates.
-1. [bitcoincore-rcp](https://crates.io/crates/bitcoincore-rpc) - contains an implementation of an rpc client that exposes 
+1. [bitcoincore-rpc](https://crates.io/crates/bitcoincore-rpc) - contains an implementation of an rpc client that exposes 
 the Bitcoin Core JSON-RPC APIs as rust functions.
 
 2. [bitcoincore-rpc-json](https://crates.io/crates/bitcoincore-rpc-json) -  contains rust data structures that represent 
