@@ -567,6 +567,16 @@ pub trait RpcApi: Sized {
         self.call("invalidateblock", &[into_json(block_hash)?])
     }
 
+    /// Mark a block as valid by `block_hash`
+    fn reconsider_block(&self, block_hash: &sha256d::Hash) -> Result<()> {
+        self.call("reconsiderblock", &[into_json(block_hash)?])
+    }
+
+    /// Get txids of all transactions in a memory pool
+    fn get_raw_mempool(&self) -> Result<Vec<sha256d::Hash>> {
+        self.call("getrawmempool", &[])
+    }
+
     fn send_to_address(
         &self,
         address: &Address,
