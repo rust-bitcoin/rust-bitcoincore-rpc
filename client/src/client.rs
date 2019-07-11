@@ -9,7 +9,7 @@
 //
 
 use std::fs::File;
-use std::result;
+use std::{fmt, result};
 
 use bitcoin;
 use hex;
@@ -652,6 +652,16 @@ pub trait RpcApi: Sized {
 /// Client implements a JSON-RPC client for the Bitcoin Core daemon or compatible APIs.
 pub struct Client {
     client: jsonrpc::client::Client,
+}
+
+impl fmt::Debug for Client {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(
+            f,
+            "bitcoincore_rpc::Client(jsonrpc::Client(last_nonce={}))",
+            self.client.last_nonce()
+        )
+    }
 }
 
 impl Client {
