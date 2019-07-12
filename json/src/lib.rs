@@ -582,7 +582,7 @@ pub struct CreateRawTransactionInput {
     pub sequence: Option<u32>,
 }
 
-#[derive(Serialize, Clone, PartialEq, Eq, Debug)]
+#[derive(Serialize, Clone, PartialEq, Eq, Debug, Default)]
 #[serde(rename_all = "camelCase")]
 pub struct FundRawTransactionOptions {
     #[serde(skip_serializing_if = "Option::is_none")]
