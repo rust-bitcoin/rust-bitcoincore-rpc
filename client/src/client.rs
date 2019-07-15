@@ -21,7 +21,7 @@ use serde_json;
 use bitcoin::{Address, Block, BlockHeader, PrivateKey, Transaction};
 use bitcoin_amount::Amount;
 use bitcoin_hashes::sha256d;
-use log::Level::Trace;
+use log::Level::Debug;
 use num_bigint::BigUint;
 use secp256k1::{SecretKey, Signature};
 use std::collections::HashMap;
@@ -701,14 +701,14 @@ impl RpcApi for Client {
         args: &[serde_json::Value],
     ) -> Result<T> {
         let req = self.client.build_request(&cmd, &args);
-        if log_enabled!(Trace) {
-            trace!("JSON-RPC request: {}", serde_json::to_string(&req).unwrap());
+        if log_enabled!(Debug) {
+            debug!("JSON-RPC request: {}", serde_json::to_string(&req).unwrap());
         }
 
         let resp = self.client.send_request(&req).map_err(Error::from);
-        if log_enabled!(Trace) && resp.is_ok() {
+        if log_enabled!(Debug) && resp.is_ok() {
             let resp = resp.as_ref().unwrap();
-            trace!("JSON-RPC response: {}", serde_json::to_string(resp).unwrap());
+            debug!("JSON-RPC response: {}", serde_json::to_string(resp).unwrap());
         }
         Ok(resp?.into_result()?)
     }
