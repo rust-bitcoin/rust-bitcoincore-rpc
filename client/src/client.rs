@@ -129,7 +129,7 @@ fn opt_result<T: for<'a> serde::de::Deserialize<'a>>(
 }
 
 /// Used to pass raw txs into the API.
-pub trait RawTx: Sized {
+pub trait RawTx: Sized + Clone {
     fn raw_hex(self) -> String;
 }
 
@@ -522,8 +522,9 @@ pub trait RpcApi: Sized {
         self.call("signrawtransactionwithkey", handle_defaults(&mut args, &defaults))
     }
 
-    fn test_mempool_accept(&self, rawtxs: &[&str]) -> Result<Vec<json::TestMempoolAccept>> {
-        self.call("testmempoolaccept", &[into_json(rawtxs)?])
+    fn test_mempool_accept<R: RawTx>(&self, rawtxs: &[R]) -> Result<Vec<json::TestMempoolAccept>> {
+        let hexes: Vec<serde_json::Value> = rawtxs.to_vec().into_iter().map(|r| r.raw_hex().into()).collect();
+        self.call("testmempoolaccept", &[hexes.into()])
     }
 
     fn stop(&self) -> Result<()> {
