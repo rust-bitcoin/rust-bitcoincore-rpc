@@ -603,7 +603,7 @@ pub struct FundRawTransactionResult {
     #[serde(deserialize_with = "deserialize_amount")]
     pub fee: Amount,
     #[serde(rename = "changepos")]
-    pub change_position: u32,
+    pub change_position: i32,
 }
 
 impl FundRawTransactionResult {
