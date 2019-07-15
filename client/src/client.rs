@@ -468,7 +468,7 @@ pub trait RpcApi: Sized {
     fn fund_raw_transaction<R: RawTx>(
         &self,
         tx: R,
-        options: Option<json::FundRawTransactionOptions>,
+        options: Option<&json::FundRawTransactionOptions>,
         is_witness: Option<bool>,
     ) -> Result<json::FundRawTransactionResult> {
         let mut args = [tx.raw_hex().into(), opt_into_json(options)?, opt_into_json(is_witness)?];
