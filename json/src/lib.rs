@@ -258,24 +258,12 @@ pub enum Bip125Replaceable {
 }
 
 /// Enum to represent the BIP125 replacable status for a transaction.
-#[derive(Clone, PartialEq, Eq, Debug)]
+#[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
+#[serde(rename_all = "lowercase")]
 pub enum GetTransactionResultDetailCategory {
     Send,
     Receive,
-}
-
-impl<'de> ::serde::Deserialize<'de> for GetTransactionResultDetailCategory {
-    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
-    where
-        D: ::serde::Deserializer<'de>,
-    {
-        let s = String::deserialize(deserializer)?;
-        match s.as_ref() {
-            "send" => Ok(GetTransactionResultDetailCategory::Send),
-            "receive" => Ok(GetTransactionResultDetailCategory::Receive),
-            v => Err(D::Error::custom(&format!("wrong value for 'detail' field: {}", v))),
-        }
-    }
+    Generate,
 }
 
 #[derive(Clone, PartialEq, Eq, Debug, Deserialize)]
@@ -285,7 +273,7 @@ pub struct GetTransactionResultDetail {
     pub category: GetTransactionResultDetailCategory,
     #[serde(deserialize_with = "deserialize_amount")]
     pub amount: Amount,
-    pub label: String,
+    pub label: Option<String>,
     pub vout: u32,
     #[serde(default, deserialize_with = "deserialize_amount_opt")]
     pub fee: Option<Amount>,
@@ -1025,7 +1013,7 @@ mod tests {
 					address: addr!("mq3VuL2K63VKWkp8vvqRiJPre4h9awrHfA"),
 					category: GetTransactionResultDetailCategory::Receive,
 					amount: Amount::from_btc(1.0),
-					label: "".into(),
+					label: Some("".into()),
 					vout: 1,
 					fee: None,
 					abandoned: None,
