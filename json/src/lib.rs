@@ -377,7 +377,7 @@ pub struct TestMempoolAccept {
     pub txid: String,
     pub allowed: bool,
     #[serde(rename = "reject-reason")]
-    pub reject_reason: String,
+    pub reject_reason: Option<String>,
 }
 
 /// Models the result of "getblockchaininfo"
