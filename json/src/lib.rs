@@ -30,11 +30,10 @@ extern crate serde_json;
 use std::str::FromStr;
 
 use bitcoin::consensus::encode;
-use bitcoin::{Address, Script, Transaction};
+use bitcoin::{PublicKey, Address, Script, Transaction};
 use bitcoin_amount::Amount;
 use bitcoin_hashes::sha256d;
 use num_bigint::BigUint;
-use secp256k1::PublicKey;
 use serde::de::Error as SerdeError;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
