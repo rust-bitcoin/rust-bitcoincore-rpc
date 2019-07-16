@@ -30,7 +30,7 @@ extern crate serde_json;
 use std::str::FromStr;
 
 use bitcoin::consensus::encode;
-use bitcoin::{PublicKey, PrivateKey, Address, Script, Transaction};
+use bitcoin::{Address, PrivateKey, PublicKey, Script, Transaction};
 use bitcoin_amount::Amount;
 use bitcoin_hashes::sha256d;
 use num_bigint::BigUint;
@@ -443,14 +443,19 @@ impl<'a> serde::Serialize for ImportMultiRequestScriptPubkey<'a> {
     where
         S: serde::Serializer,
     {
-        match self {
+        match *self {
             ImportMultiRequestScriptPubkey::Address(ref addr) => {
                 #[derive(Serialize)]
                 struct Tmp<'a> {
                     pub address: &'a Address,
                 };
-                serde::Serialize::serialize(&Tmp{ address: addr }, serializer)
-            },
+                serde::Serialize::serialize(
+                    &Tmp {
+                        address: addr,
+                    },
+                    serializer,
+                )
+            }
             ImportMultiRequestScriptPubkey::Script(script) => {
                 serializer.serialize_str(&hex::encode(script.as_bytes()))
             }
