@@ -395,6 +395,15 @@ pub trait RpcApi: Sized {
         )
     }
 
+    fn import_multi(&self, requests: &[&json::ImportMultiRequest], options: Option<&json::ImportMultiOptions>) -> Result<Vec<json::ImportMultiResult>> {
+        let mut json_requests = Vec::with_capacity(requests.len());
+        for req in requests {
+            json_requests.push(serde_json::to_value(req)?);
+        }
+        let mut args = [json_requests.into(), opt_into_json(options)?];
+        self.call("importmulti", handle_defaults(&mut args, &[null()]))
+    }
+
     fn key_pool_refill(&self, new_size: Option<usize>) -> Result<()> {
         let mut args = [opt_into_json(new_size)?];
         self.call("keypoolrefill", handle_defaults(&mut args, &[null()]))

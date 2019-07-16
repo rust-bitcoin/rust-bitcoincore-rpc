@@ -30,7 +30,7 @@ extern crate serde_json;
 use std::str::FromStr;
 
 use bitcoin::consensus::encode;
-use bitcoin::{PublicKey, Address, Script, Transaction};
+use bitcoin::{PublicKey, PrivateKey, Address, Script, Transaction};
 use bitcoin_amount::Amount;
 use bitcoin_hashes::sha256d;
 use num_bigint::BigUint;
@@ -379,6 +379,17 @@ pub struct TestMempoolAccept {
     pub reject_reason: Option<String>,
 }
 
+/// Status of a softfork
+#[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
+pub struct Softfork {
+    /// Name of softfork
+    pub id: String,
+    /// Block version
+    pub version: u64,
+    /// Progress toward rejecting pre-softfork blocks
+    pub reject: RejectStatus,
+}
+
 /// Models the result of "getblockchaininfo"
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct GetBlockchainInfoResult {
@@ -421,15 +432,78 @@ pub struct GetBlockchainInfoResult {
     pub warnings: String,
 }
 
-/// Status of a softfork
+#[derive(Clone, PartialEq, Eq, Debug)]
+pub enum ImportMultiRequestScriptPubkey<'a> {
+    Address(&'a Address),
+    Script(&'a Script),
+}
+
+impl<'a> serde::Serialize for ImportMultiRequestScriptPubkey<'a> {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        match self {
+            ImportMultiRequestScriptPubkey::Address(ref addr) => {
+                #[derive(Serialize)]
+                struct Tmp<'a> {
+                    pub address: &'a Address,
+                };
+                serde::Serialize::serialize(&Tmp{ address: addr }, serializer)
+            },
+            ImportMultiRequestScriptPubkey::Script(script) => {
+                serializer.serialize_str(&hex::encode(script.as_bytes()))
+            }
+        }
+    }
+}
+
+/// A import request for importmulti.
+#[derive(Clone, PartialEq, Eq, Debug, Default, Serialize)]
+pub struct ImportMultiRequest<'a> {
+    pub timestamp: u64,
+    /// If using descriptor, do not also provide address/scriptPubKey, scripts, or pubkeys.
+    #[serde(rename = "desc", skip_serializing_if = "Option::is_none")]
+    pub descriptor: Option<&'a str>,
+    #[serde(rename = "scriptPubKey", skip_serializing_if = "Option::is_none")]
+    pub script_pubkey: Option<ImportMultiRequestScriptPubkey<'a>>,
+    #[serde(rename = "redeemscript", skip_serializing_if = "Option::is_none")]
+    pub redeem_script: Option<&'a Script>,
+    #[serde(rename = "witnessscript", skip_serializing_if = "Option::is_none")]
+    pub witness_script: Option<&'a Script>,
+    #[serde(skip_serializing_if = "<[_]>::is_empty")]
+    pub pubkeys: &'a [PublicKey],
+    #[serde(skip_serializing_if = "<[_]>::is_empty")]
+    pub keys: &'a [PrivateKey],
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub range: Option<(usize, usize)>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub internal: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub watchonly: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub label: Option<&'a str>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub keypool: Option<bool>,
+}
+
+#[derive(Clone, PartialEq, Eq, Debug, Default, Deserialize, Serialize)]
+pub struct ImportMultiOptions {
+    pub rescan: Option<bool>,
+}
+
 #[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
-pub struct Softfork {
-    /// Name of softfork
-    pub id: String,
-    /// Block version
-    pub version: u64,
-    /// Progress toward rejecting pre-softfork blocks
-    pub reject: RejectStatus,
+pub struct ImportMultiResultError {
+    pub code: i64,
+    pub message: String,
+}
+
+#[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
+pub struct ImportMultiResult {
+    pub success: bool,
+    #[serde(default)]
+    pub warnings: Vec<String>,
+    pub error: Option<ImportMultiResultError>,
 }
 
 /// Progress toward rejecting pre-softfork blocks
