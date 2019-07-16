@@ -8,7 +8,9 @@
 // If not, see <http://creativecommons.org/publicdomain/zero/1.0/>.
 //
 
+use std::collections::HashMap;
 use std::fs::File;
+use std::path::PathBuf;
 use std::{fmt, result};
 
 use bitcoin;
@@ -18,14 +20,13 @@ use secp256k1;
 use serde;
 use serde_json;
 
-use bitcoin::{Address, Block, BlockHeader, PrivateKey, PublicKey, Transaction};
+use bitcoin::{Address, Block, BlockHeader, OutPoint, PrivateKey, PublicKey, Transaction};
 use bitcoin_amount::Amount;
 use bitcoin_hashes::sha256d;
 use log::Level::Debug;
 use num_bigint::BigUint;
 use secp256k1::{SecretKey, Signature};
-use std::collections::HashMap;
-use std::path::PathBuf;
+use serde::{Deserialize, Serialize};
 
 use error::*;
 use json;
@@ -34,6 +35,30 @@ use queryable;
 /// Crate-specific Result type, shorthand for `std::result::Result` with our
 /// crate-specific Error type;
 pub type Result<T> = result::Result<T, Error>;
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+struct JsonOutPoint {
+    pub txid: sha256d::Hash,
+    pub vout: u32,
+}
+
+impl From<OutPoint> for JsonOutPoint {
+    fn from(o: OutPoint) -> JsonOutPoint {
+        JsonOutPoint {
+            txid: o.txid,
+            vout: o.vout,
+        }
+    }
+}
+
+impl Into<OutPoint> for JsonOutPoint {
+    fn into(self) -> OutPoint {
+        OutPoint {
+            txid: self.txid,
+            vout: self.vout,
+        }
+    }
+}
 
 /// Shorthand for converting a variable into a serde_json::Value.
 fn into_json<T>(val: T) -> Result<serde_json::Value>
@@ -440,6 +465,23 @@ pub trait RpcApi: Sized {
         ];
         let defaults = [into_json(0)?, into_json(9999999)?, empty_arr(), into_json(true)?, null()];
         self.call("listunspent", handle_defaults(&mut args, &defaults))
+    }
+
+    /// To unlock, use [unlock_unspent].
+    fn lock_unspent(&self, outputs: &[OutPoint]) -> Result<bool> {
+        let outputs: Vec<_> = outputs
+            .into_iter()
+            .map(|o| serde_json::to_value(JsonOutPoint::from(*o)).unwrap())
+            .collect();
+        self.call("lockunspent", &[false.into(), outputs.into()])
+    }
+
+    fn unlock_unspent(&self, outputs: &[OutPoint]) -> Result<bool> {
+        let outputs: Vec<_> = outputs
+            .into_iter()
+            .map(|o| serde_json::to_value(JsonOutPoint::from(*o)).unwrap())
+            .collect();
+        self.call("lockunspent", &[true.into(), outputs.into()])
     }
 
     fn list_received_by_address(
