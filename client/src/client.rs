@@ -18,7 +18,7 @@ use secp256k1;
 use serde;
 use serde_json;
 
-use bitcoin::{Address, Block, BlockHeader, PrivateKey, Transaction};
+use bitcoin::{Address, Block, BlockHeader, PrivateKey, PublicKey, Transaction};
 use bitcoin_amount::Amount;
 use bitcoin_hashes::sha256d;
 use log::Level::Debug;
@@ -366,6 +366,16 @@ pub trait RpcApi: Sized {
         Ok(hex::decode(&hex)?)
     }
 
+    fn import_public_key(
+        &self,
+        pubkey: &PublicKey,
+        label: Option<&str>,
+        rescan: Option<bool>,
+    ) -> Result<()> {
+        let mut args = [pubkey.to_string().into(), opt_into_json(label)?, opt_into_json(rescan)?];
+        self.call("importpubkey", handle_defaults(&mut args, &[into_json("")?, null()]))
+    }
+
     fn import_priv_key(
         &self,
         privkey: &SecretKey,
@@ -393,6 +403,19 @@ pub trait RpcApi: Sized {
             "importaddress",
             handle_defaults(&mut args, &[into_json("")?, true.into(), null()]),
         )
+    }
+
+    fn import_multi(
+        &self,
+        requests: &[&json::ImportMultiRequest],
+        options: Option<&json::ImportMultiOptions>,
+    ) -> Result<Vec<json::ImportMultiResult>> {
+        let mut json_requests = Vec::with_capacity(requests.len());
+        for req in requests {
+            json_requests.push(serde_json::to_value(req)?);
+        }
+        let mut args = [json_requests.into(), opt_into_json(options)?];
+        self.call("importmulti", handle_defaults(&mut args, &[null()]))
     }
 
     fn key_pool_refill(&self, new_size: Option<usize>) -> Result<()> {
@@ -523,7 +546,8 @@ pub trait RpcApi: Sized {
     }
 
     fn test_mempool_accept<R: RawTx>(&self, rawtxs: &[R]) -> Result<Vec<json::TestMempoolAccept>> {
-        let hexes: Vec<serde_json::Value> = rawtxs.to_vec().into_iter().map(|r| r.raw_hex().into()).collect();
+        let hexes: Vec<serde_json::Value> =
+            rawtxs.to_vec().into_iter().map(|r| r.raw_hex().into()).collect();
         self.call("testmempoolaccept", &[hexes.into()])
     }
 
