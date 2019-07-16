@@ -10,3 +10,16 @@ script:
   - cargo test --verbose
   - cargo build --verbose --examples
 
+jobs:
+  include:
+    - stage: integration
+      env:
+        - VERSION=0.18.0
+      install:
+        - wget https://bitcoincore.org/bin/bitcoin-core-$VERSION/bitcoin-$VERSION-x86_64-linux-gnu.tar.gz
+        - tar -xzf bitcoin-$VERSION-x86_64-linux-gnu.tar.gz
+        - cd bitcoin-$VERSION/bin
+        - ./bitcoind -regtest &
+      rust: stable
+      script:
+        - cargo run --example regtest
