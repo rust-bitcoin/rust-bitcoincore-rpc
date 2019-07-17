@@ -346,6 +346,22 @@ pub trait RpcApi: Sized {
         self.call("gettransaction", handle_defaults(&mut args, &[null()]))
     }
 
+    fn list_transactions(
+        &self,
+        label: Option<&str>,
+        count: Option<usize>,
+        skip: Option<usize>,
+        include_watchonly: Option<bool>,
+    ) -> Result<Vec<json::ListTransactionResult>> {
+        let mut args = [
+            label.unwrap_or("*").into(),
+            opt_into_json(count)?,
+            opt_into_json(skip)?,
+            opt_into_json(include_watchonly)?,
+        ];
+        self.call("listtransactions", handle_defaults(&mut args, &[10.into(), 0.into(), null()]))
+    }
+
     fn get_tx_out(
         &self,
         txid: &sha256d::Hash,
