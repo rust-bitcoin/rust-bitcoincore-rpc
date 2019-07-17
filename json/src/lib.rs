@@ -287,9 +287,9 @@ pub struct GetTransactionResult {
     #[serde(default, deserialize_with = "deserialize_amount_opt")]
     pub fee: Option<Amount>,
     pub confirmations: i32,
-    pub blockhash: sha256d::Hash,
-    pub blockindex: usize,
-    pub blocktime: u64,
+    pub blockhash: Option<sha256d::Hash>,
+    pub blockindex: Option<usize>,
+    pub blocktime: Option<u64>,
     pub txid: sha256d::Hash,
     pub time: u64,
     pub timereceived: u64,
@@ -494,6 +494,7 @@ pub struct ImportMultiRequest<'a> {
 
 #[derive(Clone, PartialEq, Eq, Debug, Default, Deserialize, Serialize)]
 pub struct ImportMultiOptions {
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub rescan: Option<bool>,
 }
 
@@ -699,6 +700,7 @@ pub struct SignRawTransactionInput {
     pub script_pub_key: Script,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub redeem_script: Option<Script>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub amount: Option<f64>,
 }
 
@@ -1079,9 +1081,9 @@ mod tests {
 			amount: Amount::from_btc(1.0),
 			fee: None,
 			confirmations: 30104,
-			blockhash: hash!("00000000000000039dc06adbd7666a8d1df9acf9d0329d73651b764167d63765"),
-			blockindex: 2028,
-			blocktime: 1534935138,
+			blockhash: Some(hash!("00000000000000039dc06adbd7666a8d1df9acf9d0329d73651b764167d63765")),
+			blockindex: Some(2028),
+			blocktime: Some(1534935138),
 			txid: hash!("4a5b5266e1750488395ac15c0376c9d48abf45e4df620777fe8cff096f57aa91"),
 			time: 1534934745,
 			timereceived: 1534934745,
