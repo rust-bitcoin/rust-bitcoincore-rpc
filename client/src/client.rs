@@ -418,6 +418,10 @@ pub trait RpcApi: Sized {
         self.call("importmulti", handle_defaults(&mut args, &[null()]))
     }
 
+    fn set_label(&self, address: &Address, label: &str) -> Result<()> {
+        self.call("setlabel", &[address.to_string().into(), label.into()])
+    }
+
     fn key_pool_refill(&self, new_size: Option<usize>) -> Result<()> {
         let mut args = [opt_into_json(new_size)?];
         self.call("keypoolrefill", handle_defaults(&mut args, &[null()]))
