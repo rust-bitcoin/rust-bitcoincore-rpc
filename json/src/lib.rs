@@ -836,15 +836,15 @@ mod tests {
     #[test]
     fn test_AddMultiSigAddressResult() {
         let expected = AddMultiSigAddressResult {
-			address: addr!("2N3Cvw3s23W43MXnW28DKpuDGeXV147KTzc"),
-			redeem_script: script!("51210330aa51b444e2bac981235a0056112385057492c6cd06936af410c5af27c1f9462103dae74774a6cd35d948ee60bc7a1b35fdaed7b54698762e963e3677f795c7ad2a52ae"),
-		};
+            address: addr!("2N3Cvw3s23W43MXnW28DKpuDGeXV147KTzc"),
+            redeem_script: script!("51210330aa51b444e2bac981235a0056112385057492c6cd06936af410c5af27c1f9462103dae74774a6cd35d948ee60bc7a1b35fdaed7b54698762e963e3677f795c7ad2a52ae"),
+        };
         let json = r#"
-			{
-			  "address": "2N3Cvw3s23W43MXnW28DKpuDGeXV147KTzc",
-			  "redeemScript": "51210330aa51b444e2bac981235a0056112385057492c6cd06936af410c5af27c1f9462103dae74774a6cd35d948ee60bc7a1b35fdaed7b54698762e963e3677f795c7ad2a52ae"
-			}
-		"#;
+            {
+              "address": "2N3Cvw3s23W43MXnW28DKpuDGeXV147KTzc",
+              "redeemScript": "51210330aa51b444e2bac981235a0056112385057492c6cd06936af410c5af27c1f9462103dae74774a6cd35d948ee60bc7a1b35fdaed7b54698762e963e3677f795c7ad2a52ae"
+            }
+        "#;
         assert_eq!(expected, serde_json::from_str(json).unwrap());
     }
 
@@ -876,30 +876,30 @@ mod tests {
             )),
         };
         let json = r#"
-			{
-			  "hash": "000000006c02c8ea6e4ff69651f7fcde348fb9d557a06e6957b65552002a7820",
-			  "confirmations": 1414401,
-			  "strippedsize": 190,
-			  "size": 190,
-			  "weight": 760,
-			  "height": 2,
-			  "version": 1,
-			  "versionHex": "00000001",
-			  "merkleroot": "20222eb90f5895556926c112bb5aa0df4ab5abc3107e21a6950aec3b2e3541e2",
-			  "tx": [
-				"20222eb90f5895556926c112bb5aa0df4ab5abc3107e21a6950aec3b2e3541e2"
-			  ],
-			  "time": 1296688946,
-			  "mediantime": 1296688928,
-			  "nonce": 875942400,
-			  "bits": "1d00ffff",
-			  "difficulty": 1,
-			  "chainwork": "0000000000000000000000000000000000000000000000000000000300030003",
-			  "nTx": 1,
-			  "previousblockhash": "00000000b873e79784647a6c82962c70d228557d24a747ea4d1b8bbe878e1206",
-			  "nextblockhash": "000000008b896e272758da5297bcd98fdc6d97c9b765ecec401e286dc1fdbe10"
-			}
-		"#;
+            {
+              "hash": "000000006c02c8ea6e4ff69651f7fcde348fb9d557a06e6957b65552002a7820",
+              "confirmations": 1414401,
+              "strippedsize": 190,
+              "size": 190,
+              "weight": 760,
+              "height": 2,
+              "version": 1,
+              "versionHex": "00000001",
+              "merkleroot": "20222eb90f5895556926c112bb5aa0df4ab5abc3107e21a6950aec3b2e3541e2",
+              "tx": [
+                "20222eb90f5895556926c112bb5aa0df4ab5abc3107e21a6950aec3b2e3541e2"
+              ],
+              "time": 1296688946,
+              "mediantime": 1296688928,
+              "nonce": 875942400,
+              "bits": "1d00ffff",
+              "difficulty": 1,
+              "chainwork": "0000000000000000000000000000000000000000000000000000000300030003",
+              "nTx": 1,
+              "previousblockhash": "00000000b873e79784647a6c82962c70d228557d24a747ea4d1b8bbe878e1206",
+              "nextblockhash": "000000008b896e272758da5297bcd98fdc6d97c9b765ecec401e286dc1fdbe10"
+            }
+        "#;
         assert_eq!(expected, serde_json::from_str(json).unwrap());
     }
 
@@ -927,24 +927,24 @@ mod tests {
             )),
         };
         let json = r#"
-			{
-			  "hash": "00000000000000039dc06adbd7666a8d1df9acf9d0329d73651b764167d63765",
-			  "confirmations": 29341,
-			  "height": 1384958,
-			  "version": 536870912,
-			  "versionHex": "20000000",
-			  "merkleroot": "33d8a6f622182a4e844022bbc8aa51c63f6476708ad5cc5c451f2933753440d7",
-			  "time": 1534935138,
-			  "mediantime": 1534932055,
-			  "nonce": 871182973,
-			  "bits": "1959273b",
-			  "difficulty": 48174374.44122773,
-			  "chainwork": "0000000000000000000000000000000000000000000000a3c78921878ecbafd4",
-			  "nTx": 2647,
-			  "previousblockhash": "000000000000002937dcaffd8367cfb05cd9ef2e3bd7a081de82696f70e719d9",
-			  "nextblockhash": "00000000000000331dddb553312687a4be62635ad950cde36ebc977c702d2791"
-			}
-		"#;
+            {
+              "hash": "00000000000000039dc06adbd7666a8d1df9acf9d0329d73651b764167d63765",
+              "confirmations": 29341,
+              "height": 1384958,
+              "version": 536870912,
+              "versionHex": "20000000",
+              "merkleroot": "33d8a6f622182a4e844022bbc8aa51c63f6476708ad5cc5c451f2933753440d7",
+              "time": 1534935138,
+              "mediantime": 1534932055,
+              "nonce": 871182973,
+              "bits": "1959273b",
+              "difficulty": 48174374.44122773,
+              "chainwork": "0000000000000000000000000000000000000000000000a3c78921878ecbafd4",
+              "nTx": 2647,
+              "previousblockhash": "000000000000002937dcaffd8367cfb05cd9ef2e3bd7a081de82696f70e719d9",
+              "nextblockhash": "00000000000000331dddb553312687a4be62635ad950cde36ebc977c702d2791"
+            }
+        "#;
         assert_eq!(expected, serde_json::from_str(json).unwrap());
     }
 
@@ -961,17 +961,17 @@ mod tests {
             warnings: "Warning: unknown new rules activated (versionbit 28)".into(),
         };
         let json = r#"
-			{
-			  "blocks": 1415011,
-			  "currentblockweight": 0,
-			  "currentblocktx": 0,
-			  "difficulty": 1,
-			  "networkhashps": 11970022568515.56,
-			  "pooledtx": 110,
-			  "chain": "test",
-			  "warnings": "Warning: unknown new rules activated (versionbit 28)"
-			}
-		"#;
+            {
+              "blocks": 1415011,
+              "currentblockweight": 0,
+              "currentblocktx": 0,
+              "difficulty": 1,
+              "networkhashps": 11970022568515.56,
+              "pooledtx": 110,
+              "chain": "test",
+              "warnings": "Warning: unknown new rules activated (versionbit 28)"
+            }
+        "#;
         assert_eq!(expected, serde_json::from_str(json).unwrap());
     }
 
@@ -979,107 +979,107 @@ mod tests {
     #[test]
     fn test_GetRawTransactionResult() {
         let expected = GetRawTransactionResult {
-			in_active_chain: None,
-			hex: hex!("0200000001586bd02815cf5faabfec986a4e50d25dbee089bd2758621e61c5fab06c334af0000000006b483045022100e85425f6d7c589972ee061413bcf08dc8c8e589ce37b217535a42af924f0e4d602205c9ba9cb14ef15513c9d946fa1c4b797883e748e8c32171bdf6166583946e35c012103dae30a4d7870cd87b45dd53e6012f71318fdd059c1c2623b8cc73f8af287bb2dfeffffff021dc4260c010000001976a914f602e88b2b5901d8aab15ebe4a97cf92ec6e03b388ac00e1f505000000001976a914687ffeffe8cf4e4c038da46a9b1d37db385a472d88acfd211500"),
-			txid: hash!("4a5b5266e1750488395ac15c0376c9d48abf45e4df620777fe8cff096f57aa91"),
-			hash: hash!("4a5b5266e1750488395ac15c0376c9d48abf45e4df620777fe8cff096f57aa91"),
-			size: 226,
-			vsize: 226,
-			version: 2,
-			locktime: 1384957,
-			vin: vec![GetRawTransactionResultVin{
-				txid: Some(hash!("f04a336cb0fac5611e625827bd89e0be5dd2504e6a98ecbfaa5fcf1528d06b58")),
-				vout: Some(0),
-				coinbase: None,
-				script_sig: Some(GetRawTransactionResultVinScriptSig{
-					asm: "3045022100e85425f6d7c589972ee061413bcf08dc8c8e589ce37b217535a42af924f0e4d602205c9ba9cb14ef15513c9d946fa1c4b797883e748e8c32171bdf6166583946e35c[ALL] 03dae30a4d7870cd87b45dd53e6012f71318fdd059c1c2623b8cc73f8af287bb2d".into(),
-					hex: hex!("483045022100e85425f6d7c589972ee061413bcf08dc8c8e589ce37b217535a42af924f0e4d602205c9ba9cb14ef15513c9d946fa1c4b797883e748e8c32171bdf6166583946e35c012103dae30a4d7870cd87b45dd53e6012f71318fdd059c1c2623b8cc73f8af287bb2d"),
-				}),
-				sequence: 4294967294,
-				txinwitness: None,
+            in_active_chain: None,
+            hex: hex!("0200000001586bd02815cf5faabfec986a4e50d25dbee089bd2758621e61c5fab06c334af0000000006b483045022100e85425f6d7c589972ee061413bcf08dc8c8e589ce37b217535a42af924f0e4d602205c9ba9cb14ef15513c9d946fa1c4b797883e748e8c32171bdf6166583946e35c012103dae30a4d7870cd87b45dd53e6012f71318fdd059c1c2623b8cc73f8af287bb2dfeffffff021dc4260c010000001976a914f602e88b2b5901d8aab15ebe4a97cf92ec6e03b388ac00e1f505000000001976a914687ffeffe8cf4e4c038da46a9b1d37db385a472d88acfd211500"),
+            txid: hash!("4a5b5266e1750488395ac15c0376c9d48abf45e4df620777fe8cff096f57aa91"),
+            hash: hash!("4a5b5266e1750488395ac15c0376c9d48abf45e4df620777fe8cff096f57aa91"),
+            size: 226,
+            vsize: 226,
+            version: 2,
+            locktime: 1384957,
+            vin: vec![GetRawTransactionResultVin{
+                txid: Some(hash!("f04a336cb0fac5611e625827bd89e0be5dd2504e6a98ecbfaa5fcf1528d06b58")),
+                vout: Some(0),
+                coinbase: None,
+                script_sig: Some(GetRawTransactionResultVinScriptSig{
+                    asm: "3045022100e85425f6d7c589972ee061413bcf08dc8c8e589ce37b217535a42af924f0e4d602205c9ba9cb14ef15513c9d946fa1c4b797883e748e8c32171bdf6166583946e35c[ALL] 03dae30a4d7870cd87b45dd53e6012f71318fdd059c1c2623b8cc73f8af287bb2d".into(),
+                    hex: hex!("483045022100e85425f6d7c589972ee061413bcf08dc8c8e589ce37b217535a42af924f0e4d602205c9ba9cb14ef15513c9d946fa1c4b797883e748e8c32171bdf6166583946e35c012103dae30a4d7870cd87b45dd53e6012f71318fdd059c1c2623b8cc73f8af287bb2d"),
+                }),
+                sequence: 4294967294,
+                txinwitness: None,
 
-			}],
-			vout: vec![GetRawTransactionResultVout{
-				value: Amount::from_btc(44.98834461),
-				n: 0,
-				script_pub_key: GetRawTransactionResultVoutScriptPubKey{
-					asm: "OP_DUP OP_HASH160 f602e88b2b5901d8aab15ebe4a97cf92ec6e03b3 OP_EQUALVERIFY OP_CHECKSIG".into(),
-					hex: hex!("76a914f602e88b2b5901d8aab15ebe4a97cf92ec6e03b388ac"),
-					req_sigs: Some(1),
-					type_: Some("pubkeyhash".into()),
-					addresses: Some(vec![addr!("n3wk1KcFnVibGdqQa6jbwoR8gbVtRbYM4M")]),
-				},
-			}, GetRawTransactionResultVout{
-				value: Amount::from_btc(1.0),
-				n: 1,
-				script_pub_key: GetRawTransactionResultVoutScriptPubKey{
-					asm: "OP_DUP OP_HASH160 687ffeffe8cf4e4c038da46a9b1d37db385a472d OP_EQUALVERIFY OP_CHECKSIG".into(),
-					hex: hex!("76a914687ffeffe8cf4e4c038da46a9b1d37db385a472d88ac"),
-					req_sigs: Some(1),
-					type_: Some("pubkeyhash".into()),
-					addresses: Some(vec![addr!("mq3VuL2K63VKWkp8vvqRiJPre4h9awrHfA")]),
-				},
-			}],
-			blockhash: Some(hash!("00000000000000039dc06adbd7666a8d1df9acf9d0329d73651b764167d63765")),
-			confirmations: Some(29446),
-			time: Some(1534935138),
-			blocktime: Some(1534935138),
-		};
+            }],
+            vout: vec![GetRawTransactionResultVout{
+                value: Amount::from_btc(44.98834461),
+                n: 0,
+                script_pub_key: GetRawTransactionResultVoutScriptPubKey{
+                    asm: "OP_DUP OP_HASH160 f602e88b2b5901d8aab15ebe4a97cf92ec6e03b3 OP_EQUALVERIFY OP_CHECKSIG".into(),
+                    hex: hex!("76a914f602e88b2b5901d8aab15ebe4a97cf92ec6e03b388ac"),
+                    req_sigs: Some(1),
+                    type_: Some("pubkeyhash".into()),
+                    addresses: Some(vec![addr!("n3wk1KcFnVibGdqQa6jbwoR8gbVtRbYM4M")]),
+                },
+            }, GetRawTransactionResultVout{
+                value: Amount::from_btc(1.0),
+                n: 1,
+                script_pub_key: GetRawTransactionResultVoutScriptPubKey{
+                    asm: "OP_DUP OP_HASH160 687ffeffe8cf4e4c038da46a9b1d37db385a472d OP_EQUALVERIFY OP_CHECKSIG".into(),
+                    hex: hex!("76a914687ffeffe8cf4e4c038da46a9b1d37db385a472d88ac"),
+                    req_sigs: Some(1),
+                    type_: Some("pubkeyhash".into()),
+                    addresses: Some(vec![addr!("mq3VuL2K63VKWkp8vvqRiJPre4h9awrHfA")]),
+                },
+            }],
+            blockhash: Some(hash!("00000000000000039dc06adbd7666a8d1df9acf9d0329d73651b764167d63765")),
+            confirmations: Some(29446),
+            time: Some(1534935138),
+            blocktime: Some(1534935138),
+        };
         let json = r#"
-			{
-			  "txid": "4a5b5266e1750488395ac15c0376c9d48abf45e4df620777fe8cff096f57aa91",
-			  "hash": "4a5b5266e1750488395ac15c0376c9d48abf45e4df620777fe8cff096f57aa91",
-			  "version": 2,
-			  "size": 226,
-			  "vsize": 226,
-			  "weight": 904,
-			  "locktime": 1384957,
-			  "vin": [
-				{
-				  "txid": "f04a336cb0fac5611e625827bd89e0be5dd2504e6a98ecbfaa5fcf1528d06b58",
-				  "vout": 0,
-				  "scriptSig": {
-					"asm": "3045022100e85425f6d7c589972ee061413bcf08dc8c8e589ce37b217535a42af924f0e4d602205c9ba9cb14ef15513c9d946fa1c4b797883e748e8c32171bdf6166583946e35c[ALL] 03dae30a4d7870cd87b45dd53e6012f71318fdd059c1c2623b8cc73f8af287bb2d",
-					"hex": "483045022100e85425f6d7c589972ee061413bcf08dc8c8e589ce37b217535a42af924f0e4d602205c9ba9cb14ef15513c9d946fa1c4b797883e748e8c32171bdf6166583946e35c012103dae30a4d7870cd87b45dd53e6012f71318fdd059c1c2623b8cc73f8af287bb2d"
-				  },
-				  "sequence": 4294967294
-				}
-			  ],
-			  "vout": [
-				{
-				  "value": 44.98834461,
-				  "n": 0,
-				  "scriptPubKey": {
-					"asm": "OP_DUP OP_HASH160 f602e88b2b5901d8aab15ebe4a97cf92ec6e03b3 OP_EQUALVERIFY OP_CHECKSIG",
-					"hex": "76a914f602e88b2b5901d8aab15ebe4a97cf92ec6e03b388ac",
-					"reqSigs": 1,
-					"type": "pubkeyhash",
-					"addresses": [
-					  "n3wk1KcFnVibGdqQa6jbwoR8gbVtRbYM4M"
-					]
-				  }
-				},
-				{
-				  "value": 1.00000000,
-				  "n": 1,
-				  "scriptPubKey": {
-					"asm": "OP_DUP OP_HASH160 687ffeffe8cf4e4c038da46a9b1d37db385a472d OP_EQUALVERIFY OP_CHECKSIG",
-					"hex": "76a914687ffeffe8cf4e4c038da46a9b1d37db385a472d88ac",
-					"reqSigs": 1,
-					"type": "pubkeyhash",
-					"addresses": [
-					  "mq3VuL2K63VKWkp8vvqRiJPre4h9awrHfA"
-					]
-				  }
-				}
-			  ],
-			  "hex": "0200000001586bd02815cf5faabfec986a4e50d25dbee089bd2758621e61c5fab06c334af0000000006b483045022100e85425f6d7c589972ee061413bcf08dc8c8e589ce37b217535a42af924f0e4d602205c9ba9cb14ef15513c9d946fa1c4b797883e748e8c32171bdf6166583946e35c012103dae30a4d7870cd87b45dd53e6012f71318fdd059c1c2623b8cc73f8af287bb2dfeffffff021dc4260c010000001976a914f602e88b2b5901d8aab15ebe4a97cf92ec6e03b388ac00e1f505000000001976a914687ffeffe8cf4e4c038da46a9b1d37db385a472d88acfd211500",
-			  "blockhash": "00000000000000039dc06adbd7666a8d1df9acf9d0329d73651b764167d63765",
-			  "confirmations": 29446,
-			  "time": 1534935138,
-			  "blocktime": 1534935138
-			}
-		"#;
+            {
+              "txid": "4a5b5266e1750488395ac15c0376c9d48abf45e4df620777fe8cff096f57aa91",
+              "hash": "4a5b5266e1750488395ac15c0376c9d48abf45e4df620777fe8cff096f57aa91",
+              "version": 2,
+              "size": 226,
+              "vsize": 226,
+              "weight": 904,
+              "locktime": 1384957,
+              "vin": [
+                {
+                  "txid": "f04a336cb0fac5611e625827bd89e0be5dd2504e6a98ecbfaa5fcf1528d06b58",
+                  "vout": 0,
+                  "scriptSig": {
+                    "asm": "3045022100e85425f6d7c589972ee061413bcf08dc8c8e589ce37b217535a42af924f0e4d602205c9ba9cb14ef15513c9d946fa1c4b797883e748e8c32171bdf6166583946e35c[ALL] 03dae30a4d7870cd87b45dd53e6012f71318fdd059c1c2623b8cc73f8af287bb2d",
+                    "hex": "483045022100e85425f6d7c589972ee061413bcf08dc8c8e589ce37b217535a42af924f0e4d602205c9ba9cb14ef15513c9d946fa1c4b797883e748e8c32171bdf6166583946e35c012103dae30a4d7870cd87b45dd53e6012f71318fdd059c1c2623b8cc73f8af287bb2d"
+                  },
+                  "sequence": 4294967294
+                }
+              ],
+              "vout": [
+                {
+                  "value": 44.98834461,
+                  "n": 0,
+                  "scriptPubKey": {
+                    "asm": "OP_DUP OP_HASH160 f602e88b2b5901d8aab15ebe4a97cf92ec6e03b3 OP_EQUALVERIFY OP_CHECKSIG",
+                    "hex": "76a914f602e88b2b5901d8aab15ebe4a97cf92ec6e03b388ac",
+                    "reqSigs": 1,
+                    "type": "pubkeyhash",
+                    "addresses": [
+                      "n3wk1KcFnVibGdqQa6jbwoR8gbVtRbYM4M"
+                    ]
+                  }
+                },
+                {
+                  "value": 1.00000000,
+                  "n": 1,
+                  "scriptPubKey": {
+                    "asm": "OP_DUP OP_HASH160 687ffeffe8cf4e4c038da46a9b1d37db385a472d OP_EQUALVERIFY OP_CHECKSIG",
+                    "hex": "76a914687ffeffe8cf4e4c038da46a9b1d37db385a472d88ac",
+                    "reqSigs": 1,
+                    "type": "pubkeyhash",
+                    "addresses": [
+                      "mq3VuL2K63VKWkp8vvqRiJPre4h9awrHfA"
+                    ]
+                  }
+                }
+              ],
+              "hex": "0200000001586bd02815cf5faabfec986a4e50d25dbee089bd2758621e61c5fab06c334af0000000006b483045022100e85425f6d7c589972ee061413bcf08dc8c8e589ce37b217535a42af924f0e4d602205c9ba9cb14ef15513c9d946fa1c4b797883e748e8c32171bdf6166583946e35c012103dae30a4d7870cd87b45dd53e6012f71318fdd059c1c2623b8cc73f8af287bb2dfeffffff021dc4260c010000001976a914f602e88b2b5901d8aab15ebe4a97cf92ec6e03b388ac00e1f505000000001976a914687ffeffe8cf4e4c038da46a9b1d37db385a472d88acfd211500",
+              "blockhash": "00000000000000039dc06adbd7666a8d1df9acf9d0329d73651b764167d63765",
+              "confirmations": 29446,
+              "time": 1534935138,
+              "blocktime": 1534935138
+            }
+        "#;
         assert_eq!(expected, serde_json::from_str(json).unwrap());
         assert!(expected.transaction().is_ok());
         assert_eq!(
@@ -1119,30 +1119,30 @@ mod tests {
             hex: hex!("0200000001586bd02815cf5faabfec986a4e50d25dbee089bd2758621e61c5fab06c334af0000000006b483045022100e85425f6d7c589972ee061413bcf08dc8c8e589ce37b217535a42af924f0e4d602205c9ba9cb14ef15513c9d946fa1c4b797883e748e8c32171bdf6166583946e35c012103dae30a4d7870cd87b45dd53e6012f71318fdd059c1c2623b8cc73f8af287bb2dfeffffff021dc4260c010000001976a914f602e88b2b5901d8aab15ebe4a97cf92ec6e03b388ac00e1f505000000001976a914687ffeffe8cf4e4c038da46a9b1d37db385a472d88acfd211500"),
         };
         let json = r#"
-			{
-			  "amount": 1.00000000,
-			  "confirmations": 30104,
-			  "blockhash": "00000000000000039dc06adbd7666a8d1df9acf9d0329d73651b764167d63765",
-			  "blockindex": 2028,
-			  "blocktime": 1534935138,
-			  "txid": "4a5b5266e1750488395ac15c0376c9d48abf45e4df620777fe8cff096f57aa91",
-			  "walletconflicts": [
-			  ],
-			  "time": 1534934745,
-			  "timereceived": 1534934745,
-			  "bip125-replaceable": "no",
-			  "details": [
-				{
-				  "address": "mq3VuL2K63VKWkp8vvqRiJPre4h9awrHfA",
-				  "category": "receive",
-				  "amount": 1.00000000,
-				  "label": "",
-				  "vout": 1
-				}
-			  ],
-			  "hex": "0200000001586bd02815cf5faabfec986a4e50d25dbee089bd2758621e61c5fab06c334af0000000006b483045022100e85425f6d7c589972ee061413bcf08dc8c8e589ce37b217535a42af924f0e4d602205c9ba9cb14ef15513c9d946fa1c4b797883e748e8c32171bdf6166583946e35c012103dae30a4d7870cd87b45dd53e6012f71318fdd059c1c2623b8cc73f8af287bb2dfeffffff021dc4260c010000001976a914f602e88b2b5901d8aab15ebe4a97cf92ec6e03b388ac00e1f505000000001976a914687ffeffe8cf4e4c038da46a9b1d37db385a472d88acfd211500"
-			}
-		"#;
+            {
+              "amount": 1.00000000,
+              "confirmations": 30104,
+              "blockhash": "00000000000000039dc06adbd7666a8d1df9acf9d0329d73651b764167d63765",
+              "blockindex": 2028,
+              "blocktime": 1534935138,
+              "txid": "4a5b5266e1750488395ac15c0376c9d48abf45e4df620777fe8cff096f57aa91",
+              "walletconflicts": [
+              ],
+              "time": 1534934745,
+              "timereceived": 1534934745,
+              "bip125-replaceable": "no",
+              "details": [
+                {
+                  "address": "mq3VuL2K63VKWkp8vvqRiJPre4h9awrHfA",
+                  "category": "receive",
+                  "amount": 1.00000000,
+                  "label": "",
+                  "vout": 1
+                }
+              ],
+              "hex": "0200000001586bd02815cf5faabfec986a4e50d25dbee089bd2758621e61c5fab06c334af0000000006b483045022100e85425f6d7c589972ee061413bcf08dc8c8e589ce37b217535a42af924f0e4d602205c9ba9cb14ef15513c9d946fa1c4b797883e748e8c32171bdf6166583946e35c012103dae30a4d7870cd87b45dd53e6012f71318fdd059c1c2623b8cc73f8af287bb2dfeffffff021dc4260c010000001976a914f602e88b2b5901d8aab15ebe4a97cf92ec6e03b388ac00e1f505000000001976a914687ffeffe8cf4e4c038da46a9b1d37db385a472d88acfd211500"
+            }
+        "#;
         assert_eq!(expected, serde_json::from_str(json).unwrap());
         assert!(expected.transaction().is_ok());
     }
@@ -1150,35 +1150,35 @@ mod tests {
     #[test]
     fn test_GetTxOutResult() {
         let expected = GetTxOutResult {
-			bestblock: hash!("000000000000002a1fde7234dc2bc016863f3d672af749497eb5c227421e44d5"),
-			confirmations: 29505,
-			value: Amount::from_btc(1.0),
-			script_pub_key: GetRawTransactionResultVoutScriptPubKey{
-				asm: "OP_DUP OP_HASH160 687ffeffe8cf4e4c038da46a9b1d37db385a472d OP_EQUALVERIFY OP_CHECKSIG".into(),
-				hex: hex!("76a914687ffeffe8cf4e4c038da46a9b1d37db385a472d88ac"),
-				req_sigs: Some(1),
-				type_: Some("pubkeyhash".into()),
-				addresses: Some(vec![addr!("mq3VuL2K63VKWkp8vvqRiJPre4h9awrHfA")]),
-			},
-			coinbase: false,
-		};
+            bestblock: hash!("000000000000002a1fde7234dc2bc016863f3d672af749497eb5c227421e44d5"),
+            confirmations: 29505,
+            value: Amount::from_btc(1.0),
+            script_pub_key: GetRawTransactionResultVoutScriptPubKey{
+                asm: "OP_DUP OP_HASH160 687ffeffe8cf4e4c038da46a9b1d37db385a472d OP_EQUALVERIFY OP_CHECKSIG".into(),
+                hex: hex!("76a914687ffeffe8cf4e4c038da46a9b1d37db385a472d88ac"),
+                req_sigs: Some(1),
+                type_: Some("pubkeyhash".into()),
+                addresses: Some(vec![addr!("mq3VuL2K63VKWkp8vvqRiJPre4h9awrHfA")]),
+            },
+            coinbase: false,
+        };
         let json = r#"
-			{
-			  "bestblock": "000000000000002a1fde7234dc2bc016863f3d672af749497eb5c227421e44d5",
-			  "confirmations": 29505,
-			  "value": 1.00000000,
-			  "scriptPubKey": {
-				"asm": "OP_DUP OP_HASH160 687ffeffe8cf4e4c038da46a9b1d37db385a472d OP_EQUALVERIFY OP_CHECKSIG",
-				"hex": "76a914687ffeffe8cf4e4c038da46a9b1d37db385a472d88ac",
-				"reqSigs": 1,
-				"type": "pubkeyhash",
-				"addresses": [
-				  "mq3VuL2K63VKWkp8vvqRiJPre4h9awrHfA"
-				]
-			  },
-			  "coinbase": false
-			}
-		"#;
+            {
+              "bestblock": "000000000000002a1fde7234dc2bc016863f3d672af749497eb5c227421e44d5",
+              "confirmations": 29505,
+              "value": 1.00000000,
+              "scriptPubKey": {
+                "asm": "OP_DUP OP_HASH160 687ffeffe8cf4e4c038da46a9b1d37db385a472d OP_EQUALVERIFY OP_CHECKSIG",
+                "hex": "76a914687ffeffe8cf4e4c038da46a9b1d37db385a472d88ac",
+                "reqSigs": 1,
+                "type": "pubkeyhash",
+                "addresses": [
+                  "mq3VuL2K63VKWkp8vvqRiJPre4h9awrHfA"
+                ]
+              },
+              "coinbase": false
+            }
+        "#;
         assert_eq!(expected, serde_json::from_str(json).unwrap());
         println!("{:?}", expected.script_pub_key.script());
         assert!(expected.script_pub_key.script().is_ok());
@@ -1199,20 +1199,20 @@ mod tests {
             safe: true,
         };
         let json = r#"
-			{
-			  "txid": "1e66743d6384496fe631501ba3f5b788d4bc193980b847f9e7d4e20d9202489f",
-			  "vout": 1,
-			  "address": "2N56rvr9bGj862UZMNQhv57nU4GXfMof1Xu",
-			  "label": "",
-			  "redeemScript": "0014b1a84f7a5c60e58e2c6eee4b33e7585483399af0",
-			  "scriptPubKey": "a914820c9a334a89cb72bc4abfce96efc1fb202cdd9087",
-			  "amount": 2.00000000,
-			  "confirmations": 29503,
-			  "spendable": true,
-			  "solvable": true,
-			  "safe": true
-			}
-		"#;
+            {
+              "txid": "1e66743d6384496fe631501ba3f5b788d4bc193980b847f9e7d4e20d9202489f",
+              "vout": 1,
+              "address": "2N56rvr9bGj862UZMNQhv57nU4GXfMof1Xu",
+              "label": "",
+              "redeemScript": "0014b1a84f7a5c60e58e2c6eee4b33e7585483399af0",
+              "scriptPubKey": "a914820c9a334a89cb72bc4abfce96efc1fb202cdd9087",
+              "amount": 2.00000000,
+              "confirmations": 29503,
+              "spendable": true,
+              "solvable": true,
+              "safe": true
+            }
+        "#;
         assert_eq!(expected, serde_json::from_str(json).unwrap());
     }
 
