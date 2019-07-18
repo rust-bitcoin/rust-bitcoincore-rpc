@@ -84,6 +84,12 @@ pub struct AddMultiSigAddressResult {
 }
 
 #[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
+pub struct LoadWalletResult {
+    pub name: String,
+    pub warning: Option<String>,
+}
+
+#[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct GetBlockResult {
     pub hash: sha256d::Hash,

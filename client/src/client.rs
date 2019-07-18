@@ -224,6 +224,24 @@ pub trait RpcApi: Sized {
         self.call("addmultisigaddress", handle_defaults(&mut args, &[into_json("")?, null()]))
     }
 
+    fn load_wallet(&self, wallet: &str) -> Result<json::LoadWalletResult> {
+        self.call("loadwallet", &[wallet.into()])
+    }
+
+    fn unload_wallet(&self, wallet: Option<&str>) -> Result<()> {
+        let mut args = [opt_into_json(wallet)?];
+        self.call("unloadwallet", handle_defaults(&mut args, &[null()]))
+    }
+
+    fn create_wallet(
+        &self,
+        wallet: &str,
+        disable_private_keys: Option<bool>,
+    ) -> Result<json::LoadWalletResult> {
+        let mut args = [wallet.into(), opt_into_json(disable_private_keys)?];
+        self.call("createwallet", handle_defaults(&mut args, &[null()]))
+    }
+
     fn backup_wallet(&self, destination: Option<&str>) -> Result<()> {
         let mut args = [opt_into_json(destination)?];
         self.call("backupwallet", handle_defaults(&mut args, &[null()]))
