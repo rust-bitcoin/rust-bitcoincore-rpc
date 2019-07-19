@@ -137,8 +137,8 @@ pub struct GetBlockHeaderResult {
 #[serde(rename_all = "camelCase")]
 pub struct GetMiningInfoResult {
     pub blocks: u32,
-    pub currentblockweight: u64,
-    pub currentblocktx: usize,
+    pub currentblockweight: Option<u64>,
+    pub currentblocktx: Option<usize>,
     #[serde(deserialize_with = "deserialize_difficulty")]
     pub difficulty: BigUint,
     pub networkhashps: f64,
@@ -952,8 +952,8 @@ mod tests {
     fn test_GetMiningInfoResult() {
         let expected = GetMiningInfoResult {
             blocks: 1415011,
-            currentblockweight: 0,
-            currentblocktx: 0,
+            currentblockweight: Some(0),
+            currentblocktx: Some(0),
             difficulty: 1u32.into(),
             networkhashps: 11970022568515.56,
             pooledtx: 110,
@@ -970,6 +970,28 @@ mod tests {
               "pooledtx": 110,
               "chain": "test",
               "warnings": "Warning: unknown new rules activated (versionbit 28)"
+            }
+        "#;
+        assert_eq!(expected, serde_json::from_str(json).unwrap());
+
+        let expected = GetMiningInfoResult {
+            blocks: 585966,
+            currentblockweight: None,
+            currentblocktx: None,
+            difficulty: "9064159826491".parse().unwrap(),
+            networkhashps: 5.276674407862246e+19,
+            pooledtx: 48870,
+            chain: "main".into(),
+            warnings: "".into(),
+        };
+        let json = r#"
+            {
+              "blocks": 585966,
+              "difficulty": 9064159826491.41,
+              "networkhashps": 5.276674407862246e+19,
+              "pooledtx": 48870,
+              "chain": "main",
+              "warnings": ""
             }
         "#;
         assert_eq!(expected, serde_json::from_str(json).unwrap());
