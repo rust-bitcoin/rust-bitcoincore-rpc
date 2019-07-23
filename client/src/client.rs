@@ -417,7 +417,7 @@ pub trait RpcApi: Sized {
 
     fn get_tx_out_proof(
         &self,
-        txids: &[&sha256d::Hash],
+        txids: &[sha256d::Hash],
         block_hash: Option<&sha256d::Hash>,
     ) -> Result<Vec<u8>> {
         let mut args = [into_json(txids)?, opt_into_json(block_hash)?];
@@ -466,7 +466,7 @@ pub trait RpcApi: Sized {
 
     fn import_multi(
         &self,
-        requests: &[&json::ImportMultiRequest],
+        requests: &[json::ImportMultiRequest],
         options: Option<&json::ImportMultiOptions>,
     ) -> Result<Vec<json::ImportMultiResult>> {
         let mut json_requests = Vec::with_capacity(requests.len());
@@ -584,7 +584,7 @@ pub trait RpcApi: Sized {
         &self,
         tx: R,
         utxos: Option<&[json::SignRawTransactionInput]>,
-        private_keys: Option<&[&PrivateKey]>,
+        private_keys: Option<&[PrivateKey]>,
         sighash_type: Option<json::SigHashType>,
     ) -> Result<json::SignRawTransactionResult> {
         let mut args = [
@@ -611,7 +611,7 @@ pub trait RpcApi: Sized {
     fn sign_raw_transaction_with_key<R: RawTx>(
         &self,
         tx: R,
-        privkeys: &[&PrivateKey],
+        privkeys: &[PrivateKey],
         prevtxs: Option<&[json::SignRawTransactionInput]>,
         sighash_type: Option<json::SigHashType>,
     ) -> Result<json::SignRawTransactionResult> {
