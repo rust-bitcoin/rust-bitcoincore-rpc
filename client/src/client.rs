@@ -796,6 +796,11 @@ impl Client {
             client: client,
         }
     }
+
+    /// Get the underlying JSONRPC client.
+    pub fn get_jsonrpc_client(&self) -> &jsonrpc::client::Client {
+        &self.client
+    }
 }
 
 impl RpcApi for Client {
