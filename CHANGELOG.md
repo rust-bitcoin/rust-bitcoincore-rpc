@@ -1,4 +1,24 @@
 
+# v0.7.0
+
+- use `bitcoin::PublicKey` instead of `secp256k1::PublicKey`
+- fix get_mining_info result issue
+- fix test_mempool_accept issue
+- fix get_transaction result issues
+- fix bug in fund_raw_transaction
+- add list_transactions
+- add get_raw_mempool
+- add reconsider_block
+- add import_multi
+- add import_public_key
+- add set_label
+- add lock_unspent
+- add unlock_unspent
+- add create_wallet
+- add load_wallet
+- add unload_wallet
+- increased log level for requests to debug
+
 # v0.6.0
 
 - polish Auth to use owned Strings
