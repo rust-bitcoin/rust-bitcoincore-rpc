@@ -10,22 +10,21 @@
 
 use std::collections::HashMap;
 use std::fs::File;
+use std::iter::FromIterator;
 use std::path::PathBuf;
 use std::{fmt, result};
 
 use bitcoin;
 use hex;
 use jsonrpc;
-use secp256k1;
 use serde;
 use serde_json;
 
-use bitcoin::{Address, Block, BlockHeader, OutPoint, PrivateKey, PublicKey, Transaction};
-use bitcoin_amount::Amount;
-use bitcoin_hashes::sha256d;
+use bitcoin::hashes::sha256d;
+use bitcoin::secp256k1::{self, SecretKey, Signature};
+use bitcoin::{Address, Amount, Block, BlockHeader, OutPoint, PrivateKey, PublicKey, Transaction};
 use log::Level::Debug;
 use num_bigint::BigUint;
-use secp256k1::{SecretKey, Signature};
 use serde::{Deserialize, Serialize};
 
 use error::*;
@@ -377,7 +376,9 @@ pub trait RpcApi: Sized {
 
     fn get_received_by_address(&self, address: &Address, minconf: Option<u32>) -> Result<Amount> {
         let mut args = [address.to_string().into(), opt_into_json(minconf)?];
-        self.call("getreceivedbyaddress", handle_defaults(&mut args, &[null()]))
+        Ok(Amount::from_btc(
+            self.call("getreceivedbyaddress", handle_defaults(&mut args, &[null()]))?,
+        )?)
     }
 
     fn get_transaction(
@@ -542,13 +543,16 @@ pub trait RpcApi: Sized {
     fn create_raw_transaction_hex(
         &self,
         utxos: &[json::CreateRawTransactionInput],
-        outs: &HashMap<String, f64>,
+        outs: &HashMap<String, Amount>,
         locktime: Option<i64>,
         replaceable: Option<bool>,
     ) -> Result<String> {
+        let outs_converted = serde_json::Map::from_iter(
+            outs.iter().map(|(k, v)| (k.clone(), serde_json::Value::from(v.as_btc()))),
+        );
         let mut args = [
             into_json(utxos)?,
-            into_json(outs)?,
+            into_json(outs_converted)?,
             opt_into_json(locktime)?,
             opt_into_json(replaceable)?,
         ];
@@ -559,7 +563,7 @@ pub trait RpcApi: Sized {
     fn create_raw_transaction(
         &self,
         utxos: &[json::CreateRawTransactionInput],
-        outs: &HashMap<String, f64>,
+        outs: &HashMap<String, Amount>,
         locktime: Option<i64>,
         replaceable: Option<bool>,
     ) -> Result<Transaction> {
@@ -685,7 +689,7 @@ pub trait RpcApi: Sized {
     fn send_to_address(
         &self,
         address: &Address,
-        amount: f64,
+        amount: Amount,
         comment: Option<&str>,
         comment_to: Option<&str>,
         subtract_fee: Option<bool>,
@@ -695,7 +699,7 @@ pub trait RpcApi: Sized {
     ) -> Result<sha256d::Hash> {
         let mut args = [
             address.to_string().into(),
-            into_json(amount)?,
+            into_json(amount.as_btc())?,
             opt_into_json(comment)?,
             opt_into_json(comment_to)?,
             opt_into_json(subtract_fee)?,

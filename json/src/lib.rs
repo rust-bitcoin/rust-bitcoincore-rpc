@@ -17,11 +17,8 @@
 #![crate_type = "rlib"]
 
 extern crate bitcoin;
-extern crate bitcoin_amount;
-extern crate bitcoin_hashes;
 extern crate hex;
 extern crate num_bigint;
-extern crate secp256k1;
 #[allow(unused)]
 #[macro_use] // `macro_use` is needed for v1.24.0 compilation.
 extern crate serde;
@@ -30,9 +27,8 @@ extern crate serde_json;
 use std::str::FromStr;
 
 use bitcoin::consensus::encode;
-use bitcoin::{Address, PrivateKey, PublicKey, Script, Transaction};
-use bitcoin_amount::Amount;
-use bitcoin_hashes::sha256d;
+use bitcoin::hashes::sha256d;
+use bitcoin::{Address, Amount, PrivateKey, PublicKey, Script, Transaction};
 use num_bigint::BigUint;
 use serde::de::Error as SerdeError;
 use serde::{Deserialize, Serialize};
@@ -215,7 +211,7 @@ impl GetRawTransactionResultVoutScriptPubKey {
 #[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct GetRawTransactionResultVout {
-    #[serde(deserialize_with = "deserialize_amount")]
+    #[serde(with = "bitcoin::util::amount::serde::as_btc")]
     pub value: Amount,
     pub n: u32,
     pub script_pub_key: GetRawTransactionResultVoutScriptPubKey,
@@ -275,11 +271,11 @@ pub enum GetTransactionResultDetailCategory {
 pub struct GetTransactionResultDetail {
     pub address: Address,
     pub category: GetTransactionResultDetailCategory,
-    #[serde(deserialize_with = "deserialize_amount")]
+    #[serde(with = "bitcoin::util::amount::serde::as_btc")]
     pub amount: Amount,
     pub label: Option<String>,
     pub vout: u32,
-    #[serde(default, deserialize_with = "deserialize_amount_opt")]
+    #[serde(default, with = "bitcoin::util::amount::serde::as_btc::opt")]
     pub fee: Option<Amount>,
     pub abandoned: Option<bool>,
 }
@@ -301,9 +297,9 @@ pub struct WalletTxInfo {
 pub struct GetTransactionResult {
     #[serde(flatten)]
     pub info: WalletTxInfo,
-    #[serde(deserialize_with = "deserialize_amount")]
+    #[serde(with = "bitcoin::util::amount::serde::as_btc")]
     pub amount: Amount,
-    #[serde(default, deserialize_with = "deserialize_amount_opt")]
+    #[serde(default, with = "bitcoin::util::amount::serde::as_btc::opt")]
     pub fee: Option<Amount>,
     pub details: Vec<GetTransactionResultDetail>,
     #[serde(with = "::serde_hex")]
@@ -332,7 +328,7 @@ pub struct ListTransactionResult {
 pub struct GetTxOutResult {
     pub bestblock: sha256d::Hash,
     pub confirmations: u32,
-    #[serde(deserialize_with = "deserialize_amount")]
+    #[serde(with = "bitcoin::util::amount::serde::as_btc")]
     pub value: Amount,
     pub script_pub_key: GetRawTransactionResultVoutScriptPubKey,
     pub coinbase: bool,
@@ -345,7 +341,7 @@ pub struct ListUnspentResult {
     pub vout: u32,
     pub address: Address,
     pub script_pub_key: Script,
-    #[serde(deserialize_with = "deserialize_amount")]
+    #[serde(with = "bitcoin::util::amount::serde::as_btc")]
     pub amount: Amount,
     pub confirmations: u32,
     pub redeem_script: Option<Script>,
@@ -360,7 +356,7 @@ pub struct ListReceivedByAddressResult {
     #[serde(rename = "involvesWatchonly")]
     pub involved_watch_only: bool,
     pub address: Address,
-    #[serde(deserialize_with = "deserialize_amount")]
+    #[serde(with = "bitcoin::util::amount::serde::as_btc")]
     pub amount: Amount,
     pub confirmations: u32,
     pub label: String,
@@ -700,7 +696,7 @@ pub struct FundRawTransactionOptions {
 pub struct FundRawTransactionResult {
     #[serde(with = "::serde_hex")]
     pub hex: Vec<u8>,
-    #[serde(deserialize_with = "deserialize_amount")]
+    #[serde(with = "bitcoin::util::amount::serde::as_btc")]
     pub fee: Amount,
     #[serde(rename = "changepos")]
     pub change_position: i32,
@@ -721,8 +717,12 @@ pub struct SignRawTransactionInput {
     pub script_pub_key: Script,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub redeem_script: Option<Script>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub amount: Option<f64>,
+    #[serde(
+        default,
+        skip_serializing_if = "Option::is_none",
+        with = "bitcoin::util::amount::serde::as_btc::opt"
+    )]
+    pub amount: Option<Amount>,
 }
 
 /// Used to represent an address type.
@@ -754,24 +754,6 @@ impl<'a> serde::Serialize for PubKeyOrAddress<'a> {
 }
 
 // Custom deserializer functions.
-
-/// deserialize_amount deserializes a BTC-denominated floating point Bitcoin amount into the
-/// Amount type.
-fn deserialize_amount<'de, D>(deserializer: D) -> Result<Amount, D::Error>
-where
-    D: serde::Deserializer<'de>,
-{
-    Ok(Amount::from_btc(f64::deserialize(deserializer)?))
-}
-
-/// deserialize_amount_opt deserializes a BTC-denominated floating point Bitcoin amount into an
-/// Option of the Amount type.
-fn deserialize_amount_opt<'de, D>(deserializer: D) -> Result<Option<Amount>, D::Error>
-where
-    D: serde::Deserializer<'de>,
-{
-    Ok(Some(Amount::from_btc(f64::deserialize(deserializer)?)))
-}
 
 fn deserialize_difficulty<'de, D>(deserializer: D) -> Result<BigUint, D::Error>
 where
@@ -806,7 +788,7 @@ where
 #[cfg(test)]
 mod tests {
     use super::*;
-    use bitcoin_hashes::hex::FromHex;
+    use bitcoin::hashes::hex::FromHex;
     use serde_json;
 
     macro_rules! hex {
@@ -1028,7 +1010,7 @@ mod tests {
 
             }],
             vout: vec![GetRawTransactionResultVout{
-                value: Amount::from_btc(44.98834461),
+                value: Amount::from_btc(44.98834461).unwrap(),
                 n: 0,
                 script_pub_key: GetRawTransactionResultVoutScriptPubKey{
                     asm: "OP_DUP OP_HASH160 f602e88b2b5901d8aab15ebe4a97cf92ec6e03b3 OP_EQUALVERIFY OP_CHECKSIG".into(),
@@ -1038,7 +1020,7 @@ mod tests {
                     addresses: Some(vec![addr!("n3wk1KcFnVibGdqQa6jbwoR8gbVtRbYM4M")]),
                 },
             }, GetRawTransactionResultVout{
-                value: Amount::from_btc(1.0),
+                value: Amount::from_btc(1.0).unwrap(),
                 n: 1,
                 script_pub_key: GetRawTransactionResultVoutScriptPubKey{
                     asm: "OP_DUP OP_HASH160 687ffeffe8cf4e4c038da46a9b1d37db385a472d OP_EQUALVERIFY OP_CHECKSIG".into(),
@@ -1121,7 +1103,7 @@ mod tests {
     #[test]
     fn test_GetTransactionResult() {
         let expected = GetTransactionResult {
-            amount: Amount::from_btc(1.0),
+            amount: Amount::from_btc(1.0).unwrap(),
             fee: None,
             info: WalletTxInfo {
                 confirmations: 30104,
@@ -1137,7 +1119,7 @@ mod tests {
                 GetTransactionResultDetail {
                     address: addr!("mq3VuL2K63VKWkp8vvqRiJPre4h9awrHfA"),
                     category: GetTransactionResultDetailCategory::Receive,
-                    amount: Amount::from_btc(1.0),
+                    amount: Amount::from_btc(1.0).unwrap(),
                     label: Some("".into()),
                     vout: 1,
                     fee: None,
@@ -1180,7 +1162,7 @@ mod tests {
         let expected = GetTxOutResult {
             bestblock: hash!("000000000000002a1fde7234dc2bc016863f3d672af749497eb5c227421e44d5"),
             confirmations: 29505,
-            value: Amount::from_btc(1.0),
+            value: Amount::from_btc(1.0).unwrap(),
             script_pub_key: GetRawTransactionResultVoutScriptPubKey{
                 asm: "OP_DUP OP_HASH160 687ffeffe8cf4e4c038da46a9b1d37db385a472d OP_EQUALVERIFY OP_CHECKSIG".into(),
                 hex: hex!("76a914687ffeffe8cf4e4c038da46a9b1d37db385a472d88ac"),
@@ -1219,7 +1201,7 @@ mod tests {
             vout: 1,
             address: addr!("2N56rvr9bGj862UZMNQhv57nU4GXfMof1Xu"),
             script_pub_key: script!("a914820c9a334a89cb72bc4abfce96efc1fb202cdd9087"),
-            amount: Amount::from_btc(2.0),
+            amount: Amount::from_btc(2.0).unwrap(),
             confirmations: 29503,
             redeem_script: Some(script!("0014b1a84f7a5c60e58e2c6eee4b33e7585483399af0")),
             spendable: true,
@@ -1247,34 +1229,6 @@ mod tests {
     //TODO(stevenroose) test SignRawTransactionResult
 
     //TODO(stevenroose) test UTXO
-
-    #[test]
-    fn test_deserialize_amount() {
-        let vectors = vec![
-            ("0", Amount::from_sat(0)),
-            ("1", Amount::from_sat(100000000)),
-            ("1.00000001", Amount::from_sat(100000001)),
-            ("10000000.00000001", Amount::from_sat(1000000000000001)),
-        ];
-        for vector in vectors.into_iter() {
-            let d = deserialize_amount(deserializer!(vector.0)).unwrap();
-            assert_eq!(d, vector.1);
-        }
-    }
-
-    #[test]
-    fn test_deserialize_amount_opt() {
-        let vectors = vec![
-            ("0", Some(Amount::from_sat(0))),
-            ("1", Some(Amount::from_sat(100000000))),
-            ("1.00000001", Some(Amount::from_sat(100000001))),
-            ("10000000.00000001", Some(Amount::from_sat(1000000000000001))),
-        ];
-        for vector in vectors.into_iter() {
-            let d = deserialize_amount_opt(deserializer!(vector.0)).unwrap();
-            assert_eq!(d, vector.1);
-        }
-    }
 
     #[test]
     fn test_deserialize_difficulty() {

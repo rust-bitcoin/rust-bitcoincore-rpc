@@ -19,12 +19,9 @@
 #[macro_use]
 extern crate log;
 extern crate bitcoin;
-extern crate bitcoin_amount;
-extern crate bitcoin_hashes;
 extern crate hex;
 extern crate jsonrpc;
 extern crate num_bigint;
-extern crate secp256k1;
 #[allow(unused)]
 #[macro_use] // `macro_use` is needed for v1.24.0 compilation.
 extern crate serde;

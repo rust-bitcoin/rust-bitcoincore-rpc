@@ -11,7 +11,7 @@
 use bitcoin;
 use serde_json;
 
-use bitcoin_hashes::sha256d;
+use bitcoin::hashes::sha256d;
 use client::Result;
 use client::RpcApi;
 
