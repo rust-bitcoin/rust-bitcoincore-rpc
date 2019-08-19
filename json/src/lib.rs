@@ -25,6 +25,7 @@ extern crate serde;
 extern crate serde_json;
 
 use std::str::FromStr;
+use std::collections::HashMap;
 
 use bitcoin::consensus::encode;
 use bitcoin::hashes::sha256d;
@@ -396,15 +397,52 @@ pub struct TestMempoolAccept {
     pub reject_reason: Option<String>,
 }
 
+#[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
+#[serde(rename_all = "snake_case")]
+pub enum Bip9SoftforkStatus {
+    Defined,
+    Started,
+    LockedIn,
+    Active,
+    Failed,
+}
+
+#[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
+pub struct Bip9SoftforkStatistics {
+    pub period: u32,
+    pub threshold: u32,
+    pub elapsed: u32,
+    pub count: u32,
+    pub possible: bool,
+}
+
+#[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
+pub struct Bip9SoftforkInfo {
+    pub status: Bip9SoftforkStatus,
+    pub bit: u8,
+    #[serde(rename = "startTime")]
+    pub start_time: u64,
+    pub timeout: u64,
+    pub since: u32,
+    pub statistics: Bip9SoftforkStatistics,
+}
+
+
+#[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
+#[serde(rename_all = "lowercase")]
+pub enum SoftforkType {
+    Buried,
+    Bip9,
+}
+
 /// Status of a softfork
 #[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
 pub struct Softfork {
-    /// Name of softfork
-    pub id: String,
-    /// Block version
-    pub version: u64,
-    /// Progress toward rejecting pre-softfork blocks
-    pub reject: RejectStatus,
+    #[serde(rename = "type")]
+    pub type_: SoftforkType,
+    pub bip9: Option<Bip9SoftforkInfo>,
+    pub height: Option<u32>,
+    pub active: bool,
 }
 
 /// Models the result of "getblockchaininfo"
@@ -441,10 +479,7 @@ pub struct GetBlockchainInfoResult {
     /// The target size used by pruning (only present if automatic pruning is enabled)
     pub prune_target_size: Option<u64>,
     /// Status of softforks in progress
-    pub softforks: Vec<Softfork>,
-    // TODO: add a type?
-    /// Status of BIP9 softforks in progress
-    pub bip9_softforks: Value,
+    pub softforks: HashMap<String, Softfork>,
     /// Any network and blockchain warnings.
     pub warnings: String,
 }
