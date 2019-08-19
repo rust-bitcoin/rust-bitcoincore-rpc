@@ -13,7 +13,7 @@ use std::{error, fmt, io};
 use bitcoin;
 use hex;
 use jsonrpc;
-use secp256k1;
+use bitcoin::secp256k1;
 use serde_json;
 
 /// The error type for errors produced in this library.
@@ -25,6 +25,7 @@ pub enum Error {
     BitcoinSerialization(bitcoin::consensus::encode::Error),
     Secp256k1(secp256k1::Error),
     Io(io::Error),
+    InvalidAmount(bitcoin::util::amount::ParseAmountError),
     InvalidCookieFile,
 }
 
@@ -64,6 +65,12 @@ impl From<io::Error> for Error {
     }
 }
 
+impl From<bitcoin::util::amount::ParseAmountError> for Error {
+    fn from(e: bitcoin::util::amount::ParseAmountError) -> Error {
+        Error::InvalidAmount(e)
+    }
+}
+
 impl fmt::Display for Error {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match *self {
@@ -73,22 +80,15 @@ impl fmt::Display for Error {
             Error::BitcoinSerialization(ref e) => write!(f, "Bitcoin serialization error: {}", e),
             Error::Secp256k1(ref e) => write!(f, "secp256k1 error: {}", e),
             Error::Io(ref e) => write!(f, "I/O error: {}", e),
-            ref e => f.write_str(error::Error::description(e)),
+            Error::InvalidAmount(ref e) => write!(f, "invalid amount: {}", e),
+            Error::InvalidCookieFile => write!(f, "invalid cookie file"),
         }
     }
 }
 
 impl error::Error for Error {
     fn description(&self) -> &str {
-        match *self {
-            Error::JsonRpc(_) => "JSON-RPC error",
-            Error::FromHex(_) => "hex decode error",
-            Error::Json(_) => "JSON error",
-            Error::BitcoinSerialization(_) => "Bitcoin serialization error",
-            Error::Secp256k1(_) => "secp256k1 error",
-            Error::Io(_) => "I/O error",
-            Error::InvalidCookieFile => "invalid cookie file",
-        }
+        "bitcoincore-rpc error"
     }
 
     fn cause(&self) -> Option<&error::Error> {

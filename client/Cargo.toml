@@ -1,6 +1,6 @@
 [package]
 name = "bitcoincore-rpc"
-version = "0.7.0"
+version = "0.8.0"
 authors = [
     "Steven Roose <steven@stevenroose.org>",
     "Jean Pierre Dudey <jeandudey@hotmail.com>",
@@ -18,7 +18,7 @@ name = "bitcoincore_rpc"
 path = "src/lib.rs"
 
 [dependencies]
-bitcoincore-rpc-json = { version = "0.7.0", path = "../json" }
+bitcoincore-rpc-json = { version = "0.8.0", path = "../json" }
 
 log = "0.4.5"
 jsonrpc = "0.11"
@@ -29,8 +29,5 @@ serde_json = "1"
 hex = "0.3"
 
 # Used for Bitcoin-specific types.
-bitcoin = { version = "0.18", features = [ "serde-decimal" ] }
-bitcoin_hashes = "0.3"
-bitcoin-amount = { version = "0.1.4", features = [ "serde" ] }
-secp256k1 = { version = "0.12", features = [ "serde" ] }
+bitcoin = { version = "0.19.1", features = [ "use-serde" ] }
 num-bigint = { version = "0.2", features = [ "serde" ] }
