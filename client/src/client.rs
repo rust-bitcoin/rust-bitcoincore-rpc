@@ -378,6 +378,17 @@ pub trait RpcApi: Sized {
         self.call("getblockfilter", &[into_json(block_hash)?])
     }
 
+    fn get_balance(
+        &self,
+        minconf: Option<usize>,
+        include_watchonly: Option<bool>,
+    ) -> Result<Amount> {
+        let mut args = ["*".into(), opt_into_json(minconf)?, opt_into_json(include_watchonly)?];
+        Ok(Amount::from_btc(
+            self.call("getbalance", handle_defaults(&mut args, &[false.into(), null()]))?,
+        )?)
+    }
+
     fn get_received_by_address(&self, address: &Address, minconf: Option<u32>) -> Result<Amount> {
         let mut args = [address.to_string().into(), opt_into_json(minconf)?];
         Ok(Amount::from_btc(
