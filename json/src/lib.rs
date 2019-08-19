@@ -360,17 +360,34 @@ pub struct GetTxOutResult {
 
 #[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
-pub struct ListUnspentResult {
+pub struct ListUnspentQueryOptions {
+    #[serde(default, with = "bitcoin::util::amount::serde::as_btc::opt")]
+    pub minimum_amount: Option<Amount>,
+    #[serde(default, with = "bitcoin::util::amount::serde::as_btc::opt")]
+    pub maximum_amount: Option<Amount>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub maximum_count: Option<usize>,
+    #[serde(default, with = "bitcoin::util::amount::serde::as_btc::opt")]
+    pub maximum_sum_amount: Option<Amount>,
+}
+
+#[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ListUnspentResultEntry {
     pub txid: sha256d::Hash,
     pub vout: u32,
-    pub address: Address,
+    pub address: Option<Address>,
+    pub label: Option<String>,
+    pub redeem_script: Option<Script>,
+    pub witness_script: Option<Script>,
     pub script_pub_key: Script,
     #[serde(with = "bitcoin::util::amount::serde::as_btc")]
     pub amount: Amount,
     pub confirmations: u32,
-    pub redeem_script: Option<Script>,
     pub spendable: bool,
     pub solvable: bool,
+    #[serde(rename = "desc")]
+    pub descriptor: Option<String>,
     pub safe: bool,
 }
 
@@ -1220,10 +1237,10 @@ mod tests {
 
     #[test]
     fn test_ListUnspentResult() {
-        let expected = ListUnspentResult {
+        let expected = ListUnspentResultEntry {
             txid: hash!("1e66743d6384496fe631501ba3f5b788d4bc193980b847f9e7d4e20d9202489f"),
             vout: 1,
-            address: addr!("2N56rvr9bGj862UZMNQhv57nU4GXfMof1Xu"),
+            address: Some(addr!("2N56rvr9bGj862UZMNQhv57nU4GXfMof1Xu")),
             script_pub_key: script!("a914820c9a334a89cb72bc4abfce96efc1fb202cdd9087"),
             amount: Amount::from_btc(2.0).unwrap(),
             confirmations: 29503,
@@ -1231,20 +1248,24 @@ mod tests {
             spendable: true,
             solvable: true,
             safe: true,
+            descriptor: None,
+            label: Some("test".to_owned()),
+            witness_script: Some(script!("a914820c9a334a89cb72bc4abfce96efc1fb202cdd9087")),
         };
         let json = r#"
             {
               "txid": "1e66743d6384496fe631501ba3f5b788d4bc193980b847f9e7d4e20d9202489f",
               "vout": 1,
               "address": "2N56rvr9bGj862UZMNQhv57nU4GXfMof1Xu",
-              "label": "",
               "redeemScript": "0014b1a84f7a5c60e58e2c6eee4b33e7585483399af0",
               "scriptPubKey": "a914820c9a334a89cb72bc4abfce96efc1fb202cdd9087",
               "amount": 2.00000000,
               "confirmations": 29503,
               "spendable": true,
               "solvable": true,
-              "safe": true
+              "safe": true,
+              "label": "test",
+              "witnessScript": "a914820c9a334a89cb72bc4abfce96efc1fb202cdd9087"
             }
         "#;
         assert_eq!(expected, serde_json::from_str(json).unwrap());

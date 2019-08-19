@@ -11,9 +11,9 @@
 use std::{error, fmt, io};
 
 use bitcoin;
+use bitcoin::secp256k1;
 use hex;
 use jsonrpc;
-use bitcoin::secp256k1;
 use serde_json;
 
 /// The error type for errors produced in this library.
