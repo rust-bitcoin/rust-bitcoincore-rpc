@@ -374,6 +374,10 @@ pub trait RpcApi: Sized {
         self.call("getrawtransaction", handle_defaults(&mut args, &[null()]))
     }
 
+    fn get_block_filter(&self, block_hash: &sha256d::Hash) -> Result<json::GetBlockFilterResult> {
+        self.call("getblockfilter", &[into_json(block_hash)?])
+    }
+
     fn get_received_by_address(&self, address: &Address, minconf: Option<u32>) -> Result<Amount> {
         let mut args = [address.to_string().into(), opt_into_json(minconf)?];
         Ok(Amount::from_btc(

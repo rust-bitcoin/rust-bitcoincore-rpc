@@ -27,7 +27,8 @@ extern crate serde_json;
 use std::str::FromStr;
 
 use bitcoin::consensus::encode;
-use bitcoin::hashes::sha256d;
+use bitcoin::hashes::{sha256, sha256d};
+use bitcoin::util::bip158;
 use bitcoin::{Address, Amount, PrivateKey, PublicKey, Script, Transaction};
 use num_bigint::BigUint;
 use serde::de::Error as SerdeError;
@@ -236,6 +237,29 @@ pub struct GetRawTransactionResult {
     pub confirmations: Option<u32>,
     pub time: Option<usize>,
     pub blocktime: Option<usize>,
+}
+
+#[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
+pub struct GetBlockFilterResult {
+    pub header: sha256::Hash,
+    #[serde(with = "::serde_hex")]
+    pub filter: Vec<u8>,
+}
+
+impl GetBlockFilterResult {
+    /// Get the filter.
+    /// Note that this copies the underlying filter data. To prevent this,
+    /// use [into_filter] instead.
+    pub fn to_filter(&self) -> bip158::BlockFilter {
+        bip158::BlockFilter::new(&self.filter)
+    }
+
+    /// Convert the result in the filter type.
+    pub fn into_filter(self) -> bip158::BlockFilter {
+        bip158::BlockFilter {
+            content: self.filter,
+        }
+    }
 }
 
 impl GetRawTransactionResult {
