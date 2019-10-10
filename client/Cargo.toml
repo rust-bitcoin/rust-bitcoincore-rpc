@@ -29,5 +29,5 @@ serde_json = "1"
 hex = "0.3"
 
 # Used for Bitcoin-specific types.
-bitcoin = { version = "0.19.1", features = [ "use-serde" ] }
+bitcoin = { version = "0.21", features = [ "use-serde" ] }
 num-bigint = { version = "0.2", features = [ "serde" ] }
