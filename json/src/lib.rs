@@ -31,7 +31,7 @@ use bitcoin::hashes::{sha256, sha256d};
 use bitcoin::util::bip158;
 use bitcoin::{Address, Amount, PrivateKey, PublicKey, Script, Transaction};
 use num_bigint::BigUint;
-use serde::de::Error as SerdeError;
+use serde::de::{Error as SerdeError};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
@@ -115,14 +115,14 @@ pub struct GetBlockResult {
 
 #[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
-pub struct GetBlockHeaderResult {
-    pub hash: sha256d::Hash,
+pub struct GetBlockHeaderResult<Hash> {
+    pub hash: Hash,
     pub confirmations: u32,
     pub height: usize,
     pub version: u32,
     #[serde(default, with = "::serde_hex::opt")]
     pub version_hex: Option<Vec<u8>>,
-    pub merkleroot: sha256d::Hash,
+    pub merkleroot: Hash,
     pub time: usize,
     pub mediantime: Option<usize>,
     pub nonce: u32,
@@ -132,8 +132,8 @@ pub struct GetBlockHeaderResult {
     #[serde(with = "::serde_hex")]
     pub chainwork: Vec<u8>,
     pub n_tx: usize,
-    pub previousblockhash: Option<sha256d::Hash>,
-    pub nextblockhash: Option<sha256d::Hash>,
+    pub previousblockhash: Option<Hash>,
+    pub nextblockhash: Option<Hash>,
 }
 
 #[derive(Clone, PartialEq, Debug, Deserialize, Serialize)]

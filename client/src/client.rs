@@ -30,6 +30,7 @@ use serde::{Deserialize, Serialize};
 use error::*;
 use json;
 use queryable;
+use serde::de::DeserializeOwned;
 
 /// Crate-specific Result type, shorthand for `std::result::Result` with our
 /// crate-specific Error type;
@@ -316,7 +317,7 @@ pub trait RpcApi: Sized {
         Ok(bitcoin::consensus::encode::deserialize(&bytes)?)
     }
 
-    fn get_block_header_verbose(&self, hash: &sha256d::Hash) -> Result<json::GetBlockHeaderResult> {
+    fn get_block_header_verbose<Hash: Serialize + DeserializeOwned>(&self, hash: &Hash) -> Result<json::GetBlockHeaderResult<Hash>> {
         self.call("getblockheader", &[into_json(hash)?, true.into()])
     }
 
