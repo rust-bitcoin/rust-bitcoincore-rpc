@@ -21,7 +21,7 @@ use serde;
 use serde_json;
 
 use bitcoin::secp256k1::{self, SecretKey, Signature};
-use bitcoin::{Address, Amount, Block, BlockHeader, PrivateKey, PublicKey, Transaction};
+use bitcoin::{Amount, Block, BlockHeader, PrivateKey, PublicKey, Transaction};
 use log::Level::Debug;
 use num_bigint::BigUint;
 use serde::{Deserialize, Serialize};
@@ -276,7 +276,7 @@ pub trait RpcApi: Sized {
     //            to just get the string dump, without converting it into
     //            `bitcoin` type; Maybe we should made it `Queryable` by
     //            `Address`!
-    fn dump_priv_key(&self, address: &Address) -> Result<SecretKey> {
+    fn dump_priv_key<Address: ToString>(&self, address: &Address) -> Result<SecretKey> {
         let hex: String = self.call("dumpprivkey", &[address.to_string().into()])?;
         let bytes = hex::decode(hex)?;
         Ok(secp256k1::SecretKey::from_slice(&bytes)?)
@@ -397,7 +397,11 @@ pub trait RpcApi: Sized {
         )?)
     }
 
-    fn get_received_by_address(&self, address: &Address, minconf: Option<u32>) -> Result<Amount> {
+    fn get_received_by_address<Address: ToString>(
+        &self,
+        address: &Address,
+        minconf: Option<u32>,
+    ) -> Result<Amount> {
         let mut args = [address.to_string().into(), opt_into_json(minconf)?];
         Ok(Amount::from_btc(
             self.call("getreceivedbyaddress", handle_defaults(&mut args, &[null()]))?,
@@ -469,7 +473,7 @@ pub trait RpcApi: Sized {
         self.call("importprivkey", handle_defaults(&mut args, &[into_json("")?, null()]))
     }
 
-    fn import_address(
+    fn import_address<Address: ToString>(
         &self,
         address: &Address,
         label: Option<&str>,
@@ -501,7 +505,7 @@ pub trait RpcApi: Sized {
         self.call("importmulti", handle_defaults(&mut args, &[null()]))
     }
 
-    fn set_label(&self, address: &Address, label: &str) -> Result<()> {
+    fn set_label<Address: ToString>(&self, address: &Address, label: &str) -> Result<()> {
         self.call("setlabel", &[address.to_string().into(), label.into()])
     }
 
@@ -510,7 +514,7 @@ pub trait RpcApi: Sized {
         self.call("keypoolrefill", handle_defaults(&mut args, &[null()]))
     }
 
-    fn list_unspent(
+    fn list_unspent<Address: Serialize>(
         &self,
         minconf: Option<usize>,
         maxconf: Option<usize>,
@@ -548,7 +552,7 @@ pub trait RpcApi: Sized {
         self.call("lockunspent", &[true.into(), outputs.into()])
     }
 
-    fn list_received_by_address(
+    fn list_received_by_address<Address: Serialize>(
         &self,
         address_filter: Option<&Address>,
         minconf: Option<u32>,
@@ -664,7 +668,7 @@ pub trait RpcApi: Sized {
         self.call("stop", &[])
     }
 
-    fn verify_message(
+    fn verify_message<Address: ToString>(
         &self,
         address: &Address,
         signature: &Signature,
@@ -675,7 +679,7 @@ pub trait RpcApi: Sized {
     }
 
     /// Generate new address under own control
-    fn get_new_address(
+    fn get_new_address<Address: DeserializeOwned>(
         &self,
         label: Option<&str>,
         address_type: Option<json::AddressType>,
@@ -686,7 +690,7 @@ pub trait RpcApi: Sized {
     /// Mine `block_num` blocks and pay coinbase to `address`
     ///
     /// Returns hashes of the generated blocks
-    fn generate_to_address<Hash: DeserializeOwned>(
+    fn generate_to_address<Hash: DeserializeOwned, Address: ToString>(
         &self,
         block_num: u64,
         address: &Address,
@@ -719,7 +723,7 @@ pub trait RpcApi: Sized {
         self.call("getrawmempool", &[])
     }
 
-    fn send_to_address<Hash: DeserializeOwned>(
+    fn send_to_address<Hash: DeserializeOwned, Address: ToString>(
         &self,
         address: &Address,
         amount: Amount,
