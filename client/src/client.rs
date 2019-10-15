@@ -327,7 +327,7 @@ pub trait RpcApi: Sized {
 
     /// Returns a data structure containing various state info regarding
     /// blockchain processing.
-    fn get_blockchain_info(&self) -> Result<json::GetBlockchainInfoResult> {
+    fn get_blockchain_info<Hash: DeserializeOwned>(&self) -> Result<json::GetBlockchainInfoResult<Hash>> {
         self.call("getblockchaininfo", &[])
     }
 

@@ -450,7 +450,7 @@ pub struct Softfork {
 
 /// Models the result of "getblockchaininfo"
 #[derive(Clone, Debug, Deserialize, Serialize)]
-pub struct GetBlockchainInfoResult {
+pub struct GetBlockchainInfoResult<Hash> {
     // TODO: Use Network from rust-bitcoin
     /// Current network name as defined in BIP70 (main, test, regtest)
     pub chain: String,
@@ -459,7 +459,7 @@ pub struct GetBlockchainInfoResult {
     /// The current number of headers we have validated
     pub headers: u64,
     /// The hash of the currently best block
-    pub bestblockhash: sha256d::Hash,
+    pub bestblockhash: Hash,
     /// The current difficulty
     pub difficulty: f64,
     /// Median time for the current best block

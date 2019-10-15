@@ -26,7 +26,7 @@ fn main_result() -> Result<(), Error> {
 
     let rpc = Client::new(url, Auth::UserPass(user, pass)).unwrap();
 
-    let _blockchain_info = rpc.get_blockchain_info()?;
+    let _blockchain_info = rpc.get_blockchain_info::<bitcoin::hashes::sha256d::Hash>()?;
 
     let best_block_hash = rpc.get_best_block_hash()?;
     println!("best block hash: {}", best_block_hash);
