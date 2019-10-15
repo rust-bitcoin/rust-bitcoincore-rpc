@@ -31,7 +31,7 @@ use bitcoin::hashes::{sha256, sha256d};
 use bitcoin::util::bip158;
 use bitcoin::{Address, Amount, PrivateKey, PublicKey, Script, Transaction};
 use num_bigint::BigUint;
-use serde::de::{Error as SerdeError};
+use serde::de::Error as SerdeError;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 

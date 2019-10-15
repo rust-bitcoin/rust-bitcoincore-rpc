@@ -13,6 +13,7 @@
 extern crate bitcoin;
 extern crate bitcoincore_rpc;
 
+use bitcoin::hashes::sha256d;
 use bitcoincore_rpc::{Auth, Client, Error, RpcApi};
 
 fn main_result() -> Result<(), Error> {
@@ -32,7 +33,7 @@ fn main_result() -> Result<(), Error> {
     println!("best block hash: {}", best_block_hash);
     let bestblockcount = rpc.get_block_count()?;
     println!("best block height: {}", bestblockcount);
-    let best_block_hash_by_height = rpc.get_block_hash(bestblockcount)?;
+    let best_block_hash_by_height = rpc.get_block_hash::<sha256d::Hash>(bestblockcount)?;
     println!("best block hash by height: {}", best_block_hash_by_height);
     assert_eq!(best_block_hash_by_height, best_block_hash);
 
