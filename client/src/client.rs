@@ -21,7 +21,7 @@ use serde;
 use serde_json;
 
 use bitcoin::secp256k1::{self, SecretKey, Signature};
-use bitcoin::{Amount, Block, BlockHeader, PrivateKey, PublicKey, Transaction};
+use bitcoin::{Block, BlockHeader, PrivateKey, PublicKey, Transaction};
 use log::Level::Debug;
 use num_bigint::BigUint;
 use serde::{Deserialize, Serialize};
@@ -58,6 +58,17 @@ pub struct JsonOutPoint<Hash> {
 //        }
 //    }
 //}
+
+pub trait FromBtc
+where
+    Self: std::marker::Sized,
+{
+    fn from_btc(btc: f64) -> std::result::Result<Self, Error>;
+}
+
+pub trait AsBtc {
+    fn as_btc(&self) -> f64;
+}
 
 /// Shorthand for converting a variable into a serde_json::Value.
 fn into_json<T>(val: T) -> Result<serde_json::Value>
@@ -386,7 +397,7 @@ pub trait RpcApi: Sized {
         self.call("getblockfilter", &[into_json(block_hash)?])
     }
 
-    fn get_balance(
+    fn get_balance<Amount: FromBtc>(
         &self,
         minconf: Option<usize>,
         include_watchonly: Option<bool>,
@@ -397,7 +408,7 @@ pub trait RpcApi: Sized {
         )?)
     }
 
-    fn get_received_by_address<Address: ToString>(
+    fn get_received_by_address<Address: ToString, Amount: FromBtc>(
         &self,
         address: &Address,
         minconf: Option<u32>,
@@ -569,7 +580,7 @@ pub trait RpcApi: Sized {
         self.call("listreceivedbyaddress", handle_defaults(&mut args, &defaults))
     }
 
-    fn create_raw_transaction_hex(
+    fn create_raw_transaction_hex<Amount: AsBtc>(
         &self,
         utxos: &[json::CreateRawTransactionInput],
         outs: &HashMap<String, Amount>,
@@ -589,7 +600,7 @@ pub trait RpcApi: Sized {
         self.call("createrawtransaction", handle_defaults(&mut args, &defaults))
     }
 
-    fn create_raw_transaction(
+    fn create_raw_transaction<Amount: AsBtc>(
         &self,
         utxos: &[json::CreateRawTransactionInput],
         outs: &HashMap<String, Amount>,
@@ -723,7 +734,7 @@ pub trait RpcApi: Sized {
         self.call("getrawmempool", &[])
     }
 
-    fn send_to_address<Hash: DeserializeOwned, Address: ToString>(
+    fn send_to_address<Hash: DeserializeOwned, Address: ToString, Amount: AsBtc>(
         &self,
         address: &Address,
         amount: Amount,
