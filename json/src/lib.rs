@@ -27,7 +27,6 @@ extern crate serde_json;
 use std::str::FromStr;
 
 use bitcoin::consensus::encode;
-use bitcoin::hashes::{sha256, sha256d};
 use bitcoin::util::bip158;
 use bitcoin::{Address, Amount, PrivateKey, PublicKey, Script, Transaction};
 use num_bigint::BigUint;
@@ -89,7 +88,7 @@ pub struct LoadWalletResult {
 #[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct GetBlockResult {
-    pub hash: sha256d::Hash,
+    pub hash: bitcoin::BlockHash,
     pub confirmations: u32,
     pub size: usize,
     pub strippedsize: Option<usize>,
@@ -98,8 +97,8 @@ pub struct GetBlockResult {
     pub version: u32,
     #[serde(default, with = "::serde_hex::opt")]
     pub version_hex: Option<Vec<u8>>,
-    pub merkleroot: sha256d::Hash,
-    pub tx: Vec<sha256d::Hash>,
+    pub merkleroot: bitcoin::TxMerkleNode,
+    pub tx: Vec<bitcoin::Txid>,
     pub time: usize,
     pub mediantime: Option<usize>,
     pub nonce: u32,
@@ -109,20 +108,20 @@ pub struct GetBlockResult {
     #[serde(with = "::serde_hex")]
     pub chainwork: Vec<u8>,
     pub n_tx: usize,
-    pub previousblockhash: Option<sha256d::Hash>,
-    pub nextblockhash: Option<sha256d::Hash>,
+    pub previousblockhash: Option<bitcoin::BlockHash>,
+    pub nextblockhash: Option<bitcoin::BlockHash>,
 }
 
 #[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct GetBlockHeaderResult {
-    pub hash: sha256d::Hash,
+    pub hash: bitcoin::BlockHash,
     pub confirmations: u32,
     pub height: usize,
     pub version: u32,
     #[serde(default, with = "::serde_hex::opt")]
     pub version_hex: Option<Vec<u8>>,
-    pub merkleroot: sha256d::Hash,
+    pub merkleroot: bitcoin::TxMerkleNode,
     pub time: usize,
     pub mediantime: Option<usize>,
     pub nonce: u32,
@@ -132,8 +131,8 @@ pub struct GetBlockHeaderResult {
     #[serde(with = "::serde_hex")]
     pub chainwork: Vec<u8>,
     pub n_tx: usize,
-    pub previousblockhash: Option<sha256d::Hash>,
-    pub nextblockhash: Option<sha256d::Hash>,
+    pub previousblockhash: Option<bitcoin::BlockHash>,
+    pub nextblockhash: Option<bitcoin::BlockHash>,
 }
 
 #[derive(Clone, PartialEq, Debug, Deserialize, Serialize)]
@@ -172,7 +171,7 @@ pub struct GetRawTransactionResultVin {
     #[serde(default, with = "::serde_hex::opt")]
     pub coinbase: Option<Vec<u8>>,
     /// Not provided for coinbase txs.
-    pub txid: Option<sha256d::Hash>,
+    pub txid: Option<bitcoin::Txid>,
     /// Not provided for coinbase txs.
     pub vout: Option<u32>,
     /// The scriptSig in case of a non-coinbase tx.
@@ -225,15 +224,15 @@ pub struct GetRawTransactionResult {
     pub in_active_chain: Option<bool>,
     #[serde(with = "::serde_hex")]
     pub hex: Vec<u8>,
-    pub txid: sha256d::Hash,
-    pub hash: sha256d::Hash,
+    pub txid: bitcoin::Txid,
+    pub hash: bitcoin::Wtxid,
     pub size: usize,
     pub vsize: usize,
     pub version: u32,
     pub locktime: u32,
     pub vin: Vec<GetRawTransactionResultVin>,
     pub vout: Vec<GetRawTransactionResultVout>,
-    pub blockhash: Option<sha256d::Hash>,
+    pub blockhash: Option<bitcoin::BlockHash>,
     pub confirmations: Option<u32>,
     pub time: Option<usize>,
     pub blocktime: Option<usize>,
@@ -241,7 +240,7 @@ pub struct GetRawTransactionResult {
 
 #[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
 pub struct GetBlockFilterResult {
-    pub header: sha256::Hash,
+    pub header: bitcoin::FilterHash,
     #[serde(with = "::serde_hex")]
     pub filter: Vec<u8>,
 }
@@ -307,10 +306,10 @@ pub struct GetTransactionResultDetail {
 #[derive(Clone, PartialEq, Eq, Debug, Deserialize)]
 pub struct WalletTxInfo {
     pub confirmations: i32,
-    pub blockhash: Option<sha256d::Hash>,
+    pub blockhash: Option<bitcoin::BlockHash>,
     pub blockindex: Option<usize>,
     pub blocktime: Option<u64>,
-    pub txid: sha256d::Hash,
+    pub txid: bitcoin::Txid,
     pub time: u64,
     pub timereceived: u64,
     #[serde(rename = "bip125-replaceable")]
@@ -350,7 +349,7 @@ pub struct ListTransactionResult {
 #[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct GetTxOutResult {
-    pub bestblock: sha256d::Hash,
+    pub bestblock: bitcoin::BlockHash,
     pub confirmations: u32,
     #[serde(with = "bitcoin::util::amount::serde::as_btc")]
     pub value: Amount,
@@ -374,7 +373,7 @@ pub struct ListUnspentQueryOptions {
 #[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ListUnspentResultEntry {
-    pub txid: sha256d::Hash,
+    pub txid: bitcoin::Txid,
     pub vout: u32,
     pub address: Option<Address>,
     pub label: Option<String>,
@@ -401,13 +400,13 @@ pub struct ListReceivedByAddressResult {
     pub amount: Amount,
     pub confirmations: u32,
     pub label: String,
-    pub txids: Vec<sha256d::Hash>,
+    pub txids: Vec<bitcoin::Txid>,
 }
 
 #[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct SignRawTransactionResultError {
-    pub txid: sha256d::Hash,
+    pub txid: bitcoin::Txid,
     pub vout: u32,
     pub script_sig: Script,
     pub sequence: u32,
@@ -459,7 +458,7 @@ pub struct GetBlockchainInfoResult {
     /// The current number of headers we have validated
     pub headers: u64,
     /// The hash of the currently best block
-    pub bestblockhash: sha256d::Hash,
+    pub bestblockhash: bitcoin::BlockHash,
     /// The current difficulty
     pub difficulty: f64,
     /// Median time for the current best block
@@ -657,7 +656,7 @@ pub struct EstimateSmartFeeResult {
 /// Models the result of "waitfornewblock", and "waitforblock"
 #[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
 pub struct BlockRef {
-    pub hash: sha256d::Hash,
+    pub hash: bitcoin::BlockHash,
     pub height: u64,
 }
 
@@ -701,7 +700,7 @@ impl serde::Serialize for SigHashType {
 #[derive(Serialize, Clone, PartialEq, Eq, Debug)]
 #[serde(rename_all = "camelCase")]
 pub struct CreateRawTransactionInput {
-    pub txid: sha256d::Hash,
+    pub txid: bitcoin::Txid,
     pub vout: u32,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub sequence: Option<u32>,
@@ -753,7 +752,7 @@ impl FundRawTransactionResult {
 #[derive(Serialize, Clone, PartialEq, Debug)]
 #[serde(rename_all = "camelCase")]
 pub struct SignRawTransactionInput {
-    pub txid: sha256d::Hash,
+    pub txid: bitcoin::Txid,
     pub vout: u32,
     pub script_pub_key: Script,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -844,9 +843,9 @@ mod tests {
         };
     }
 
-    macro_rules! hash {
+    macro_rules! from_hex {
         ($h:expr) => {
-            sha256d::Hash::from_hex($h).unwrap()
+            FromHex::from_hex($h).unwrap()
         };
     }
 
@@ -880,7 +879,7 @@ mod tests {
     #[test]
     fn test_GetBlockResult() {
         let expected = GetBlockResult {
-            hash: hash!("000000006c02c8ea6e4ff69651f7fcde348fb9d557a06e6957b65552002a7820"),
+            hash: from_hex!("000000006c02c8ea6e4ff69651f7fcde348fb9d557a06e6957b65552002a7820"),
             confirmations: 1414401,
             size: 190,
             strippedsize: Some(190),
@@ -888,8 +887,8 @@ mod tests {
             height: 2,
             version: 1,
             version_hex: Some(hex!("00000001")),
-            merkleroot: hash!("20222eb90f5895556926c112bb5aa0df4ab5abc3107e21a6950aec3b2e3541e2"),
-            tx: vec![hash!("20222eb90f5895556926c112bb5aa0df4ab5abc3107e21a6950aec3b2e3541e2")],
+            merkleroot: from_hex!("20222eb90f5895556926c112bb5aa0df4ab5abc3107e21a6950aec3b2e3541e2"),
+            tx: vec![from_hex!("20222eb90f5895556926c112bb5aa0df4ab5abc3107e21a6950aec3b2e3541e2")],
             time: 1296688946,
             mediantime: Some(1296688928),
             nonce: 875942400,
@@ -897,10 +896,10 @@ mod tests {
             difficulty: 1u64.into(),
             chainwork: hex!("0000000000000000000000000000000000000000000000000000000300030003"),
             n_tx: 1,
-            previousblockhash: Some(hash!(
+            previousblockhash: Some(from_hex!(
                 "00000000b873e79784647a6c82962c70d228557d24a747ea4d1b8bbe878e1206"
             )),
-            nextblockhash: Some(hash!(
+            nextblockhash: Some(from_hex!(
                 "000000008b896e272758da5297bcd98fdc6d97c9b765ecec401e286dc1fdbe10"
             )),
         };
@@ -935,12 +934,12 @@ mod tests {
     #[test]
     fn test_GetBlockHeaderResult() {
         let expected = GetBlockHeaderResult {
-            hash: hash!("00000000000000039dc06adbd7666a8d1df9acf9d0329d73651b764167d63765"),
+            hash: from_hex!("00000000000000039dc06adbd7666a8d1df9acf9d0329d73651b764167d63765"),
             confirmations: 29341,
             height: 1384958,
             version: 536870912,
             version_hex: Some(hex!("20000000")),
-            merkleroot: hash!("33d8a6f622182a4e844022bbc8aa51c63f6476708ad5cc5c451f2933753440d7"),
+            merkleroot: from_hex!("33d8a6f622182a4e844022bbc8aa51c63f6476708ad5cc5c451f2933753440d7"),
             time: 1534935138,
             mediantime: Some(1534932055),
             nonce: 871182973,
@@ -948,10 +947,10 @@ mod tests {
             difficulty: 48174374u64.into(),
             chainwork: hex!("0000000000000000000000000000000000000000000000a3c78921878ecbafd4"),
             n_tx: 2647,
-            previousblockhash: Some(hash!(
+            previousblockhash: Some(from_hex!(
                 "000000000000002937dcaffd8367cfb05cd9ef2e3bd7a081de82696f70e719d9"
             )),
-            nextblockhash: Some(hash!(
+            nextblockhash: Some(from_hex!(
                 "00000000000000331dddb553312687a4be62635ad950cde36ebc977c702d2791"
             )),
         };
@@ -1032,14 +1031,14 @@ mod tests {
         let expected = GetRawTransactionResult {
             in_active_chain: None,
             hex: hex!("0200000001586bd02815cf5faabfec986a4e50d25dbee089bd2758621e61c5fab06c334af0000000006b483045022100e85425f6d7c589972ee061413bcf08dc8c8e589ce37b217535a42af924f0e4d602205c9ba9cb14ef15513c9d946fa1c4b797883e748e8c32171bdf6166583946e35c012103dae30a4d7870cd87b45dd53e6012f71318fdd059c1c2623b8cc73f8af287bb2dfeffffff021dc4260c010000001976a914f602e88b2b5901d8aab15ebe4a97cf92ec6e03b388ac00e1f505000000001976a914687ffeffe8cf4e4c038da46a9b1d37db385a472d88acfd211500"),
-            txid: hash!("4a5b5266e1750488395ac15c0376c9d48abf45e4df620777fe8cff096f57aa91"),
-            hash: hash!("4a5b5266e1750488395ac15c0376c9d48abf45e4df620777fe8cff096f57aa91"),
+            txid: from_hex!("4a5b5266e1750488395ac15c0376c9d48abf45e4df620777fe8cff096f57aa91"),
+            hash: from_hex!("4a5b5266e1750488395ac15c0376c9d48abf45e4df620777fe8cff096f57aa91"),
             size: 226,
             vsize: 226,
             version: 2,
             locktime: 1384957,
             vin: vec![GetRawTransactionResultVin{
-                txid: Some(hash!("f04a336cb0fac5611e625827bd89e0be5dd2504e6a98ecbfaa5fcf1528d06b58")),
+                txid: Some(from_hex!("f04a336cb0fac5611e625827bd89e0be5dd2504e6a98ecbfaa5fcf1528d06b58")),
                 vout: Some(0),
                 coinbase: None,
                 script_sig: Some(GetRawTransactionResultVinScriptSig{
@@ -1071,7 +1070,7 @@ mod tests {
                     addresses: Some(vec![addr!("mq3VuL2K63VKWkp8vvqRiJPre4h9awrHfA")]),
                 },
             }],
-            blockhash: Some(hash!("00000000000000039dc06adbd7666a8d1df9acf9d0329d73651b764167d63765")),
+            blockhash: Some(from_hex!("00000000000000039dc06adbd7666a8d1df9acf9d0329d73651b764167d63765")),
             confirmations: Some(29446),
             time: Some(1534935138),
             blocktime: Some(1534935138),
@@ -1135,7 +1134,7 @@ mod tests {
         assert!(expected.transaction().is_ok());
         assert_eq!(
             expected.transaction().unwrap().input[0].previous_output.txid,
-            hash!("f04a336cb0fac5611e625827bd89e0be5dd2504e6a98ecbfaa5fcf1528d06b58")
+            from_hex!("f04a336cb0fac5611e625827bd89e0be5dd2504e6a98ecbfaa5fcf1528d06b58")
         );
         assert!(expected.vin[0].script_sig.as_ref().unwrap().script().is_ok());
         assert!(expected.vout[0].script_pub_key.script().is_ok());
@@ -1148,10 +1147,10 @@ mod tests {
             fee: None,
             info: WalletTxInfo {
                 confirmations: 30104,
-                blockhash: Some(hash!("00000000000000039dc06adbd7666a8d1df9acf9d0329d73651b764167d63765")),
+                blockhash: Some(from_hex!("00000000000000039dc06adbd7666a8d1df9acf9d0329d73651b764167d63765")),
                 blockindex: Some(2028),
                 blocktime: Some(1534935138),
-                txid: hash!("4a5b5266e1750488395ac15c0376c9d48abf45e4df620777fe8cff096f57aa91"),
+                txid: from_hex!("4a5b5266e1750488395ac15c0376c9d48abf45e4df620777fe8cff096f57aa91"),
                 time: 1534934745,
                 timereceived: 1534934745,
                 bip125_replaceable: Bip125Replaceable::No,
@@ -1201,7 +1200,7 @@ mod tests {
     #[test]
     fn test_GetTxOutResult() {
         let expected = GetTxOutResult {
-            bestblock: hash!("000000000000002a1fde7234dc2bc016863f3d672af749497eb5c227421e44d5"),
+            bestblock: from_hex!("000000000000002a1fde7234dc2bc016863f3d672af749497eb5c227421e44d5"),
             confirmations: 29505,
             value: Amount::from_btc(1.0).unwrap(),
             script_pub_key: GetRawTransactionResultVoutScriptPubKey{
@@ -1238,7 +1237,7 @@ mod tests {
     #[test]
     fn test_ListUnspentResult() {
         let expected = ListUnspentResultEntry {
-            txid: hash!("1e66743d6384496fe631501ba3f5b788d4bc193980b847f9e7d4e20d9202489f"),
+            txid: from_hex!("1e66743d6384496fe631501ba3f5b788d4bc193980b847f9e7d4e20d9202489f"),
             vout: 1,
             address: Some(addr!("2N56rvr9bGj862UZMNQhv57nU4GXfMof1Xu")),
             script_pub_key: script!("a914820c9a334a89cb72bc4abfce96efc1fb202cdd9087"),
