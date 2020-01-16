@@ -16,9 +16,9 @@
 #![crate_name = "bitcoincore_rpc_json"]
 #![crate_type = "rlib"]
 
-extern crate bitcoin;
-extern crate hex;
-extern crate num_bigint;
+pub extern crate bitcoin;
+pub extern crate hex;
+pub extern crate num_bigint;
 #[allow(unused)]
 #[macro_use] // `macro_use` is needed for v1.24.0 compilation.
 extern crate serde;
