@@ -20,7 +20,7 @@ use jsonrpc;
 use serde;
 use serde_json;
 
-use bitcoin::hashes::sha256d;
+use bitcoin::hashes::hex::FromHex;
 use bitcoin::secp256k1::{self, SecretKey, Signature};
 use bitcoin::{Address, Amount, Block, BlockHeader, OutPoint, PrivateKey, PublicKey, Transaction};
 use log::Level::Debug;
@@ -37,7 +37,7 @@ pub type Result<T> = result::Result<T, Error>;
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 struct JsonOutPoint {
-    pub txid: sha256d::Hash,
+    pub txid: bitcoin::Txid,
     pub vout: u32,
 }
 
@@ -278,7 +278,7 @@ pub trait RpcApi: Sized {
     //            `Address`!
     fn dump_priv_key(&self, address: &Address) -> Result<SecretKey> {
         let hex: String = self.call("dumpprivkey", &[address.to_string().into()])?;
-        let bytes = hex::decode(hex)?;
+        let bytes: Vec<u8> = FromHex::from_hex(&hex)?;
         Ok(secp256k1::SecretKey::from_slice(&bytes)?)
     }
 
@@ -295,28 +295,28 @@ pub trait RpcApi: Sized {
         self.call("getconnectioncount", &[])
     }
 
-    fn get_block(&self, hash: &sha256d::Hash) -> Result<Block> {
+    fn get_block(&self, hash: &bitcoin::BlockHash) -> Result<Block> {
         let hex: String = self.call("getblock", &[into_json(hash)?, 0.into()])?;
-        let bytes = hex::decode(hex)?;
+        let bytes: Vec<u8> = FromHex::from_hex(&hex)?;
         Ok(bitcoin::consensus::encode::deserialize(&bytes)?)
     }
 
-    fn get_block_hex(&self, hash: &sha256d::Hash) -> Result<String> {
+    fn get_block_hex(&self, hash: &bitcoin::BlockHash) -> Result<String> {
         self.call("getblock", &[into_json(hash)?, 0.into()])
     }
 
-    fn get_block_info(&self, hash: &sha256d::Hash) -> Result<json::GetBlockResult> {
+    fn get_block_info(&self, hash: &bitcoin::BlockHash) -> Result<json::GetBlockResult> {
         self.call("getblock", &[into_json(hash)?, 1.into()])
     }
     //TODO(stevenroose) add getblock_txs
 
-    fn get_block_header_raw(&self, hash: &sha256d::Hash) -> Result<BlockHeader> {
+    fn get_block_header_raw(&self, hash: &bitcoin::BlockHash) -> Result<BlockHeader> {
         let hex: String = self.call("getblockheader", &[into_json(hash)?, false.into()])?;
-        let bytes = hex::decode(hex)?;
+        let bytes: Vec<u8> = FromHex::from_hex(&hex)?;
         Ok(bitcoin::consensus::encode::deserialize(&bytes)?)
     }
 
-    fn get_block_header_verbose(&self, hash: &sha256d::Hash) -> Result<json::GetBlockHeaderResult> {
+    fn get_block_header_verbose(&self, hash: &bitcoin::BlockHash) -> Result<json::GetBlockHeaderResult> {
         self.call("getblockheader", &[into_json(hash)?, true.into()])
     }
 
@@ -336,30 +336,30 @@ pub trait RpcApi: Sized {
     }
 
     /// Returns the hash of the best (tip) block in the longest blockchain.
-    fn get_best_block_hash(&self) -> Result<sha256d::Hash> {
+    fn get_best_block_hash(&self) -> Result<bitcoin::BlockHash> {
         self.call("getbestblockhash", &[])
     }
 
     /// Get block hash at a given height
-    fn get_block_hash(&self, height: u64) -> Result<sha256d::Hash> {
+    fn get_block_hash(&self, height: u64) -> Result<bitcoin::BlockHash> {
         self.call("getblockhash", &[height.into()])
     }
 
     fn get_raw_transaction(
         &self,
-        txid: &sha256d::Hash,
-        block_hash: Option<&sha256d::Hash>,
+        txid: &bitcoin::Txid,
+        block_hash: Option<&bitcoin::BlockHash>,
     ) -> Result<Transaction> {
         let mut args = [into_json(txid)?, into_json(false)?, opt_into_json(block_hash)?];
         let hex: String = self.call("getrawtransaction", handle_defaults(&mut args, &[null()]))?;
-        let bytes = hex::decode(hex)?;
+        let bytes: Vec<u8> = FromHex::from_hex(&hex)?;
         Ok(bitcoin::consensus::encode::deserialize(&bytes)?)
     }
 
     fn get_raw_transaction_hex(
         &self,
-        txid: &sha256d::Hash,
-        block_hash: Option<&sha256d::Hash>,
+        txid: &bitcoin::Txid,
+        block_hash: Option<&bitcoin::BlockHash>,
     ) -> Result<String> {
         let mut args = [into_json(txid)?, into_json(false)?, opt_into_json(block_hash)?];
         self.call("getrawtransaction", handle_defaults(&mut args, &[null()]))
@@ -367,14 +367,14 @@ pub trait RpcApi: Sized {
 
     fn get_raw_transaction_verbose(
         &self,
-        txid: &sha256d::Hash,
-        block_hash: Option<&sha256d::Hash>,
+        txid: &bitcoin::Txid,
+        block_hash: Option<&bitcoin::BlockHash>,
     ) -> Result<json::GetRawTransactionResult> {
         let mut args = [into_json(txid)?, into_json(true)?, opt_into_json(block_hash)?];
         self.call("getrawtransaction", handle_defaults(&mut args, &[null()]))
     }
 
-    fn get_block_filter(&self, block_hash: &sha256d::Hash) -> Result<json::GetBlockFilterResult> {
+    fn get_block_filter(&self, block_hash: &bitcoin::BlockHash) -> Result<json::GetBlockFilterResult> {
         self.call("getblockfilter", &[into_json(block_hash)?])
     }
 
@@ -398,7 +398,7 @@ pub trait RpcApi: Sized {
 
     fn get_transaction(
         &self,
-        txid: &sha256d::Hash,
+        txid: &bitcoin::Txid,
         include_watchonly: Option<bool>,
     ) -> Result<json::GetTransactionResult> {
         let mut args = [into_json(txid)?, opt_into_json(include_watchonly)?];
@@ -423,7 +423,7 @@ pub trait RpcApi: Sized {
 
     fn get_tx_out(
         &self,
-        txid: &sha256d::Hash,
+        txid: &bitcoin::Txid,
         vout: u32,
         include_mempool: Option<bool>,
     ) -> Result<Option<json::GetTxOutResult>> {
@@ -433,12 +433,12 @@ pub trait RpcApi: Sized {
 
     fn get_tx_out_proof(
         &self,
-        txids: &[sha256d::Hash],
-        block_hash: Option<&sha256d::Hash>,
+        txids: &[bitcoin::Txid],
+        block_hash: Option<&bitcoin::BlockHash>,
     ) -> Result<Vec<u8>> {
         let mut args = [into_json(txids)?, opt_into_json(block_hash)?];
         let hex: String = self.call("gettxoutproof", handle_defaults(&mut args, &[null()]))?;
-        Ok(hex::decode(&hex)?)
+        Ok(FromHex::from_hex(&hex)?)
     }
 
     fn import_public_key(
@@ -583,7 +583,7 @@ pub trait RpcApi: Sized {
         replaceable: Option<bool>,
     ) -> Result<Transaction> {
         let hex: String = self.create_raw_transaction_hex(utxos, outs, locktime, replaceable)?;
-        let bytes = hex::decode(hex)?;
+        let bytes: Vec<u8> = FromHex::from_hex(&hex)?;
         Ok(bitcoin::consensus::encode::deserialize(&bytes)?)
     }
 
@@ -676,28 +676,28 @@ pub trait RpcApi: Sized {
     /// Mine `block_num` blocks and pay coinbase to `address`
     ///
     /// Returns hashes of the generated blocks
-    fn generate_to_address(&self, block_num: u64, address: &Address) -> Result<Vec<sha256d::Hash>> {
+    fn generate_to_address(&self, block_num: u64, address: &Address) -> Result<Vec<bitcoin::BlockHash>> {
         self.call("generatetoaddress", &[block_num.into(), address.to_string().into()])
     }
 
     /// Mine up to block_num blocks immediately (before the RPC call returns)
     /// to an address in the wallet.
-    fn generate(&self, block_num: u64, maxtries: Option<u64>) -> Result<Vec<sha256d::Hash>> {
+    fn generate(&self, block_num: u64, maxtries: Option<u64>) -> Result<Vec<bitcoin::BlockHash>> {
         self.call("generate", &[block_num.into(), opt_into_json(maxtries)?])
     }
 
     /// Mark a block as invalid by `block_hash`
-    fn invalidate_block(&self, block_hash: &sha256d::Hash) -> Result<()> {
+    fn invalidate_block(&self, block_hash: &bitcoin::BlockHash) -> Result<()> {
         self.call("invalidateblock", &[into_json(block_hash)?])
     }
 
     /// Mark a block as valid by `block_hash`
-    fn reconsider_block(&self, block_hash: &sha256d::Hash) -> Result<()> {
+    fn reconsider_block(&self, block_hash: &bitcoin::BlockHash) -> Result<()> {
         self.call("reconsiderblock", &[into_json(block_hash)?])
     }
 
     /// Get txids of all transactions in a memory pool
-    fn get_raw_mempool(&self) -> Result<Vec<sha256d::Hash>> {
+    fn get_raw_mempool(&self) -> Result<Vec<bitcoin::Txid>> {
         self.call("getrawmempool", &[])
     }
 
@@ -711,7 +711,7 @@ pub trait RpcApi: Sized {
         replaceable: Option<bool>,
         confirmation_target: Option<u32>,
         estimate_mode: Option<json::EstimateMode>,
-    ) -> Result<sha256d::Hash> {
+    ) -> Result<bitcoin::Txid> {
         let mut args = [
             address.to_string().into(),
             into_json(amount.as_btc())?,
@@ -745,7 +745,7 @@ pub trait RpcApi: Sized {
         self.call("ping", &[])
     }
 
-    fn send_raw_transaction<R: RawTx>(&self, tx: R) -> Result<sha256d::Hash> {
+    fn send_raw_transaction<R: RawTx>(&self, tx: R) -> Result<bitcoin::Txid> {
         self.call("sendrawtransaction", &[tx.raw_hex().into()])
     }
 
@@ -777,7 +777,7 @@ pub trait RpcApi: Sized {
     /// 1. `blockhash`: Block hash to wait for.
     /// 2. `timeout`: Time in milliseconds to wait for a response. 0
     /// indicates no timeout.
-    fn wait_for_block(&self, blockhash: &sha256d::Hash, timeout: u64) -> Result<json::BlockRef> {
+    fn wait_for_block(&self, blockhash: &bitcoin::BlockHash, timeout: u64) -> Result<json::BlockRef> {
         let args = [into_json(blockhash)?, into_json(timeout)?];
         self.call("waitforblock", &args)
     }
@@ -853,7 +853,7 @@ mod tests {
     fn test_raw_tx() {
         use bitcoin::consensus::encode;
         let client = Client::new("http://localhost/".into(), Auth::None).unwrap();
-        let tx: bitcoin::Transaction = encode::deserialize(&hex::decode("0200000001586bd02815cf5faabfec986a4e50d25dbee089bd2758621e61c5fab06c334af0000000006b483045022100e85425f6d7c589972ee061413bcf08dc8c8e589ce37b217535a42af924f0e4d602205c9ba9cb14ef15513c9d946fa1c4b797883e748e8c32171bdf6166583946e35c012103dae30a4d7870cd87b45dd53e6012f71318fdd059c1c2623b8cc73f8af287bb2dfeffffff021dc4260c010000001976a914f602e88b2b5901d8aab15ebe4a97cf92ec6e03b388ac00e1f505000000001976a914687ffeffe8cf4e4c038da46a9b1d37db385a472d88acfd211500").unwrap()).unwrap();
+        let tx: bitcoin::Transaction = encode::deserialize(&Vec::<u8>::from_hex("0200000001586bd02815cf5faabfec986a4e50d25dbee089bd2758621e61c5fab06c334af0000000006b483045022100e85425f6d7c589972ee061413bcf08dc8c8e589ce37b217535a42af924f0e4d602205c9ba9cb14ef15513c9d946fa1c4b797883e748e8c32171bdf6166583946e35c012103dae30a4d7870cd87b45dd53e6012f71318fdd059c1c2623b8cc73f8af287bb2dfeffffff021dc4260c010000001976a914f602e88b2b5901d8aab15ebe4a97cf92ec6e03b388ac00e1f505000000001976a914687ffeffe8cf4e4c038da46a9b1d37db385a472d88acfd211500").unwrap()).unwrap();
 
         assert!(client.send_raw_transaction(&tx).is_err());
         assert!(client.send_raw_transaction(&encode::serialize(&tx)).is_err());

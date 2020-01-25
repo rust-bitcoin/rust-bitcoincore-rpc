@@ -11,7 +11,6 @@
 use bitcoin;
 use serde_json;
 
-use bitcoin::hashes::sha256d;
 use client::Result;
 use client::RpcApi;
 
@@ -24,23 +23,23 @@ pub trait Queryable<C: RpcApi>: Sized {
 }
 
 impl<C: RpcApi> Queryable<C> for bitcoin::blockdata::block::Block {
-    type Id = sha256d::Hash;
+    type Id = bitcoin::BlockHash;
 
     fn query(rpc: &C, id: &Self::Id) -> Result<Self> {
         let rpc_name = "getblock";
         let hex: String = rpc.call(rpc_name, &[serde_json::to_value(id)?, 0.into()])?;
-        let bytes = bitcoin::util::misc::hex_bytes(&hex)?;
+        let bytes: Vec<u8> = bitcoin::hashes::hex::FromHex::from_hex(&hex)?;
         Ok(bitcoin::consensus::encode::deserialize(&bytes)?)
     }
 }
 
 impl<C: RpcApi> Queryable<C> for bitcoin::blockdata::transaction::Transaction {
-    type Id = sha256d::Hash;
+    type Id = bitcoin::Txid;
 
     fn query(rpc: &C, id: &Self::Id) -> Result<Self> {
         let rpc_name = "getrawtransaction";
         let hex: String = rpc.call(rpc_name, &[serde_json::to_value(id)?])?;
-        let bytes = bitcoin::util::misc::hex_bytes(&hex)?;
+        let bytes: Vec<u8> = bitcoin::hashes::hex::FromHex::from_hex(&hex)?;
         Ok(bitcoin::consensus::encode::deserialize(&bytes)?)
     }
 }
