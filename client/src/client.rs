@@ -60,7 +60,7 @@ impl Into<OutPoint> for JsonOutPoint {
 }
 
 /// Shorthand for converting a variable into a serde_json::Value.
-fn into_json<T>(val: T) -> Result<serde_json::Value>
+pub fn into_json<T>(val: T) -> Result<serde_json::Value>
 where
     T: serde::ser::Serialize,
 {
@@ -68,7 +68,7 @@ where
 }
 
 /// Shorthand for converting an Option into an Option<serde_json::Value>.
-fn opt_into_json<T>(opt: Option<T>) -> Result<serde_json::Value>
+pub fn opt_into_json<T>(opt: Option<T>) -> Result<serde_json::Value>
 where
     T: serde::ser::Serialize,
 {
@@ -79,17 +79,17 @@ where
 }
 
 /// Shorthand for `serde_json::Value::Null`.
-fn null() -> serde_json::Value {
+pub fn null() -> serde_json::Value {
     serde_json::Value::Null
 }
 
 /// Shorthand for an empty serde_json::Value array.
-fn empty_arr() -> serde_json::Value {
+pub fn empty_arr() -> serde_json::Value {
     serde_json::Value::Array(vec![])
 }
 
 /// Shorthand for an empty serde_json object.
-fn empty_obj() -> serde_json::Value {
+pub fn empty_obj() -> serde_json::Value {
     serde_json::Value::Object(Default::default())
 }
 
@@ -108,7 +108,7 @@ fn empty_obj() -> serde_json::Value {
 ///
 /// Elements of `args` without corresponding `defaults` value, won't
 /// be substituted, because they are required.
-fn handle_defaults<'a, 'b>(
+pub fn handle_defaults<'a, 'b>(
     args: &'a mut [serde_json::Value],
     defaults: &'b [serde_json::Value],
 ) -> &'a [serde_json::Value] {
@@ -142,7 +142,7 @@ fn handle_defaults<'a, 'b>(
 }
 
 /// Convert a possible-null result into an Option.
-fn opt_result<T: for<'a> serde::de::Deserialize<'a>>(
+pub fn opt_result<T: for<'a> serde::de::Deserialize<'a>>(
     result: serde_json::Value,
 ) -> Result<Option<T>> {
     if result == serde_json::Value::Null {
