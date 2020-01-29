@@ -28,7 +28,7 @@ use std::str::FromStr;
 use std::collections::HashMap;
 
 use bitcoin::consensus::encode;
-use bitcoin::util::bip158;
+use bitcoin::util::{bip158, bip32};
 use bitcoin::{Address, Amount, PrivateKey, PublicKey, Script, Transaction};
 use num_bigint::BigUint;
 use serde::de::Error as SerdeError;
@@ -199,7 +199,7 @@ pub struct GetRawTransactionResultVoutScriptPubKey {
     pub hex: Vec<u8>,
     pub req_sigs: Option<usize>,
     #[serde(rename = "type")]
-    pub type_: Option<String>, //TODO(stevenroose) consider enum
+    pub type_: Option<ScriptPubkeyType>,
     pub addresses: Option<Vec<Address>>,
 }
 
@@ -483,6 +483,101 @@ pub struct Softfork {
     pub bip9: Option<Bip9SoftforkInfo>,
     pub height: Option<u32>,
     pub active: bool,
+}
+
+#[allow(non_camel_case_types)]
+#[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
+#[serde(rename_all = "lowercase")]
+pub enum ScriptPubkeyType {
+    Nonstandard,
+    Pubkey,
+    PubkeyHash,
+    ScriptHash,
+    MultiSig,
+    NullData,
+    Witness_v0_KeyHash,
+    Witness_v0_ScriptHash,
+    Witness_Unknown,
+}
+
+#[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
+pub struct GetAddressInfoResultEmbedded {
+    pub address: Address,
+    #[serde(rename = "scriptPubKey")]
+    pub script_pub_key: Script,
+    #[serde(rename = "is_script")]
+    pub is_script: Option<bool>,
+    #[serde(rename = "is_witness")]
+    pub is_witness: Option<bool>,
+    pub witness_version: Option<u32>,
+    #[serde(with = "::serde_hex")]
+    pub witness_program: Vec<u8>,
+    pub script: Option<ScriptPubkeyType>,
+    /// The redeemscript for the p2sh address.
+    #[serde(with = "::serde_hex::opt")]
+    pub hex: Option<Vec<u8>>,
+    pub pubkeys: Option<Vec<PublicKey>>,
+    #[serde(rename = "sigsrequired")]
+    pub n_signatures_required: Option<usize>,
+    pub pubkey: Option<PublicKey>,
+    #[serde(rename = "is_compressed")]
+    pub is_compressed: bool,
+    pub label: String,
+    #[serde(rename = "hdkeypath")]
+    pub hd_key_path: Option<bip32::DerivationPath>,
+    #[serde(rename = "hdseedid")]
+    pub hd_seed_id: Option<bitcoin::XpubIdentifier>,
+    pub labels: Vec<GetAddressInfoResultLabel>,
+}
+
+#[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
+#[serde(rename_all = "lowercase")]
+pub enum GetAddressInfoResultLabelPurpose {
+    Send,
+    Receive,
+}
+
+#[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
+pub struct GetAddressInfoResultLabel {
+    pub name: String,
+    pub purpose: GetAddressInfoResultLabelPurpose,
+}
+
+#[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
+pub struct GetAddressInfoResult {
+    pub address: Address,
+    #[serde(rename = "scriptPubKey")]
+    pub script_pub_key: Script,
+    #[serde(rename = "is_mine")]
+    pub is_mine: Option<bool>,
+    #[serde(rename = "is_watchonly")]
+    pub is_watchonly: Option<bool>,
+    #[serde(rename = "is_script")]
+    pub is_script: Option<bool>,
+    #[serde(rename = "is_witness")]
+    pub is_witness: Option<bool>,
+    pub witness_version: Option<u32>,
+    #[serde(with = "::serde_hex")]
+    pub witness_program: Vec<u8>,
+    pub script: Option<ScriptPubkeyType>,
+    /// The redeemscript for the p2sh address.
+    #[serde(with = "::serde_hex::opt")]
+    pub hex: Option<Vec<u8>>,
+    pub pubkeys: Option<Vec<PublicKey>>,
+    #[serde(rename = "sigsrequired")]
+    pub n_signatures_required: Option<usize>,
+    pub pubkey: Option<PublicKey>,
+    /// Information about the address embedded in P2SH or P2WSH, if relevant and known.
+    pub embedded: Option<GetAddressInfoResultEmbedded>,
+    #[serde(rename = "is_compressed")]
+    pub is_compressed: bool,
+    pub label: String,
+    pub timestamp: Option<u64>,
+    #[serde(rename = "hdkeypath")]
+    pub hd_key_path: Option<bip32::DerivationPath>,
+    #[serde(rename = "hdseedid")]
+    pub hd_seed_id: Option<bitcoin::XpubIdentifier>,
+    pub labels: Vec<GetAddressInfoResultLabel>,
 }
 
 /// Models the result of "getblockchaininfo"
@@ -1091,7 +1186,7 @@ mod tests {
                     asm: "OP_DUP OP_HASH160 f602e88b2b5901d8aab15ebe4a97cf92ec6e03b3 OP_EQUALVERIFY OP_CHECKSIG".into(),
                     hex: hex!("76a914f602e88b2b5901d8aab15ebe4a97cf92ec6e03b388ac"),
                     req_sigs: Some(1),
-                    type_: Some("pubkeyhash".into()),
+                    type_: Some(ScriptPubkeyType::PubkeyHash),
                     addresses: Some(vec![addr!("n3wk1KcFnVibGdqQa6jbwoR8gbVtRbYM4M")]),
                 },
             }, GetRawTransactionResultVout{
@@ -1101,7 +1196,7 @@ mod tests {
                     asm: "OP_DUP OP_HASH160 687ffeffe8cf4e4c038da46a9b1d37db385a472d OP_EQUALVERIFY OP_CHECKSIG".into(),
                     hex: hex!("76a914687ffeffe8cf4e4c038da46a9b1d37db385a472d88ac"),
                     req_sigs: Some(1),
-                    type_: Some("pubkeyhash".into()),
+                    type_: Some(ScriptPubkeyType::PubkeyHash),
                     addresses: Some(vec![addr!("mq3VuL2K63VKWkp8vvqRiJPre4h9awrHfA")]),
                 },
             }],
@@ -1242,7 +1337,7 @@ mod tests {
                 asm: "OP_DUP OP_HASH160 687ffeffe8cf4e4c038da46a9b1d37db385a472d OP_EQUALVERIFY OP_CHECKSIG".into(),
                 hex: hex!("76a914687ffeffe8cf4e4c038da46a9b1d37db385a472d88ac"),
                 req_sigs: Some(1),
-                type_: Some("pubkeyhash".into()),
+                type_: Some(ScriptPubkeyType::PubkeyHash),
                 addresses: Some(vec![addr!("mq3VuL2K63VKWkp8vvqRiJPre4h9awrHfA")]),
             },
             coinbase: false,

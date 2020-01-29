@@ -673,6 +673,10 @@ pub trait RpcApi: Sized {
         self.call("getnewaddress", &[opt_into_json(label)?, opt_into_json(address_type)?])
     }
 
+    fn get_address_info(&self, address: &Address) -> Result<json::GetAddressInfoResult> {
+        self.call("getaddressinfo", &[address.to_string().into()])
+    }
+
     /// Mine `block_num` blocks and pay coinbase to `address`
     ///
     /// Returns hashes of the generated blocks
