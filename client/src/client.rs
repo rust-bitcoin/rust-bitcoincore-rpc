@@ -15,12 +15,11 @@ use std::path::PathBuf;
 use std::{fmt, result};
 
 use bitcoin;
-use hex;
 use jsonrpc;
 use serde;
 use serde_json;
 
-use bitcoin::hashes::hex::FromHex;
+use bitcoin::hashes::hex::{FromHex, ToHex};
 use bitcoin::secp256k1::{self, SecretKey, Signature};
 use bitcoin::{Address, Amount, Block, BlockHeader, OutPoint, PrivateKey, PublicKey, Transaction};
 use log::Level::Debug;
@@ -159,19 +158,19 @@ pub trait RawTx: Sized + Clone {
 
 impl<'a> RawTx for &'a Transaction {
     fn raw_hex(self) -> String {
-        hex::encode(bitcoin::consensus::encode::serialize(self))
+        bitcoin::consensus::encode::serialize(self).to_hex()
     }
 }
 
 impl<'a> RawTx for &'a [u8] {
     fn raw_hex(self) -> String {
-        hex::encode(self)
+        self.to_hex()
     }
 }
 
 impl<'a> RawTx for &'a Vec<u8> {
     fn raw_hex(self) -> String {
-        hex::encode(self)
+        self.to_hex()
     }
 }
 

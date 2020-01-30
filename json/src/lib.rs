@@ -17,7 +17,6 @@
 #![crate_type = "rlib"]
 
 pub extern crate bitcoin;
-pub extern crate hex;
 pub extern crate num_bigint;
 #[allow(unused)]
 #[macro_use] // `macro_use` is needed for v1.24.0 compilation.
@@ -27,6 +26,7 @@ extern crate serde_json;
 use std::str::FromStr;
 use std::collections::HashMap;
 
+use bitcoin::hashes::hex::{FromHex, ToHex};
 use bitcoin::consensus::encode;
 use bitcoin::util::{bip158, bip32};
 use bitcoin::{Address, Amount, PrivateKey, PublicKey, Script, Transaction};
@@ -41,34 +41,34 @@ use serde_json::Value;
 ///
 /// The module is compatible with the serde attribute.
 pub mod serde_hex {
-    use hex;
+    use bitcoin::hashes::hex::{ToHex, FromHex};
     use serde::de::Error;
     use serde::{Deserializer, Serializer};
 
     pub fn serialize<S: Serializer>(b: &Vec<u8>, s: S) -> Result<S::Ok, S::Error> {
-        s.serialize_str(&hex::encode(&b))
+        s.serialize_str(&b.to_hex())
     }
 
     pub fn deserialize<'de, D: Deserializer<'de>>(d: D) -> Result<Vec<u8>, D::Error> {
         let hex_str: String = ::serde::Deserialize::deserialize(d)?;
-        Ok(hex::decode(hex_str).map_err(D::Error::custom)?)
+        Ok(FromHex::from_hex(&hex_str).map_err(D::Error::custom)?)
     }
 
     pub mod opt {
-        use hex;
+        use bitcoin::hashes::hex::{ToHex, FromHex};
         use serde::de::Error;
         use serde::{Deserializer, Serializer};
 
         pub fn serialize<S: Serializer>(b: &Option<Vec<u8>>, s: S) -> Result<S::Ok, S::Error> {
             match *b {
                 None => s.serialize_none(),
-                Some(ref b) => s.serialize_str(&hex::encode(&b)),
+                Some(ref b) => s.serialize_str(&b.to_hex()),
             }
         }
 
         pub fn deserialize<'de, D: Deserializer<'de>>(d: D) -> Result<Option<Vec<u8>>, D::Error> {
             let hex_str: String = ::serde::Deserialize::deserialize(d)?;
-            Ok(Some(hex::decode(hex_str).map_err(D::Error::custom)?))
+            Ok(Some(FromHex::from_hex(&hex_str).map_err(D::Error::custom)?))
         }
     }
 }
@@ -644,7 +644,7 @@ impl<'a> serde::Serialize for ImportMultiRequestScriptPubkey<'a> {
                 )
             }
             ImportMultiRequestScriptPubkey::Script(script) => {
-                serializer.serialize_str(&hex::encode(script.as_bytes()))
+                serializer.serialize_str(&script.as_bytes().to_hex())
             }
         }
     }
@@ -949,7 +949,7 @@ where
     let v: Vec<String> = Vec::deserialize(deserializer)?;
     let mut res = Vec::new();
     for h in v.into_iter() {
-        res.push(hex::decode(h).map_err(D::Error::custom)?);
+        res.push(FromHex::from_hex(&h).map_err(D::Error::custom)?);
     }
     Ok(Some(res))
 }
@@ -963,7 +963,7 @@ mod tests {
 
     macro_rules! hex {
         ($h:expr) => {
-            hex::decode(&$h).unwrap()
+            Vec::<u8>::from_hex(&$h).unwrap()
         };
     }
 
