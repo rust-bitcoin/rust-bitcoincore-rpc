@@ -790,6 +790,59 @@ pub struct BlockRef {
     pub height: u64,
 }
 
+/// Models the result of "getdescriptorinfo"
+#[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
+pub struct GetDescriptorInfoResult {
+    pub descriptor: String,
+    pub checksum: String,
+    pub isrange: bool,
+    pub issolvable: bool,
+    pub hasprivatekeys: bool,
+}
+
+/// Models the result of "walletcreatefundedpsbt"
+#[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
+pub struct WalletCreateFundedPsbtResult {
+    pub psbt: String,
+    #[serde(with = "bitcoin::util::amount::serde::as_btc")]
+    pub fee: Amount,
+    #[serde(rename = "changepos")]
+    pub change_position: i32,
+}
+
+/// Models the request for "walletcreatefundedpsbt"
+#[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize, Default)]
+pub struct WalletCreateFundedPsbtOptions {
+    #[serde(rename = "changeAddress", skip_serializing_if = "Option::is_none")]
+    pub change_address: Option<Address>,
+    #[serde(rename = "changePosition", skip_serializing_if = "Option::is_none")]
+    pub change_position: Option<u16>,
+    #[serde(rename = "changeType", skip_serializing_if = "Option::is_none")]
+    pub change_type: Option<String>,
+    #[serde(rename = "includeWatching", skip_serializing_if = "Option::is_none")]
+    pub include_watching: Option<bool>,
+    #[serde(rename = "lockUnspents", skip_serializing_if = "Option::is_none")]
+    pub lock_unspent: Option<bool>,
+    #[serde(rename = "feeRate", skip_serializing_if = "Option::is_none", with = "bitcoin::util::amount::serde::as_btc::opt")]
+    pub fee_rate: Option<Amount>,
+    #[serde(rename = "subtractFeeFromOutputs", skip_serializing_if = "Vec::is_empty")]
+    pub subtract_fee_from_outputs: Vec<u16>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub repleaceable: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub conf_target: Option<u16>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub estimate_mode: Option<String>,
+}
+
+/// Models the result of "finalizepsbt"
+#[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
+pub struct FinalizePsbtResult {
+    pub psbt: Option<String>,
+    pub hex: Option<String>,
+    pub complete: bool,
+}
+
 // Custom types for input arguments.
 
 #[derive(Serialize, Deserialize, Debug, Clone, Copy, Eq, PartialEq, Hash)]

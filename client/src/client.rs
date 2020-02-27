@@ -784,6 +784,52 @@ pub trait RpcApi: Sized {
         let args = [into_json(blockhash)?, into_json(timeout)?];
         self.call("waitforblock", &args)
     }
+
+    fn wallet_create_funded_psbt(
+        &self,
+        utxos: &[json::CreateRawTransactionInput],
+        outs: &HashMap<String, Amount>,
+        locktime: Option<i64>,
+        options: Option<json::WalletCreateFundedPsbtOptions>,
+        bip32derivs: Option<bool>,
+    ) -> Result<json::WalletCreateFundedPsbtResult> {
+        let outs_converted = serde_json::Map::from_iter(
+            outs.iter().map(|(k, v)| (k.clone(), serde_json::Value::from(v.as_btc()))),
+        );
+        let args = [
+            into_json(utxos)?,
+            into_json(outs_converted)?,
+            opt_into_json(locktime)?,
+            into_json(options)?,
+            into_json(bip32derivs)?,
+        ];
+        self.call("walletcreatefundedpsbt", &args)
+    }
+
+    fn get_descriptor_info(&self, desc: &str) -> Result<json::GetDescriptorInfoResult> {
+        self.call("getdescriptorinfo", &[desc.to_string().into()])
+    }
+
+    fn combine_psbt(&self, psbts: &Vec<String>) -> Result<String> {
+        self.call("combinepsbt", &[into_json(psbts)?])
+    }
+
+    fn derive_addresses(&self, descriptor: &str, range: [u32;2]) -> Result<Vec<Address>> {
+        self.call("deriveaddresses", &[into_json(descriptor)?, into_json(range)?])
+    }
+
+    fn finalize_psbt(&self, psbt: &str, extract: bool) -> Result<json::FinalizePsbtResult> {
+        self.call("finalizepsbt", &[into_json(psbt)?, into_json(extract)?])
+    }
+
+    fn rescan_blockchain(
+        &self,
+        start_from: Option<usize>,
+    ) -> Result<()> {
+        let args = [into_json(start_from.unwrap_or(0))?];
+        self.call("rescanblockchain", &args)
+    }
+
 }
 
 /// Client implements a JSON-RPC client for the Bitcoin Core daemon or compatible APIs.
