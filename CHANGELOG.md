@@ -1,4 +1,13 @@
 
+# v0.9.1
+
+- Add `wallet_create_funded_psbt`
+- Add `get_descriptor_info`
+- Add `combine_psbt`
+- Add `derive_addresses`
+- Add `finalize_psbt`
+- Add `rescan_blockchain`
+
 # v0.7.0
 
 - use `bitcoin::PublicKey` instead of `secp256k1::PublicKey`
