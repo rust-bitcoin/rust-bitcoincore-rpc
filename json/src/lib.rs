@@ -23,11 +23,11 @@ pub extern crate num_bigint;
 extern crate serde;
 extern crate serde_json;
 
-use std::str::FromStr;
 use std::collections::HashMap;
+use std::str::FromStr;
 
-use bitcoin::hashes::hex::{FromHex, ToHex};
 use bitcoin::consensus::encode;
+use bitcoin::hashes::hex::{FromHex, ToHex};
 use bitcoin::util::{bip158, bip32};
 use bitcoin::{Address, Amount, PrivateKey, PublicKey, Script, Transaction};
 use num_bigint::BigUint;
@@ -41,7 +41,7 @@ use serde_json::Value;
 ///
 /// The module is compatible with the serde attribute.
 pub mod serde_hex {
-    use bitcoin::hashes::hex::{ToHex, FromHex};
+    use bitcoin::hashes::hex::{FromHex, ToHex};
     use serde::de::Error;
     use serde::{Deserializer, Serializer};
 
@@ -55,7 +55,7 @@ pub mod serde_hex {
     }
 
     pub mod opt {
-        use bitcoin::hashes::hex::{ToHex, FromHex};
+        use bitcoin::hashes::hex::{FromHex, ToHex};
         use serde::de::Error;
         use serde::{Deserializer, Serializer};
 
@@ -467,7 +467,6 @@ pub struct Bip9SoftforkInfo {
     pub statistics: Bip9SoftforkStatistics,
 }
 
-
 #[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
 #[serde(rename_all = "lowercase")]
 pub enum SoftforkType {
@@ -795,9 +794,12 @@ pub struct BlockRef {
 pub struct GetDescriptorInfoResult {
     pub descriptor: String,
     pub checksum: String,
-    pub isrange: bool,
-    pub issolvable: bool,
-    pub hasprivatekeys: bool,
+    #[serde(rename = "isrange")]
+    pub is_range: bool,
+    #[serde(rename = "issolvable")]
+    pub is_solvable: bool,
+    #[serde(rename = "hasprivatekeys")]
+    pub has_private_keys: bool,
 }
 
 /// Models the result of "walletcreatefundedpsbt"
@@ -823,7 +825,11 @@ pub struct WalletCreateFundedPsbtOptions {
     pub include_watching: Option<bool>,
     #[serde(rename = "lockUnspents", skip_serializing_if = "Option::is_none")]
     pub lock_unspent: Option<bool>,
-    #[serde(rename = "feeRate", skip_serializing_if = "Option::is_none", with = "bitcoin::util::amount::serde::as_btc::opt")]
+    #[serde(
+        rename = "feeRate",
+        skip_serializing_if = "Option::is_none",
+        with = "bitcoin::util::amount::serde::as_btc::opt"
+    )]
     pub fee_rate: Option<Amount>,
     #[serde(rename = "subtractFeeFromOutputs", skip_serializing_if = "Vec::is_empty")]
     pub subtract_fee_from_outputs: Vec<u16>,
@@ -1070,7 +1076,9 @@ mod tests {
             height: 2,
             version: 1,
             version_hex: Some(hex!("00000001")),
-            merkleroot: from_hex!("20222eb90f5895556926c112bb5aa0df4ab5abc3107e21a6950aec3b2e3541e2"),
+            merkleroot: from_hex!(
+                "20222eb90f5895556926c112bb5aa0df4ab5abc3107e21a6950aec3b2e3541e2"
+            ),
             tx: vec![from_hex!("20222eb90f5895556926c112bb5aa0df4ab5abc3107e21a6950aec3b2e3541e2")],
             time: 1296688946,
             mediantime: Some(1296688928),
@@ -1122,7 +1130,9 @@ mod tests {
             height: 1384958,
             version: 536870912,
             version_hex: Some(hex!("20000000")),
-            merkleroot: from_hex!("33d8a6f622182a4e844022bbc8aa51c63f6476708ad5cc5c451f2933753440d7"),
+            merkleroot: from_hex!(
+                "33d8a6f622182a4e844022bbc8aa51c63f6476708ad5cc5c451f2933753440d7"
+            ),
             time: 1534935138,
             mediantime: Some(1534932055),
             nonce: 871182973,

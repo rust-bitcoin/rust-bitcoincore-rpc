@@ -315,7 +315,10 @@ pub trait RpcApi: Sized {
         Ok(bitcoin::consensus::encode::deserialize(&bytes)?)
     }
 
-    fn get_block_header_verbose(&self, hash: &bitcoin::BlockHash) -> Result<json::GetBlockHeaderResult> {
+    fn get_block_header_verbose(
+        &self,
+        hash: &bitcoin::BlockHash,
+    ) -> Result<json::GetBlockHeaderResult> {
         self.call("getblockheader", &[into_json(hash)?, true.into()])
     }
 
@@ -373,7 +376,10 @@ pub trait RpcApi: Sized {
         self.call("getrawtransaction", handle_defaults(&mut args, &[null()]))
     }
 
-    fn get_block_filter(&self, block_hash: &bitcoin::BlockHash) -> Result<json::GetBlockFilterResult> {
+    fn get_block_filter(
+        &self,
+        block_hash: &bitcoin::BlockHash,
+    ) -> Result<json::GetBlockFilterResult> {
         self.call("getblockfilter", &[into_json(block_hash)?])
     }
 
@@ -679,7 +685,11 @@ pub trait RpcApi: Sized {
     /// Mine `block_num` blocks and pay coinbase to `address`
     ///
     /// Returns hashes of the generated blocks
-    fn generate_to_address(&self, block_num: u64, address: &Address) -> Result<Vec<bitcoin::BlockHash>> {
+    fn generate_to_address(
+        &self,
+        block_num: u64,
+        address: &Address,
+    ) -> Result<Vec<bitcoin::BlockHash>> {
         self.call("generatetoaddress", &[block_num.into(), address.to_string().into()])
     }
 
@@ -780,56 +790,62 @@ pub trait RpcApi: Sized {
     /// 1. `blockhash`: Block hash to wait for.
     /// 2. `timeout`: Time in milliseconds to wait for a response. 0
     /// indicates no timeout.
-    fn wait_for_block(&self, blockhash: &bitcoin::BlockHash, timeout: u64) -> Result<json::BlockRef> {
+    fn wait_for_block(
+        &self,
+        blockhash: &bitcoin::BlockHash,
+        timeout: u64,
+    ) -> Result<json::BlockRef> {
         let args = [into_json(blockhash)?, into_json(timeout)?];
         self.call("waitforblock", &args)
     }
 
     fn wallet_create_funded_psbt(
         &self,
-        utxos: &[json::CreateRawTransactionInput],
-        outs: &HashMap<String, Amount>,
+        inputs: &[json::CreateRawTransactionInput],
+        outputs: &HashMap<String, Amount>,
         locktime: Option<i64>,
         options: Option<json::WalletCreateFundedPsbtOptions>,
         bip32derivs: Option<bool>,
     ) -> Result<json::WalletCreateFundedPsbtResult> {
-        let outs_converted = serde_json::Map::from_iter(
-            outs.iter().map(|(k, v)| (k.clone(), serde_json::Value::from(v.as_btc()))),
+        let outputs_converted = serde_json::Map::from_iter(
+            outputs.iter().map(|(k, v)| (k.clone(), serde_json::Value::from(v.as_btc()))),
         );
-        let args = [
-            into_json(utxos)?,
-            into_json(outs_converted)?,
+        let mut args = [
+            into_json(inputs)?,
+            into_json(outputs_converted)?,
             opt_into_json(locktime)?,
-            into_json(options)?,
-            into_json(bip32derivs)?,
+            opt_into_json(options)?,
+            opt_into_json(bip32derivs)?,
         ];
-        self.call("walletcreatefundedpsbt", &args)
+        self.call("walletcreatefundedpsbt", handle_defaults(&mut args, &[0.into(), null(), false.into()]))
     }
 
     fn get_descriptor_info(&self, desc: &str) -> Result<json::GetDescriptorInfoResult> {
         self.call("getdescriptorinfo", &[desc.to_string().into()])
     }
 
-    fn combine_psbt(&self, psbts: &Vec<String>) -> Result<String> {
+    fn combine_psbt(&self, psbts: &[String]) -> Result<String> {
         self.call("combinepsbt", &[into_json(psbts)?])
     }
 
-    fn derive_addresses(&self, descriptor: &str, range: [u32;2]) -> Result<Vec<Address>> {
-        self.call("deriveaddresses", &[into_json(descriptor)?, into_json(range)?])
+    fn derive_addresses(&self, descriptor: &str, range: Option<[u32; 2]>) -> Result<Vec<Address>> {
+        let mut args = [into_json(descriptor)?, opt_into_json(range)?];
+        self.call("deriveaddresses", handle_defaults(&mut args, &[null()]))
     }
 
-    fn finalize_psbt(&self, psbt: &str, extract: bool) -> Result<json::FinalizePsbtResult> {
-        self.call("finalizepsbt", &[into_json(psbt)?, into_json(extract)?])
+    fn finalize_psbt(&self, psbt: &str, extract: Option<bool>) -> Result<json::FinalizePsbtResult> {
+        let mut args = [into_json(psbt)?, opt_into_json(extract)?];
+        self.call("finalizepsbt", handle_defaults(&mut args, &[true.into()]))
     }
 
     fn rescan_blockchain(
         &self,
         start_from: Option<usize>,
+        stop_height: Option<usize>,
     ) -> Result<()> {
-        let args = [into_json(start_from.unwrap_or(0))?];
-        self.call("rescanblockchain", &args)
+        let mut args = [opt_into_json(start_from)?, opt_into_json(stop_height)?];
+        self.call("rescanblockchain", handle_defaults(&mut args, &[0.into(), null()]))
     }
-
 }
 
 /// Client implements a JSON-RPC client for the Bitcoin Core daemon or compatible APIs.
