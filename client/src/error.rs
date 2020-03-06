@@ -11,8 +11,8 @@
 use std::{error, fmt, io};
 
 use bitcoin;
-use bitcoin::secp256k1;
 use bitcoin::hashes::hex;
+use bitcoin::secp256k1;
 use jsonrpc;
 use serde_json;
 
