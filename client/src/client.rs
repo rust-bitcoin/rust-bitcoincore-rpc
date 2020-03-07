@@ -315,13 +315,13 @@ pub trait RpcApi: Sized {
     }
     //TODO(stevenroose) add getblock_txs
 
-    fn get_block_header_raw(&self, hash: &bitcoin::BlockHash) -> Result<BlockHeader> {
+    fn get_block_header(&self, hash: &bitcoin::BlockHash) -> Result<BlockHeader> {
         let hex: String = self.call("getblockheader", &[into_json(hash)?, false.into()])?;
         let bytes: Vec<u8> = FromHex::from_hex(&hex)?;
         Ok(bitcoin::consensus::encode::deserialize(&bytes)?)
     }
 
-    fn get_block_header_verbose(
+    fn get_block_header_info(
         &self,
         hash: &bitcoin::BlockHash,
     ) -> Result<json::GetBlockHeaderResult> {
