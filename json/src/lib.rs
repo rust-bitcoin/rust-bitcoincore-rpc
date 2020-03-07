@@ -74,6 +74,47 @@ pub mod serde_hex {
 }
 
 #[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
+pub struct GetNetworkInfoResultNetwork {
+    pub name: String,
+    pub limited: bool,
+    pub reachable: bool,
+    pub proxy: String,
+    pub proxy_randomize_credentials: bool,
+}
+
+#[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
+pub struct GetNetworkInfoResultAddress {
+    pub address: String,
+    pub port: usize,
+    pub score: usize,
+}
+
+#[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
+pub struct GetNetworkInfoResult {
+    pub version: usize,
+    pub subversion: String,
+    #[serde(rename = "protocolversion")]
+    pub protocol_version: usize,
+    #[serde(rename = "localservices")]
+    pub local_services: String,
+    #[serde(rename = "localrelay")]
+    pub local_relay: bool,
+    #[serde(rename = "timeoffset")]
+    pub time_offset: usize,
+    pub connections: usize,
+    #[serde(rename = "networkactive")]
+    pub network_active: bool,
+    pub networks: Vec<GetNetworkInfoResultNetwork>,
+    #[serde(rename = "relayfee", with = "bitcoin::util::amount::serde::as_btc")]
+    pub relay_fee: Amount,
+    #[serde(rename = "incrementalfee", with = "bitcoin::util::amount::serde::as_btc")]
+    pub incremental_fee: Amount,
+    #[serde(rename = "localaddresses")]
+    pub local_addresses: Vec<GetNetworkInfoResultAddress>,
+    pub warnings: String,
+}
+
+#[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct AddMultiSigAddressResult {
     pub address: Address,

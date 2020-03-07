@@ -231,6 +231,19 @@ pub trait RpcApi: Sized {
         T::query(&self, &id)
     }
 
+    fn get_network_info(&self) -> Result<json::GetNetworkInfoResult> {
+        self.call("getnetworkinfo", &[])
+    }
+
+    fn version(&self) -> Result<usize> {
+        #[derive(Deserialize)]
+        struct Response {
+            pub version: usize,
+        }
+        let res: Response = self.call("getnetworkinfo", &[])?;
+        Ok(res.version)
+    }
+
     fn add_multisig_address(
         &self,
         nrequired: usize,
