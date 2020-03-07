@@ -185,12 +185,16 @@ pub struct GetBlockHeaderResult {
 #[serde(rename_all = "camelCase")]
 pub struct GetMiningInfoResult {
     pub blocks: u32,
-    pub currentblockweight: Option<u64>,
-    pub currentblocktx: Option<usize>,
+    #[serde(rename = "currentblockweight")]
+    pub current_block_weight: Option<u64>,
+    #[serde(rename = "currentblocktx")]
+    pub current_block_tx: Option<usize>,
     #[serde(deserialize_with = "deserialize_difficulty")]
     pub difficulty: BigUint,
-    pub networkhashps: f64,
-    pub pooledtx: usize,
+    #[serde(rename = "networkhashps")]
+    pub network_hash_ps: f64,
+    #[serde(rename = "pooledtx")]
+    pub pooled_tx: usize,
     pub chain: String,
     pub warnings: String,
 }
