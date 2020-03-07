@@ -508,12 +508,12 @@ pub struct Bip9SoftforkStatistics {
 #[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
 pub struct Bip9SoftforkInfo {
     pub status: Bip9SoftforkStatus,
-    pub bit: u8,
-    #[serde(rename = "startTime")]
-    pub start_time: u64,
+    pub bit: Option<u8>,
+    // Can be -1 for 0.18.x inactive ones.
+    pub start_time: i64,
     pub timeout: u64,
     pub since: u32,
-    pub statistics: Bip9SoftforkStatistics,
+    pub statistics: Option<Bip9SoftforkStatistics>,
 }
 
 #[derive(Copy, Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
@@ -631,7 +631,6 @@ pub struct GetAddressInfoResult {
 /// Models the result of "getblockchaininfo"
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct GetBlockchainInfoResult {
-    // TODO: Use Network from rust-bitcoin
     /// Current network name as defined in BIP70 (main, test, regtest)
     pub chain: String,
     /// The current number of blocks processed in the server
@@ -639,29 +638,35 @@ pub struct GetBlockchainInfoResult {
     /// The current number of headers we have validated
     pub headers: u64,
     /// The hash of the currently best block
-    pub bestblockhash: bitcoin::BlockHash,
+    #[serde(rename = "bestblockhash")]
+    pub best_block_hash: bitcoin::BlockHash,
     /// The current difficulty
     pub difficulty: f64,
     /// Median time for the current best block
-    pub mediantime: u64,
+    #[serde(rename = "mediantime")]
+    pub median_time: u64,
     /// Estimate of verification progress [0..1]
-    pub verificationprogress: f64,
+    #[serde(rename = "verificationprogress")]
+    pub verification_progress: f64,
     /// Estimate of whether this node is in Initial Block Download mode
-    pub initialblockdownload: bool,
+    #[serde(rename = "initialblockdownload")]
+    pub initial_block_download: bool,
     /// Total amount of work in active chain, in hexadecimal
-    #[serde(with = "::serde_hex")]
-    pub chainwork: Vec<u8>,
+    #[serde(rename = "chainwork", with = "::serde_hex")]
+    pub chain_work: Vec<u8>,
     /// The estimated size of the block and undo files on disk
     pub size_on_disk: u64,
     /// If the blocks are subject to pruning
     pub pruned: bool,
     /// Lowest-height complete block stored (only present if pruning is enabled)
-    pub pruneheight: Option<u64>,
+    #[serde(rename = "pruneheight")]
+    pub prune_height: Option<u64>,
     /// Whether automatic pruning is enabled (only present if pruning is enabled)
     pub automatic_pruning: Option<bool>,
     /// The target size used by pruning (only present if automatic pruning is enabled)
     pub prune_target_size: Option<u64>,
     /// Status of softforks in progress
+    #[serde(default)]
     pub softforks: HashMap<String, Softfork>,
     /// Any network and blockchain warnings.
     pub warnings: String,
