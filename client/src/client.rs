@@ -20,7 +20,7 @@ use serde;
 use serde_json;
 
 use bitcoin::hashes::hex::{FromHex, ToHex};
-use bitcoin::secp256k1::{self, SecretKey, Signature};
+use bitcoin::secp256k1::{SecretKey, Signature};
 use bitcoin::{Address, Amount, Block, BlockHeader, OutPoint, PrivateKey, PublicKey, Transaction};
 use log::Level::Debug;
 use num_bigint::BigUint;
@@ -270,15 +270,8 @@ pub trait RpcApi: Sized {
         self.call("backupwallet", handle_defaults(&mut args, &[null()]))
     }
 
-    // TODO(dpc): should we convert? Or maybe we should have two methods?
-    //            just like with `getrawtransaction` it is sometimes useful
-    //            to just get the string dump, without converting it into
-    //            `bitcoin` type; Maybe we should made it `Queryable` by
-    //            `Address`!
-    fn dump_priv_key(&self, address: &Address) -> Result<SecretKey> {
-        let hex: String = self.call("dumpprivkey", &[address.to_string().into()])?;
-        let bytes: Vec<u8> = FromHex::from_hex(&hex)?;
-        Ok(secp256k1::SecretKey::from_slice(&bytes)?)
+    fn dump_private_key(&self, address: &Address) -> Result<PrivateKey> {
+        self.call("dumpprivkey", &[address.to_string().into()])
     }
 
     fn encrypt_wallet(&self, passphrase: &str) -> Result<()> {
