@@ -163,9 +163,11 @@ pub struct GetBlockHeaderResult {
     pub version: u32,
     #[serde(default, with = "::serde_hex::opt")]
     pub version_hex: Option<Vec<u8>>,
-    pub merkleroot: bitcoin::TxMerkleNode,
+    #[serde(rename = "merkleroot")]
+    pub merkle_root: bitcoin::TxMerkleNode,
     pub time: usize,
-    pub mediantime: Option<usize>,
+    #[serde(rename = "mediantime")]
+    pub median_time: Option<usize>,
     pub nonce: u32,
     pub bits: String,
     #[serde(deserialize_with = "deserialize_difficulty")]
@@ -173,8 +175,10 @@ pub struct GetBlockHeaderResult {
     #[serde(with = "::serde_hex")]
     pub chainwork: Vec<u8>,
     pub n_tx: usize,
-    pub previousblockhash: Option<bitcoin::BlockHash>,
-    pub nextblockhash: Option<bitcoin::BlockHash>,
+    #[serde(rename = "previousblockhash")]
+    pub previous_block_hash: Option<bitcoin::BlockHash>,
+    #[serde(rename = "nextblockhash")]
+    pub next_block_hash: Option<bitcoin::BlockHash>,
 }
 
 #[derive(Clone, PartialEq, Debug, Deserialize, Serialize)]
