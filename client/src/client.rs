@@ -396,7 +396,7 @@ pub trait RpcApi: Sized {
     ) -> Result<Amount> {
         let mut args = ["*".into(), opt_into_json(minconf)?, opt_into_json(include_watchonly)?];
         Ok(Amount::from_btc(
-            self.call("getbalance", handle_defaults(&mut args, &[false.into(), null()]))?,
+            self.call("getbalance", handle_defaults(&mut args, &[0.into(), null()]))?,
         )?)
     }
 
