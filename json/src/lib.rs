@@ -323,7 +323,7 @@ impl GetRawTransactionResult {
 }
 
 /// Enum to represent the BIP125 replaceable status for a transaction.
-#[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
+#[derive(Copy, Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
 #[serde(rename_all = "lowercase")]
 pub enum Bip125Replaceable {
     Yes,
@@ -332,7 +332,7 @@ pub enum Bip125Replaceable {
 }
 
 /// Enum to represent the BIP125 replaceable status for a transaction.
-#[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
+#[derive(Copy, Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
 #[serde(rename_all = "lowercase")]
 pub enum GetTransactionResultDetailCategory {
     Send,
@@ -486,7 +486,7 @@ pub struct TestMempoolAccept {
     pub reject_reason: Option<String>,
 }
 
-#[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
+#[derive(Copy, Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
 #[serde(rename_all = "snake_case")]
 pub enum Bip9SoftforkStatus {
     Defined,
@@ -516,7 +516,7 @@ pub struct Bip9SoftforkInfo {
     pub statistics: Bip9SoftforkStatistics,
 }
 
-#[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
+#[derive(Copy, Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
 #[serde(rename_all = "lowercase")]
 pub enum SoftforkType {
     Buried,
@@ -534,7 +534,7 @@ pub struct Softfork {
 }
 
 #[allow(non_camel_case_types)]
-#[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
+#[derive(Copy, Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
 #[serde(rename_all = "lowercase")]
 pub enum ScriptPubkeyType {
     Nonstandard,
@@ -578,7 +578,7 @@ pub struct GetAddressInfoResultEmbedded {
     pub labels: Vec<GetAddressInfoResultLabel>,
 }
 
-#[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
+#[derive(Copy, Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
 #[serde(rename_all = "lowercase")]
 pub enum GetAddressInfoResultLabelPurpose {
     Send,
@@ -1004,7 +1004,7 @@ pub struct SignRawTransactionInput {
 }
 
 /// Used to represent an address type.
-#[derive(Serialize, Clone, PartialEq, Eq, Debug)]
+#[derive(Copy, Serialize, Clone, PartialEq, Eq, Debug)]
 #[serde(rename_all = "kebab-case")]
 pub enum AddressType {
     Legacy,
