@@ -17,20 +17,17 @@
 #![crate_type = "rlib"]
 
 pub extern crate bitcoin;
-pub extern crate num_bigint;
 #[allow(unused)]
 #[macro_use] // `macro_use` is needed for v1.24.0 compilation.
 extern crate serde;
 extern crate serde_json;
 
 use std::collections::HashMap;
-use std::str::FromStr;
 
 use bitcoin::consensus::encode;
 use bitcoin::hashes::hex::{FromHex, ToHex};
 use bitcoin::util::{bip158, bip32};
 use bitcoin::{Address, Amount, PrivateKey, PublicKey, Script, Transaction};
-use num_bigint::BigUint;
 use serde::de::Error as SerdeError;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
@@ -127,7 +124,7 @@ pub struct LoadWalletResult {
     pub warning: Option<String>,
 }
 
-#[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
+#[derive(Clone, PartialEq, Debug, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct GetBlockResult {
     pub hash: bitcoin::BlockHash,
@@ -145,8 +142,7 @@ pub struct GetBlockResult {
     pub mediantime: Option<usize>,
     pub nonce: u32,
     pub bits: String,
-    #[serde(deserialize_with = "deserialize_difficulty")]
-    pub difficulty: BigUint,
+    pub difficulty: f64,
     #[serde(with = "::serde_hex")]
     pub chainwork: Vec<u8>,
     pub n_tx: usize,
@@ -154,7 +150,7 @@ pub struct GetBlockResult {
     pub nextblockhash: Option<bitcoin::BlockHash>,
 }
 
-#[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
+#[derive(Clone, PartialEq, Debug, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct GetBlockHeaderResult {
     pub hash: bitcoin::BlockHash,
@@ -170,8 +166,7 @@ pub struct GetBlockHeaderResult {
     pub median_time: Option<usize>,
     pub nonce: u32,
     pub bits: String,
-    #[serde(deserialize_with = "deserialize_difficulty")]
-    pub difficulty: BigUint,
+    pub difficulty: f64,
     #[serde(with = "::serde_hex")]
     pub chainwork: Vec<u8>,
     pub n_tx: usize,
@@ -189,8 +184,7 @@ pub struct GetMiningInfoResult {
     pub current_block_weight: Option<u64>,
     #[serde(rename = "currentblocktx")]
     pub current_block_tx: Option<usize>,
-    #[serde(deserialize_with = "deserialize_difficulty")]
-    pub difficulty: BigUint,
+    pub difficulty: f64,
     #[serde(rename = "networkhashps")]
     pub network_hash_ps: f64,
     #[serde(rename = "pooledtx")]
@@ -1051,19 +1045,6 @@ impl<'a> serde::Serialize for PubKeyOrAddress<'a> {
 
 // Custom deserializer functions.
 
-fn deserialize_difficulty<'de, D>(deserializer: D) -> Result<BigUint, D::Error>
-where
-    D: serde::Deserializer<'de>,
-{
-    let s = f64::deserialize(deserializer)?.to_string();
-    let real = match s.split('.').nth(0) {
-        Some(r) => r,
-        None => return Err(D::Error::custom(&format!("error parsing difficulty: {}", s))),
-    };
-    BigUint::from_str(real)
-        .map_err(|_| D::Error::custom(&format!("error parsing difficulty: {}", s)))
-}
-
 /// deserialize_hex_array_opt deserializes a vector of hex-encoded byte arrays.
 fn deserialize_hex_array_opt<'de, D>(deserializer: D) -> Result<Option<Vec<Vec<u8>>>, D::Error>
 where
@@ -1151,7 +1132,7 @@ mod tests {
             mediantime: Some(1296688928),
             nonce: 875942400,
             bits: "1d00ffff".into(),
-            difficulty: 1u64.into(),
+            difficulty: 1.0,
             chainwork: hex!("0000000000000000000000000000000000000000000000000000000300030003"),
             n_tx: 1,
             previousblockhash: Some(from_hex!(
@@ -1204,7 +1185,7 @@ mod tests {
             mediantime: Some(1534932055),
             nonce: 871182973,
             bits: "1959273b".into(),
-            difficulty: 48174374u64.into(),
+            difficulty: 48174374u64.0,
             chainwork: hex!("0000000000000000000000000000000000000000000000a3c78921878ecbafd4"),
             n_tx: 2647,
             previousblockhash: Some(from_hex!(
@@ -1242,7 +1223,7 @@ mod tests {
             blocks: 1415011,
             currentblockweight: Some(0),
             currentblocktx: Some(0),
-            difficulty: 1u32.into(),
+            difficulty: 1.0,
             networkhashps: 11970022568515.56,
             pooledtx: 110,
             chain: "test".into(),
@@ -1266,7 +1247,7 @@ mod tests {
             blocks: 585966,
             currentblockweight: None,
             currentblocktx: None,
-            difficulty: "9064159826491".parse().unwrap(),
+            difficulty: 9064159826491.0,
             networkhashps: 5.276674407862246e+19,
             pooledtx: 48870,
             chain: "main".into(),

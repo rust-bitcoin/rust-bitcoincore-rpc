@@ -23,7 +23,6 @@ use bitcoin::hashes::hex::{FromHex, ToHex};
 use bitcoin::secp256k1::{SecretKey, Signature};
 use bitcoin::{Address, Amount, Block, BlockHeader, OutPoint, PrivateKey, PublicKey, Transaction};
 use log::Level::Debug;
-use num_bigint::BigUint;
 use serde::{Deserialize, Serialize};
 
 use error::*;
@@ -291,8 +290,7 @@ pub trait RpcApi: Sized {
         self.call("encryptwallet", &[into_json(passphrase)?])
     }
 
-    //TODO(stevenroose) verify if return type works
-    fn get_difficulty(&self) -> Result<BigUint> {
+    fn get_difficulty(&self) -> Result<f64> {
         self.call("getdifficulty", &[])
     }
 
