@@ -20,7 +20,7 @@ use serde;
 use serde_json;
 
 use bitcoin::hashes::hex::{FromHex, ToHex};
-use bitcoin::secp256k1::{SecretKey, Signature};
+use bitcoin::secp256k1::Signature;
 use bitcoin::{Address, Amount, Block, BlockHeader, OutPoint, PrivateKey, PublicKey, Transaction};
 use log::Level::Debug;
 use serde::{Deserialize, Serialize};
@@ -517,9 +517,9 @@ pub trait RpcApi: Sized {
         self.call("importpubkey", handle_defaults(&mut args, &[into_json("")?, null()]))
     }
 
-    fn import_priv_key(
+    fn import_private_key(
         &self,
-        privkey: &SecretKey,
+        privkey: &PrivateKey,
         label: Option<&str>,
         rescan: Option<bool>,
     ) -> Result<()> {
