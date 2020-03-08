@@ -27,7 +27,7 @@ use std::collections::HashMap;
 use bitcoin::consensus::encode;
 use bitcoin::hashes::hex::{FromHex, ToHex};
 use bitcoin::util::{bip158, bip32};
-use bitcoin::{Address, Amount, PrivateKey, PublicKey, Script, Transaction};
+use bitcoin::{Address, Amount, SignedAmount, PrivateKey, PublicKey, Script, Transaction};
 use serde::de::Error as SerdeError;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
@@ -339,11 +339,11 @@ pub struct GetTransactionResultDetail {
     pub address: Address,
     pub category: GetTransactionResultDetailCategory,
     #[serde(with = "bitcoin::util::amount::serde::as_btc")]
-    pub amount: Amount,
+    pub amount: SignedAmount,
     pub label: Option<String>,
     pub vout: u32,
     #[serde(default, with = "bitcoin::util::amount::serde::as_btc::opt")]
-    pub fee: Option<Amount>,
+    pub fee: Option<SignedAmount>,
     pub abandoned: Option<bool>,
 }
 
@@ -365,9 +365,9 @@ pub struct GetTransactionResult {
     #[serde(flatten)]
     pub info: WalletTxInfo,
     #[serde(with = "bitcoin::util::amount::serde::as_btc")]
-    pub amount: Amount,
+    pub amount: SignedAmount,
     #[serde(default, with = "bitcoin::util::amount::serde::as_btc::opt")]
-    pub fee: Option<Amount>,
+    pub fee: Option<SignedAmount>,
     pub details: Vec<GetTransactionResultDetail>,
     #[serde(with = "::serde_hex")]
     pub hex: Vec<u8>,
