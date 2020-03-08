@@ -30,7 +30,6 @@ use bitcoin::util::{bip158, bip32};
 use bitcoin::{Address, Amount, SignedAmount, PrivateKey, PublicKey, Script, Transaction};
 use serde::de::Error as SerdeError;
 use serde::{Deserialize, Serialize};
-use serde_json::Value;
 
 //TODO(stevenroose) consider using a Time type
 
@@ -837,7 +836,13 @@ pub struct GetPeerInfoResult {
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct EstimateSmartFeeResult {
     /// Estimate fee rate in BTC/kB.
-    pub feerate: Option<Value>,
+    #[serde(
+        default,
+        rename = "feerate",
+        skip_serializing_if = "Option::is_none",
+        with = "bitcoin::util::amount::serde::as_btc::opt"
+    )]
+    pub fee_rate: Option<Amount>,
     /// Errors encountered during processing.
     pub errors: Option<Vec<String>>,
     /// Block number where estimate was found.
