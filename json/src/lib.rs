@@ -779,7 +779,7 @@ pub struct GetPeerInfoResult {
     pub addrbind: String,
     /// Local address as reported by the peer
     // TODO: use a type for addrlocal
-    pub addrlocal: String,
+    pub addrlocal: Option<String>,
     /// The services offered
     // TODO: use a type for services
     pub services: String,
@@ -796,13 +796,13 @@ pub struct GetPeerInfoResult {
     /// The connection time in seconds since epoch (Jan 1 1970 GMT)
     pub conntime: u64,
     /// The time offset in seconds
-    pub timeoffset: u64,
+    pub timeoffset: i64,
     /// ping time (if available)
-    pub pingtime: u64,
+    pub pingtime: f64,
     /// minimum observed ping time (if any at all)
-    pub minping: u64,
+    pub minping: f64,
     /// ping wait (if non-zero)
-    pub pingwait: u64,
+    pub pingwait: Option<f64>,
     /// The peer version, such as 70001
     pub version: u64,
     /// The string version
@@ -817,19 +817,19 @@ pub struct GetPeerInfoResult {
     /// The ban score
     pub banscore: i64,
     /// The last header we have in common with this peer
-    pub synced_headers: u64,
+    pub synced_headers: i64,
     /// The last block we have in common with this peer
-    pub synced_blocks: u64,
+    pub synced_blocks: i64,
     /// The heights of blocks we're currently asking from this peer
     pub inflight: Vec<u64>,
     /// Whether the peer is whitelisted
     pub whitelisted: bool,
+    #[serde(rename = "minfeefilter", default, with = "bitcoin::util::amount::serde::as_btc::opt")]
+    pub min_fee_filter: Option<Amount>,
     /// The total bytes sent aggregated by message type
-    // TODO: use a type for bytessent_per_msg
-    pub bytessent_per_msg: Value,
+    pub bytessent_per_msg: HashMap<String, u64>,
     /// The total bytes received aggregated by message type
-    // TODO: use a type for bytesrecv_per_msg
-    pub bytesrecv_per_msg: Value,
+    pub bytesrecv_per_msg: HashMap<String, u64>,
 }
 
 /// Models the result of "estimatesmartfee"
