@@ -562,19 +562,20 @@ pub struct GetAddressInfoResultEmbedded {
     pub witness_program: Vec<u8>,
     pub script: Option<ScriptPubkeyType>,
     /// The redeemscript for the p2sh address.
-    #[serde(with = "::serde_hex::opt")]
+    #[serde(default, with = "::serde_hex::opt")]
     pub hex: Option<Vec<u8>>,
     pub pubkeys: Option<Vec<PublicKey>>,
     #[serde(rename = "sigsrequired")]
     pub n_signatures_required: Option<usize>,
     pub pubkey: Option<PublicKey>,
     #[serde(rename = "is_compressed")]
-    pub is_compressed: bool,
-    pub label: String,
+    pub is_compressed: Option<bool>,
+    pub label: Option<String>,
     #[serde(rename = "hdkeypath")]
     pub hd_key_path: Option<bip32::DerivationPath>,
     #[serde(rename = "hdseedid")]
     pub hd_seed_id: Option<bitcoin::XpubIdentifier>,
+    #[serde(default)]
     pub labels: Vec<GetAddressInfoResultLabel>,
 }
 
@@ -596,20 +597,20 @@ pub struct GetAddressInfoResult {
     pub address: Address,
     #[serde(rename = "scriptPubKey")]
     pub script_pub_key: Script,
-    #[serde(rename = "is_mine")]
+    #[serde(rename = "ismine")]
     pub is_mine: Option<bool>,
-    #[serde(rename = "is_watchonly")]
+    #[serde(rename = "iswatchonly")]
     pub is_watchonly: Option<bool>,
-    #[serde(rename = "is_script")]
+    #[serde(rename = "isscript")]
     pub is_script: Option<bool>,
-    #[serde(rename = "is_witness")]
+    #[serde(rename = "iswitness")]
     pub is_witness: Option<bool>,
     pub witness_version: Option<u32>,
-    #[serde(with = "::serde_hex")]
-    pub witness_program: Vec<u8>,
+    #[serde(default, with = "::serde_hex::opt")]
+    pub witness_program: Option<Vec<u8>>,
     pub script: Option<ScriptPubkeyType>,
     /// The redeemscript for the p2sh address.
-    #[serde(with = "::serde_hex::opt")]
+    #[serde(default, with = "::serde_hex::opt")]
     pub hex: Option<Vec<u8>>,
     pub pubkeys: Option<Vec<PublicKey>>,
     #[serde(rename = "sigsrequired")]
@@ -618,7 +619,7 @@ pub struct GetAddressInfoResult {
     /// Information about the address embedded in P2SH or P2WSH, if relevant and known.
     pub embedded: Option<GetAddressInfoResultEmbedded>,
     #[serde(rename = "is_compressed")]
-    pub is_compressed: bool,
+    pub is_compressed: Option<bool>,
     pub label: String,
     pub timestamp: Option<u64>,
     #[serde(rename = "hdkeypath")]
