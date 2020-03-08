@@ -332,6 +332,7 @@ pub enum GetTransactionResultDetailCategory {
     Send,
     Receive,
     Generate,
+    Immature,
 }
 
 #[derive(Clone, PartialEq, Eq, Debug, Deserialize)]
