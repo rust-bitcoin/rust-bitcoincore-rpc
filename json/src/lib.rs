@@ -449,7 +449,7 @@ pub struct ListUnspentResultEntry {
 #[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ListReceivedByAddressResult {
-    #[serde(rename = "involvesWatchonly")]
+    #[serde(default, rename = "involvesWatchonly")]
     pub involved_watch_only: bool,
     pub address: Address,
     #[serde(with = "bitcoin::util::amount::serde::as_btc")]
@@ -886,8 +886,8 @@ pub struct WalletCreateFundedPsbtOptions {
     pub change_address: Option<Address>,
     #[serde(rename = "changePosition", skip_serializing_if = "Option::is_none")]
     pub change_position: Option<u16>,
-    #[serde(rename = "changeType", skip_serializing_if = "Option::is_none")]
-    pub change_type: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub change_type: Option<AddressType>,
     #[serde(rename = "includeWatching", skip_serializing_if = "Option::is_none")]
     pub include_watching: Option<bool>,
     #[serde(rename = "lockUnspents", skip_serializing_if = "Option::is_none")]
@@ -901,11 +901,11 @@ pub struct WalletCreateFundedPsbtOptions {
     #[serde(rename = "subtractFeeFromOutputs", skip_serializing_if = "Vec::is_empty")]
     pub subtract_fee_from_outputs: Vec<u16>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub repleaceable: Option<bool>,
+    pub replaceable: Option<bool>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub conf_target: Option<u16>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub estimate_mode: Option<String>,
+    pub estimate_mode: Option<EstimateMode>,
 }
 
 /// Models the result of "finalizepsbt"
@@ -1022,7 +1022,7 @@ pub struct SignRawTransactionInput {
 }
 
 /// Used to represent an address type.
-#[derive(Copy, Serialize, Clone, PartialEq, Eq, Debug)]
+#[derive(Copy, Serialize, Deserialize, Clone, PartialEq, Eq, Debug)]
 #[serde(rename_all = "kebab-case")]
 pub enum AddressType {
     Legacy,
