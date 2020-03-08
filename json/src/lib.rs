@@ -407,16 +407,28 @@ pub struct GetTxOutResult {
     pub coinbase: bool,
 }
 
-#[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
+#[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize, Default)]
 #[serde(rename_all = "camelCase")]
 pub struct ListUnspentQueryOptions {
-    #[serde(default, with = "bitcoin::util::amount::serde::as_btc::opt")]
+    #[serde(
+        rename = "minimumAmount",
+        with = "bitcoin::util::amount::serde::as_btc::opt",
+        skip_serializing_if = "Option::is_none"
+    )]
     pub minimum_amount: Option<Amount>,
-    #[serde(default, with = "bitcoin::util::amount::serde::as_btc::opt")]
+    #[serde(
+        rename = "maximumAmount",
+        with = "bitcoin::util::amount::serde::as_btc::opt",
+        skip_serializing_if = "Option::is_none"
+    )]
     pub maximum_amount: Option<Amount>,
-    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(rename = "maximumCount", skip_serializing_if = "Option::is_none")]
     pub maximum_count: Option<usize>,
-    #[serde(default, with = "bitcoin::util::amount::serde::as_btc::opt")]
+    #[serde(
+        rename = "minimumSumAmount",
+        with = "bitcoin::util::amount::serde::as_btc::opt",
+        skip_serializing_if = "Option::is_none"
+    )]
     pub maximum_sum_amount: Option<Amount>,
 }
 

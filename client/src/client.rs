@@ -574,7 +574,7 @@ pub trait RpcApi: Sized {
         &self,
         minconf: Option<usize>,
         maxconf: Option<usize>,
-        addresses: Option<&[Address]>,
+        addresses: Option<&[&Address]>,
         include_unsafe: Option<bool>,
         query_options: Option<json::ListUnspentQueryOptions>,
     ) -> Result<Vec<json::ListUnspentResultEntry>> {
