@@ -798,7 +798,9 @@ pub trait RpcApi: Sized {
             opt_into_json(confirmation_target)?,
             opt_into_json(estimate_mode)?,
         ];
-        self.call("sendtoaddress", handle_defaults(&mut args, &vec![null(); 6]))
+        self.call("sendtoaddress", handle_defaults(&mut args, &[
+            "".into(), "".into(), false.into(), false.into(), 6.into(), null()
+        ]))
     }
 
     /// Returns data about each connected network node as an array of
