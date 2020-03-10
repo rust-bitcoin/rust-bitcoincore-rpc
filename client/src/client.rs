@@ -762,7 +762,7 @@ pub trait RpcApi: Sized {
         self.call("sendrawtransaction", &[tx.raw_hex().into()])
     }
 
-    fn estimate_smartfee<E>(
+    fn estimate_smartfee(
         &self,
         conf_target: u16,
         estimate_mode: Option<json::EstimateMode>,
