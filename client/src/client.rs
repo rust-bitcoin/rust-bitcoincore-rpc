@@ -733,7 +733,7 @@ pub trait RpcApi: Sized {
         self.call("testmempoolaccept", &[hexes.into()])
     }
 
-    fn stop(&self) -> Result<()> {
+    fn stop(&self) -> Result<String> {
         self.call("stop", &[])
     }
 
