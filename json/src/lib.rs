@@ -982,8 +982,11 @@ pub struct FundRawTransactionOptions {
     pub include_watching: Option<bool>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub lock_unspents: Option<bool>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub fee_rate: Option<u64>,
+    #[serde(
+        with = "bitcoin::util::amount::serde::as_btc::opt",
+        skip_serializing_if = "Option::is_none"
+    )]
+    pub fee_rate: Option<Amount>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub subtract_fee_from_outputs: Option<Vec<u32>>,
     #[serde(skip_serializing_if = "Option::is_none")]
