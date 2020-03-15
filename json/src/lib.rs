@@ -485,8 +485,8 @@ impl SignRawTransactionResult {
 }
 
 #[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
-pub struct TestMempoolAccept {
-    pub txid: String,
+pub struct TestMempoolAcceptResult {
+    pub txid: bitcoin::Txid,
     pub allowed: bool,
     #[serde(rename = "reject-reason")]
     pub reject_reason: Option<String>,

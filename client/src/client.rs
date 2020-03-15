@@ -727,7 +727,7 @@ pub trait RpcApi: Sized {
         self.call("signrawtransactionwithkey", handle_defaults(&mut args, &defaults))
     }
 
-    fn test_mempool_accept<R: RawTx>(&self, rawtxs: &[R]) -> Result<Vec<json::TestMempoolAccept>> {
+    fn test_mempool_accept<R: RawTx>(&self, rawtxs: &[R]) -> Result<Vec<json::TestMempoolAcceptResult>> {
         let hexes: Vec<serde_json::Value> =
             rawtxs.to_vec().into_iter().map(|r| r.raw_hex().into()).collect();
         self.call("testmempoolaccept", &[hexes.into()])
