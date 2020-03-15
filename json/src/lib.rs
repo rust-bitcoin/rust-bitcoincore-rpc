@@ -912,8 +912,15 @@ pub struct WalletCreateFundedPsbtOptions {
 #[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
 pub struct FinalizePsbtResult {
     pub psbt: Option<String>,
-    pub hex: Option<String>,
+    #[serde(default, with = "::serde_hex::opt")]
+    pub hex: Option<Vec<u8>>,
     pub complete: bool,
+}
+
+impl FinalizePsbtResult {
+    pub fn transaction(&self) -> Option<Result<Transaction, encode::Error>> {
+        self.hex.as_ref().map(|h| encode::deserialize(h))
+    }
 }
 
 // Custom types for input arguments.

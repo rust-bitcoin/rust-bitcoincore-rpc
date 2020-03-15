@@ -897,7 +897,9 @@ pub trait RpcApi: Sized {
             opt_into_json(options)?,
             opt_into_json(bip32derivs)?,
         ];
-        self.call("walletcreatefundedpsbt", handle_defaults(&mut args, &[0.into(), null(), false.into()]))
+        self.call("walletcreatefundedpsbt", handle_defaults(&mut args, &[
+            0.into(), serde_json::Map::new().into(), false.into()
+        ]))
     }
 
     fn get_descriptor_info(&self, desc: &str) -> Result<json::GetDescriptorInfoResult> {
@@ -908,14 +910,14 @@ pub trait RpcApi: Sized {
         self.call("combinepsbt", &[into_json(psbts)?])
     }
 
-    fn derive_addresses(&self, descriptor: &str, range: Option<[u32; 2]>) -> Result<Vec<Address>> {
-        let mut args = [into_json(descriptor)?, opt_into_json(range)?];
-        self.call("deriveaddresses", handle_defaults(&mut args, &[null()]))
-    }
-
     fn finalize_psbt(&self, psbt: &str, extract: Option<bool>) -> Result<json::FinalizePsbtResult> {
         let mut args = [into_json(psbt)?, opt_into_json(extract)?];
         self.call("finalizepsbt", handle_defaults(&mut args, &[true.into()]))
+    }
+
+    fn derive_addresses(&self, descriptor: &str, range: Option<[u32; 2]>) -> Result<Vec<Address>> {
+        let mut args = [into_json(descriptor)?, opt_into_json(range)?];
+        self.call("deriveaddresses", handle_defaults(&mut args, &[null()]))
     }
 
     fn rescan_blockchain(
