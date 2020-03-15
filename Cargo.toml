@@ -3,4 +3,5 @@
 members = [
     "json",
     "client",
+    "integration_test",
 ]
