@@ -21,7 +21,7 @@ use serde_json;
 
 use bitcoin::hashes::hex::{FromHex, ToHex};
 use bitcoin::secp256k1::Signature;
-use bitcoin::{Address, Amount, Block, BlockHeader, OutPoint, PrivateKey, PublicKey, Transaction};
+use bitcoin::{Address, Amount, Block, BlockHeader, OutPoint, PrivateKey, PublicKey, Script, Transaction};
 use log::Level::Debug;
 use serde::{Deserialize, Serialize};
 
@@ -532,10 +532,27 @@ pub trait RpcApi: Sized {
         address: &Address,
         label: Option<&str>,
         rescan: Option<bool>,
-        p2sh: Option<bool>,
     ) -> Result<()> {
         let mut args = [
             address.to_string().into(),
+            opt_into_json(label)?,
+            opt_into_json(rescan)?,
+        ];
+        self.call(
+            "importaddress",
+            handle_defaults(&mut args, &[into_json("")?, null()]),
+        )
+    }
+
+    fn import_address_script(
+        &self,
+        script: &Script,
+        label: Option<&str>,
+        rescan: Option<bool>,
+        p2sh: Option<bool>,
+    ) -> Result<()> {
+        let mut args = [
+            script.to_hex().into(),
             opt_into_json(label)?,
             opt_into_json(rescan)?,
             opt_into_json(p2sh)?,
