@@ -459,12 +459,11 @@ pub struct Bip9SoftforkStatistics {
 #[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
 pub struct Bip9SoftforkInfo {
     pub status: Bip9SoftforkStatus,
-    pub bit: u8,
-    #[serde(rename = "startTime")]
+    pub bit: Option<u8>,
     pub start_time: u64,
     pub timeout: u64,
     pub since: u32,
-    pub statistics: Bip9SoftforkStatistics,
+    pub statistics: Option<Bip9SoftforkStatistics>,
 }
 
 #[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
