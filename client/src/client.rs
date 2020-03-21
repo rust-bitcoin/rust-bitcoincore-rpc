@@ -655,7 +655,7 @@ pub trait RpcApi: Sized {
         self.call("testmempoolaccept", &[hexes.into()])
     }
 
-    fn stop(&self) -> Result<()> {
+    fn stop(&self) -> Result<String> {
         self.call("stop", &[])
     }
 
@@ -817,7 +817,10 @@ pub trait RpcApi: Sized {
             opt_into_json(options)?,
             opt_into_json(bip32derivs)?,
         ];
-        self.call("walletcreatefundedpsbt", handle_defaults(&mut args, &[0.into(), null(), false.into()]))
+        self.call(
+            "walletcreatefundedpsbt",
+            handle_defaults(&mut args, &[0.into(), null(), false.into()]),
+        )
     }
 
     fn get_descriptor_info(&self, desc: &str) -> Result<json::GetDescriptorInfoResult> {
