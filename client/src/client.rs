@@ -3,7 +3,7 @@
 // the public domain worldwide. This software is distributed without
 // any warranty.
 //
-// You should have received a copy of the CC0 Public Domain Dedication
+// You should hsave received a copy of the CC0 Public Domain Dedication
 // along with this software.
 // If not, see <http://creativecommons.org/publicdomain/zero/1.0/>.
 //
@@ -655,7 +655,7 @@ pub trait RpcApi: Sized {
         self.call("testmempoolaccept", &[hexes.into()])
     }
 
-    fn stop(&self) -> Result<()> {
+    fn stop(&self) -> Result<String> {
         self.call("stop", &[])
     }
 
