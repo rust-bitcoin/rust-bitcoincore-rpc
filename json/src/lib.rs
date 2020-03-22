@@ -29,7 +29,7 @@ use std::str::FromStr;
 use bitcoin::consensus::encode;
 use bitcoin::hashes::hex::{FromHex, ToHex};
 use bitcoin::util::{bip158, bip32};
-use bitcoin::{Address, Amount, PrivateKey, PublicKey, Script, Transaction};
+use bitcoin::{Address, Amount, PrivateKey, PublicKey, Script, Transaction, SignedAmount};
 use num_bigint::BigUint;
 use serde::de::Error as SerdeError;
 use serde::{Deserialize, Serialize};
@@ -291,16 +291,16 @@ pub enum GetTransactionResultDetailCategory {
     Generate,
 }
 
-#[derive(Clone, PartialEq, Eq, Debug, Deserialize)]
+#[derive(Clone, PartialEq, Debug, Deserialize)]
 pub struct GetTransactionResultDetail {
     pub address: Address,
     pub category: GetTransactionResultDetailCategory,
     #[serde(with = "bitcoin::util::amount::serde::as_btc")]
-    pub amount: Amount,
+    pub amount: SignedAmount,
     pub label: Option<String>,
     pub vout: u32,
     #[serde(default, with = "bitcoin::util::amount::serde::as_btc::opt")]
-    pub fee: Option<Amount>,
+    pub fee: Option<SignedAmount>,
     pub abandoned: Option<bool>,
 }
 
@@ -317,14 +317,14 @@ pub struct WalletTxInfo {
     pub bip125_replaceable: Bip125Replaceable,
 }
 
-#[derive(Clone, PartialEq, Eq, Debug, Deserialize)]
+#[derive(Clone, PartialEq, Debug, Deserialize)]
 pub struct GetTransactionResult {
     #[serde(flatten)]
     pub info: WalletTxInfo,
     #[serde(with = "bitcoin::util::amount::serde::as_btc")]
     pub amount: Amount,
     #[serde(default, with = "bitcoin::util::amount::serde::as_btc::opt")]
-    pub fee: Option<Amount>,
+    pub fee: Option<SignedAmount>,
     pub details: Vec<GetTransactionResultDetail>,
     #[serde(with = "::serde_hex")]
     pub hex: Vec<u8>,
@@ -336,7 +336,7 @@ impl GetTransactionResult {
     }
 }
 
-#[derive(Clone, PartialEq, Eq, Debug, Deserialize)]
+#[derive(Clone, PartialEq, Debug, Deserialize)]
 pub struct ListTransactionResult {
     #[serde(flatten)]
     pub info: WalletTxInfo,
