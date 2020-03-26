@@ -29,7 +29,7 @@ use std::str::FromStr;
 use bitcoin::consensus::encode;
 use bitcoin::hashes::hex::{FromHex, ToHex};
 use bitcoin::util::{bip158, bip32};
-use bitcoin::{Address, Amount, PrivateKey, PublicKey, Script, Transaction};
+use bitcoin::{Address, Amount, PrivateKey, PublicKey, Script, SignedAmount, Transaction};
 use num_bigint::BigUint;
 use serde::de::Error as SerdeError;
 use serde::{Deserialize, Serialize};
@@ -296,11 +296,11 @@ pub struct GetTransactionResultDetail {
     pub address: Address,
     pub category: GetTransactionResultDetailCategory,
     #[serde(with = "bitcoin::util::amount::serde::as_btc")]
-    pub amount: Amount,
+    pub amount: SignedAmount,
     pub label: Option<String>,
     pub vout: u32,
     #[serde(default, with = "bitcoin::util::amount::serde::as_btc::opt")]
-    pub fee: Option<Amount>,
+    pub fee: Option<SignedAmount>,
     pub abandoned: Option<bool>,
 }
 
@@ -322,9 +322,9 @@ pub struct GetTransactionResult {
     #[serde(flatten)]
     pub info: WalletTxInfo,
     #[serde(with = "bitcoin::util::amount::serde::as_btc")]
-    pub amount: Amount,
+    pub amount: SignedAmount,
     #[serde(default, with = "bitcoin::util::amount::serde::as_btc::opt")]
-    pub fee: Option<Amount>,
+    pub fee: Option<SignedAmount>,
     pub details: Vec<GetTransactionResultDetail>,
     #[serde(with = "::serde_hex")]
     pub hex: Vec<u8>,
@@ -1334,9 +1334,9 @@ mod tests {
     }
 
     #[test]
-    fn test_GetTransactionResult() {
+    fn test_receive_GetTransactionResult() {
         let expected = GetTransactionResult {
-            amount: Amount::from_btc(1.0).unwrap(),
+            amount: SignedAmount::from_btc(1.0).unwrap(),
             fee: None,
             info: WalletTxInfo {
                 confirmations: 30104,
@@ -1352,7 +1352,7 @@ mod tests {
                 GetTransactionResultDetail {
                     address: addr!("mq3VuL2K63VKWkp8vvqRiJPre4h9awrHfA"),
                     category: GetTransactionResultDetailCategory::Receive,
-                    amount: Amount::from_btc(1.0).unwrap(),
+                    amount: SignedAmount::from_btc(1.0).unwrap(),
                     label: Some("".into()),
                     vout: 1,
                     fee: None,
@@ -1381,6 +1381,65 @@ mod tests {
                   "amount": 1.00000000,
                   "label": "",
                   "vout": 1
+                }
+              ],
+              "hex": "0200000001586bd02815cf5faabfec986a4e50d25dbee089bd2758621e61c5fab06c334af0000000006b483045022100e85425f6d7c589972ee061413bcf08dc8c8e589ce37b217535a42af924f0e4d602205c9ba9cb14ef15513c9d946fa1c4b797883e748e8c32171bdf6166583946e35c012103dae30a4d7870cd87b45dd53e6012f71318fdd059c1c2623b8cc73f8af287bb2dfeffffff021dc4260c010000001976a914f602e88b2b5901d8aab15ebe4a97cf92ec6e03b388ac00e1f505000000001976a914687ffeffe8cf4e4c038da46a9b1d37db385a472d88acfd211500"
+            }
+        "#;
+        assert_eq!(expected, serde_json::from_str(json).unwrap());
+        assert!(expected.transaction().is_ok());
+    }
+
+    #[test]
+    fn test_send_GetTransactionResult() {
+        let expected = GetTransactionResult {
+            amount: SignedAmount::from_btc(-0.00613580).unwrap(),
+            fee: Some(SignedAmount::from_btc(-0.00000258).unwrap()),
+            info: WalletTxInfo {
+                confirmations: 30104,
+                blockhash: Some(from_hex!("00000000000000039dc06adbd7666a8d1df9acf9d0329d73651b764167d63765")),
+                blockindex: Some(2028),
+                blocktime: Some(1534935138),
+                txid: from_hex!("4a5b5266e1750488395ac15c0376c9d48abf45e4df620777fe8cff096f57aa91"),
+                time: 1534934745,
+                timereceived: 1534934745,
+                bip125_replaceable: Bip125Replaceable::No,
+            },
+            details: vec![
+                GetTransactionResultDetail {
+                    address: addr!("mq3VuL2K63VKWkp8vvqRiJPre4h9awrHfA"),
+                    category: GetTransactionResultDetailCategory::Send,
+                    amount: SignedAmount::from_btc(-0.00613580).unwrap(),
+                    label: Some("".into()),
+                    vout: 1,
+                    fee: Some(SignedAmount::from_btc(-0.00000258).unwrap()),
+                    abandoned: None,
+                },
+            ],
+            hex: hex!("0200000001586bd02815cf5faabfec986a4e50d25dbee089bd2758621e61c5fab06c334af0000000006b483045022100e85425f6d7c589972ee061413bcf08dc8c8e589ce37b217535a42af924f0e4d602205c9ba9cb14ef15513c9d946fa1c4b797883e748e8c32171bdf6166583946e35c012103dae30a4d7870cd87b45dd53e6012f71318fdd059c1c2623b8cc73f8af287bb2dfeffffff021dc4260c010000001976a914f602e88b2b5901d8aab15ebe4a97cf92ec6e03b388ac00e1f505000000001976a914687ffeffe8cf4e4c038da46a9b1d37db385a472d88acfd211500"),
+        };
+        let json = r#"
+            {
+              "amount": -0.00613580,
+              "fee": -0.00000258,
+              "confirmations": 30104,
+              "blockhash": "00000000000000039dc06adbd7666a8d1df9acf9d0329d73651b764167d63765",
+              "blockindex": 2028,
+              "blocktime": 1534935138,
+              "txid": "4a5b5266e1750488395ac15c0376c9d48abf45e4df620777fe8cff096f57aa91",
+              "walletconflicts": [
+              ],
+              "time": 1534934745,
+              "timereceived": 1534934745,
+              "bip125-replaceable": "no",
+              "details": [
+                {
+                  "address": "mq3VuL2K63VKWkp8vvqRiJPre4h9awrHfA",
+                  "category": "send",
+                  "amount": -0.00613580,
+                  "label": "",
+                  "vout": 1,
+                  "fee": -0.00000258
                 }
               ],
               "hex": "0200000001586bd02815cf5faabfec986a4e50d25dbee089bd2758621e61c5fab06c334af0000000006b483045022100e85425f6d7c589972ee061413bcf08dc8c8e589ce37b217535a42af924f0e4d602205c9ba9cb14ef15513c9d946fa1c4b797883e748e8c32171bdf6166583946e35c012103dae30a4d7870cd87b45dd53e6012f71318fdd059c1c2623b8cc73f8af287bb2dfeffffff021dc4260c010000001976a914f602e88b2b5901d8aab15ebe4a97cf92ec6e03b388ac00e1f505000000001976a914687ffeffe8cf4e4c038da46a9b1d37db385a472d88acfd211500"
