@@ -20,10 +20,9 @@ use serde;
 use serde_json;
 
 use bitcoin::hashes::hex::{FromHex, ToHex};
-use bitcoin::secp256k1::{self, SecretKey, Signature};
-use bitcoin::{Address, Amount, Block, BlockHeader, OutPoint, PrivateKey, PublicKey, Transaction};
+use bitcoin::secp256k1::Signature;
+use bitcoin::{Address, Amount, Block, BlockHeader, OutPoint, PrivateKey, PublicKey, Script, Transaction};
 use log::Level::Debug;
-use num_bigint::BigUint;
 use serde::{Deserialize, Serialize};
 
 use error::*;
@@ -231,6 +230,19 @@ pub trait RpcApi: Sized {
         T::query(&self, &id)
     }
 
+    fn get_network_info(&self) -> Result<json::GetNetworkInfoResult> {
+        self.call("getnetworkinfo", &[])
+    }
+
+    fn version(&self) -> Result<usize> {
+        #[derive(Deserialize)]
+        struct Response {
+            pub version: usize,
+        }
+        let res: Response = self.call("getnetworkinfo", &[])?;
+        Ok(res.version)
+    }
+
     fn add_multisig_address(
         &self,
         nrequired: usize,
@@ -270,23 +282,15 @@ pub trait RpcApi: Sized {
         self.call("backupwallet", handle_defaults(&mut args, &[null()]))
     }
 
-    // TODO(dpc): should we convert? Or maybe we should have two methods?
-    //            just like with `getrawtransaction` it is sometimes useful
-    //            to just get the string dump, without converting it into
-    //            `bitcoin` type; Maybe we should made it `Queryable` by
-    //            `Address`!
-    fn dump_priv_key(&self, address: &Address) -> Result<SecretKey> {
-        let hex: String = self.call("dumpprivkey", &[address.to_string().into()])?;
-        let bytes: Vec<u8> = FromHex::from_hex(&hex)?;
-        Ok(secp256k1::SecretKey::from_slice(&bytes)?)
+    fn dump_private_key(&self, address: &Address) -> Result<PrivateKey> {
+        self.call("dumpprivkey", &[address.to_string().into()])
     }
 
     fn encrypt_wallet(&self, passphrase: &str) -> Result<()> {
         self.call("encryptwallet", &[into_json(passphrase)?])
     }
 
-    //TODO(stevenroose) verify if return type works
-    fn get_difficulty(&self) -> Result<BigUint> {
+    fn get_difficulty(&self) -> Result<f64> {
         self.call("getdifficulty", &[])
     }
 
@@ -309,13 +313,13 @@ pub trait RpcApi: Sized {
     }
     //TODO(stevenroose) add getblock_txs
 
-    fn get_block_header_raw(&self, hash: &bitcoin::BlockHash) -> Result<BlockHeader> {
+    fn get_block_header(&self, hash: &bitcoin::BlockHash) -> Result<BlockHeader> {
         let hex: String = self.call("getblockheader", &[into_json(hash)?, false.into()])?;
         let bytes: Vec<u8> = FromHex::from_hex(&hex)?;
         Ok(bitcoin::consensus::encode::deserialize(&bytes)?)
     }
 
-    fn get_block_header_verbose(
+    fn get_block_header_info(
         &self,
         hash: &bitcoin::BlockHash,
     ) -> Result<json::GetBlockHeaderResult> {
@@ -329,7 +333,64 @@ pub trait RpcApi: Sized {
     /// Returns a data structure containing various state info regarding
     /// blockchain processing.
     fn get_blockchain_info(&self) -> Result<json::GetBlockchainInfoResult> {
-        self.call("getblockchaininfo", &[])
+        let mut raw: serde_json::Value = self.call("getblockchaininfo", &[])?;
+        // The softfork fields are not backwards compatible:
+        // - 0.18.x returns a "softforks" array and a "bip9_softforks" map.
+        // - 0.19.x returns a "softforks" map.
+        Ok(if self.version()? < 190000 {
+            use Error::UnexpectedStructure as err;
+
+            // First, remove both incompatible softfork fields.
+            let map = raw.as_object_mut().ok_or(err)?;
+            let bip9_softforks = map.remove("bip9_softforks").ok_or(err)?;
+            let old_softforks = map.remove("softforks").ok_or(err)?;
+            // Put back an empty "softforks" field.
+            map.insert("softforks".into(), serde_json::Map::new().into());
+            let mut ret: json::GetBlockchainInfoResult = serde_json::from_value(raw)?;
+
+            // Then convert both softfork types and add them.
+            for sf in old_softforks.as_array().ok_or(err)?.iter() {
+                let json = sf.as_object().ok_or(err)?;
+                let id = json.get("id").ok_or(err)?.as_str().ok_or(err)?;
+                let reject = json.get("reject").ok_or(err)?.as_object().ok_or(err)?;
+                let active = reject.get("status").ok_or(err)?.as_bool().ok_or(err)?;
+                ret.softforks.insert(id.into(), json::Softfork {
+                    type_: json::SoftforkType::Buried,
+                    bip9: None,
+                    height: None,
+                    active: active,
+                });
+            }
+            for (id, sf) in bip9_softforks.as_object().ok_or(err)?.iter() {
+                #[derive(Deserialize)]
+                struct OldBip9SoftFork {
+                    pub status: json::Bip9SoftforkStatus,
+                    pub bit: Option<u8>,
+                    #[serde(rename = "startTime")]
+                    pub start_time: i64,
+                    pub timeout: u64,
+                    pub since: u32,
+                    pub statistics: Option<json::Bip9SoftforkStatistics>,
+                }
+                let sf: OldBip9SoftFork = serde_json::from_value(sf.clone())?;
+                ret.softforks.insert(id.into(), json::Softfork {
+                    type_: json::SoftforkType::Bip9,
+                    bip9: Some(json::Bip9SoftforkInfo {
+                        status: sf.status,
+                        bit: sf.bit,
+                        start_time: sf.start_time,
+                        timeout: sf.timeout,
+                        since: sf.since,
+                        statistics: sf.statistics,
+                    }),
+                    height: None,
+                    active: sf.status == json::Bip9SoftforkStatus::Active,
+                });
+            }
+            ret
+        } else {
+            serde_json::from_value(raw)?
+        })
     }
 
     /// Returns the numbers of block in the longest chain.
@@ -367,7 +428,7 @@ pub trait RpcApi: Sized {
         self.call("getrawtransaction", handle_defaults(&mut args, &[null()]))
     }
 
-    fn get_raw_transaction_verbose(
+    fn get_raw_transaction_info(
         &self,
         txid: &bitcoin::Txid,
         block_hash: Option<&bitcoin::BlockHash>,
@@ -390,7 +451,7 @@ pub trait RpcApi: Sized {
     ) -> Result<Amount> {
         let mut args = ["*".into(), opt_into_json(minconf)?, opt_into_json(include_watchonly)?];
         Ok(Amount::from_btc(
-            self.call("getbalance", handle_defaults(&mut args, &[false.into(), null()]))?,
+            self.call("getbalance", handle_defaults(&mut args, &[0.into(), null()]))?,
         )?)
     }
 
@@ -456,9 +517,9 @@ pub trait RpcApi: Sized {
         self.call("importpubkey", handle_defaults(&mut args, &[into_json("")?, null()]))
     }
 
-    fn import_priv_key(
+    fn import_private_key(
         &self,
-        privkey: &SecretKey,
+        privkey: &PrivateKey,
         label: Option<&str>,
         rescan: Option<bool>,
     ) -> Result<()> {
@@ -471,10 +532,27 @@ pub trait RpcApi: Sized {
         address: &Address,
         label: Option<&str>,
         rescan: Option<bool>,
-        p2sh: Option<bool>,
     ) -> Result<()> {
         let mut args = [
             address.to_string().into(),
+            opt_into_json(label)?,
+            opt_into_json(rescan)?,
+        ];
+        self.call(
+            "importaddress",
+            handle_defaults(&mut args, &[into_json("")?, null()]),
+        )
+    }
+
+    fn import_address_script(
+        &self,
+        script: &Script,
+        label: Option<&str>,
+        rescan: Option<bool>,
+        p2sh: Option<bool>,
+    ) -> Result<()> {
+        let mut args = [
+            script.to_hex().into(),
             opt_into_json(label)?,
             opt_into_json(rescan)?,
             opt_into_json(p2sh)?,
@@ -511,7 +589,7 @@ pub trait RpcApi: Sized {
         &self,
         minconf: Option<usize>,
         maxconf: Option<usize>,
-        addresses: Option<&[Address]>,
+        addresses: Option<&[&Address]>,
         include_unsafe: Option<bool>,
         query_options: Option<json::ListUnspentQueryOptions>,
     ) -> Result<Vec<json::ListUnspentResultEntry>> {
@@ -649,13 +727,13 @@ pub trait RpcApi: Sized {
         self.call("signrawtransactionwithkey", handle_defaults(&mut args, &defaults))
     }
 
-    fn test_mempool_accept<R: RawTx>(&self, rawtxs: &[R]) -> Result<Vec<json::TestMempoolAccept>> {
+    fn test_mempool_accept<R: RawTx>(&self, rawtxs: &[R]) -> Result<Vec<json::TestMempoolAcceptResult>> {
         let hexes: Vec<serde_json::Value> =
             rawtxs.to_vec().into_iter().map(|r| r.raw_hex().into()).collect();
         self.call("testmempoolaccept", &[hexes.into()])
     }
 
-    fn stop(&self) -> Result<()> {
+    fn stop(&self) -> Result<String> {
         self.call("stop", &[])
     }
 
@@ -735,7 +813,9 @@ pub trait RpcApi: Sized {
             opt_into_json(confirmation_target)?,
             opt_into_json(estimate_mode)?,
         ];
-        self.call("sendtoaddress", handle_defaults(&mut args, &vec![null(); 6]))
+        self.call("sendtoaddress", handle_defaults(&mut args, &[
+            "".into(), "".into(), false.into(), false.into(), 6.into(), null()
+        ]))
     }
 
     /// Returns data about each connected network node as an array of
@@ -762,7 +842,7 @@ pub trait RpcApi: Sized {
         self.call("sendrawtransaction", &[tx.raw_hex().into()])
     }
 
-    fn estimate_smartfee(
+    fn estimate_smart_fee(
         &self,
         conf_target: u16,
         estimate_mode: Option<json::EstimateMode>,
@@ -817,7 +897,9 @@ pub trait RpcApi: Sized {
             opt_into_json(options)?,
             opt_into_json(bip32derivs)?,
         ];
-        self.call("walletcreatefundedpsbt", handle_defaults(&mut args, &[0.into(), null(), false.into()]))
+        self.call("walletcreatefundedpsbt", handle_defaults(&mut args, &[
+            0.into(), serde_json::Map::new().into(), false.into()
+        ]))
     }
 
     fn get_descriptor_info(&self, desc: &str) -> Result<json::GetDescriptorInfoResult> {
@@ -828,14 +910,14 @@ pub trait RpcApi: Sized {
         self.call("combinepsbt", &[into_json(psbts)?])
     }
 
-    fn derive_addresses(&self, descriptor: &str, range: Option<[u32; 2]>) -> Result<Vec<Address>> {
-        let mut args = [into_json(descriptor)?, opt_into_json(range)?];
-        self.call("deriveaddresses", handle_defaults(&mut args, &[null()]))
-    }
-
     fn finalize_psbt(&self, psbt: &str, extract: Option<bool>) -> Result<json::FinalizePsbtResult> {
         let mut args = [into_json(psbt)?, opt_into_json(extract)?];
         self.call("finalizepsbt", handle_defaults(&mut args, &[true.into()]))
+    }
+
+    fn derive_addresses(&self, descriptor: &str, range: Option<[u32; 2]>) -> Result<Vec<Address>> {
+        let mut args = [into_json(descriptor)?, opt_into_json(range)?];
+        self.call("deriveaddresses", handle_defaults(&mut args, &[null()]))
     }
 
     fn rescan_blockchain(

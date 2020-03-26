@@ -17,23 +17,19 @@
 #![crate_type = "rlib"]
 
 pub extern crate bitcoin;
-pub extern crate num_bigint;
 #[allow(unused)]
 #[macro_use] // `macro_use` is needed for v1.24.0 compilation.
 extern crate serde;
 extern crate serde_json;
 
 use std::collections::HashMap;
-use std::str::FromStr;
 
 use bitcoin::consensus::encode;
 use bitcoin::hashes::hex::{FromHex, ToHex};
 use bitcoin::util::{bip158, bip32};
-use bitcoin::{Address, Amount, PrivateKey, PublicKey, Script, Transaction};
-use num_bigint::BigUint;
+use bitcoin::{Address, Amount, SignedAmount, PrivateKey, PublicKey, Script, Transaction};
 use serde::de::Error as SerdeError;
 use serde::{Deserialize, Serialize};
-use serde_json::Value;
 
 //TODO(stevenroose) consider using a Time type
 
@@ -74,6 +70,47 @@ pub mod serde_hex {
 }
 
 #[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
+pub struct GetNetworkInfoResultNetwork {
+    pub name: String,
+    pub limited: bool,
+    pub reachable: bool,
+    pub proxy: String,
+    pub proxy_randomize_credentials: bool,
+}
+
+#[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
+pub struct GetNetworkInfoResultAddress {
+    pub address: String,
+    pub port: usize,
+    pub score: usize,
+}
+
+#[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
+pub struct GetNetworkInfoResult {
+    pub version: usize,
+    pub subversion: String,
+    #[serde(rename = "protocolversion")]
+    pub protocol_version: usize,
+    #[serde(rename = "localservices")]
+    pub local_services: String,
+    #[serde(rename = "localrelay")]
+    pub local_relay: bool,
+    #[serde(rename = "timeoffset")]
+    pub time_offset: usize,
+    pub connections: usize,
+    #[serde(rename = "networkactive")]
+    pub network_active: bool,
+    pub networks: Vec<GetNetworkInfoResultNetwork>,
+    #[serde(rename = "relayfee", with = "bitcoin::util::amount::serde::as_btc")]
+    pub relay_fee: Amount,
+    #[serde(rename = "incrementalfee", with = "bitcoin::util::amount::serde::as_btc")]
+    pub incremental_fee: Amount,
+    #[serde(rename = "localaddresses")]
+    pub local_addresses: Vec<GetNetworkInfoResultAddress>,
+    pub warnings: String,
+}
+
+#[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct AddMultiSigAddressResult {
     pub address: Address,
@@ -86,7 +123,7 @@ pub struct LoadWalletResult {
     pub warning: Option<String>,
 }
 
-#[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
+#[derive(Clone, PartialEq, Debug, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct GetBlockResult {
     pub hash: bitcoin::BlockHash,
@@ -104,31 +141,7 @@ pub struct GetBlockResult {
     pub mediantime: Option<usize>,
     pub nonce: u32,
     pub bits: String,
-    #[serde(deserialize_with = "deserialize_difficulty")]
-    pub difficulty: BigUint,
-    #[serde(with = "::serde_hex")]
-    pub chainwork: Vec<u8>,
-    pub n_tx: usize,
-    pub previousblockhash: Option<bitcoin::BlockHash>,
-    pub nextblockhash: Option<bitcoin::BlockHash>,
-}
-
-#[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
-#[serde(rename_all = "camelCase")]
-pub struct GetBlockHeaderResult {
-    pub hash: bitcoin::BlockHash,
-    pub confirmations: u32,
-    pub height: usize,
-    pub version: u32,
-    #[serde(default, with = "::serde_hex::opt")]
-    pub version_hex: Option<Vec<u8>>,
-    pub merkleroot: bitcoin::TxMerkleNode,
-    pub time: usize,
-    pub mediantime: Option<usize>,
-    pub nonce: u32,
-    pub bits: String,
-    #[serde(deserialize_with = "deserialize_difficulty")]
-    pub difficulty: BigUint,
+    pub difficulty: f64,
     #[serde(with = "::serde_hex")]
     pub chainwork: Vec<u8>,
     pub n_tx: usize,
@@ -138,14 +151,43 @@ pub struct GetBlockHeaderResult {
 
 #[derive(Clone, PartialEq, Debug, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
+pub struct GetBlockHeaderResult {
+    pub hash: bitcoin::BlockHash,
+    pub confirmations: u32,
+    pub height: usize,
+    pub version: u32,
+    #[serde(default, with = "::serde_hex::opt")]
+    pub version_hex: Option<Vec<u8>>,
+    #[serde(rename = "merkleroot")]
+    pub merkle_root: bitcoin::TxMerkleNode,
+    pub time: usize,
+    #[serde(rename = "mediantime")]
+    pub median_time: Option<usize>,
+    pub nonce: u32,
+    pub bits: String,
+    pub difficulty: f64,
+    #[serde(with = "::serde_hex")]
+    pub chainwork: Vec<u8>,
+    pub n_tx: usize,
+    #[serde(rename = "previousblockhash")]
+    pub previous_block_hash: Option<bitcoin::BlockHash>,
+    #[serde(rename = "nextblockhash")]
+    pub next_block_hash: Option<bitcoin::BlockHash>,
+}
+
+#[derive(Clone, PartialEq, Debug, Deserialize, Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct GetMiningInfoResult {
     pub blocks: u32,
-    pub currentblockweight: Option<u64>,
-    pub currentblocktx: Option<usize>,
-    #[serde(deserialize_with = "deserialize_difficulty")]
-    pub difficulty: BigUint,
-    pub networkhashps: f64,
-    pub pooledtx: usize,
+    #[serde(rename = "currentblockweight")]
+    pub current_block_weight: Option<u64>,
+    #[serde(rename = "currentblocktx")]
+    pub current_block_tx: Option<usize>,
+    pub difficulty: f64,
+    #[serde(rename = "networkhashps")]
+    pub network_hash_ps: f64,
+    #[serde(rename = "pooledtx")]
+    pub pooled_tx: usize,
     pub chain: String,
     pub warnings: String,
 }
@@ -274,7 +316,7 @@ impl GetRawTransactionResult {
 }
 
 /// Enum to represent the BIP125 replaceable status for a transaction.
-#[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
+#[derive(Copy, Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
 #[serde(rename_all = "lowercase")]
 pub enum Bip125Replaceable {
     Yes,
@@ -283,12 +325,13 @@ pub enum Bip125Replaceable {
 }
 
 /// Enum to represent the BIP125 replaceable status for a transaction.
-#[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
+#[derive(Copy, Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
 #[serde(rename_all = "lowercase")]
 pub enum GetTransactionResultDetailCategory {
     Send,
     Receive,
     Generate,
+    Immature,
 }
 
 #[derive(Clone, PartialEq, Eq, Debug, Deserialize)]
@@ -296,11 +339,11 @@ pub struct GetTransactionResultDetail {
     pub address: Address,
     pub category: GetTransactionResultDetailCategory,
     #[serde(with = "bitcoin::util::amount::serde::as_btc")]
-    pub amount: Amount,
+    pub amount: SignedAmount,
     pub label: Option<String>,
     pub vout: u32,
     #[serde(default, with = "bitcoin::util::amount::serde::as_btc::opt")]
-    pub fee: Option<Amount>,
+    pub fee: Option<SignedAmount>,
     pub abandoned: Option<bool>,
 }
 
@@ -322,9 +365,9 @@ pub struct GetTransactionResult {
     #[serde(flatten)]
     pub info: WalletTxInfo,
     #[serde(with = "bitcoin::util::amount::serde::as_btc")]
-    pub amount: Amount,
+    pub amount: SignedAmount,
     #[serde(default, with = "bitcoin::util::amount::serde::as_btc::opt")]
-    pub fee: Option<Amount>,
+    pub fee: Option<SignedAmount>,
     pub details: Vec<GetTransactionResultDetail>,
     #[serde(with = "::serde_hex")]
     pub hex: Vec<u8>,
@@ -358,16 +401,28 @@ pub struct GetTxOutResult {
     pub coinbase: bool,
 }
 
-#[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
+#[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize, Default)]
 #[serde(rename_all = "camelCase")]
 pub struct ListUnspentQueryOptions {
-    #[serde(default, with = "bitcoin::util::amount::serde::as_btc::opt")]
+    #[serde(
+        rename = "minimumAmount",
+        with = "bitcoin::util::amount::serde::as_btc::opt",
+        skip_serializing_if = "Option::is_none"
+    )]
     pub minimum_amount: Option<Amount>,
-    #[serde(default, with = "bitcoin::util::amount::serde::as_btc::opt")]
+    #[serde(
+        rename = "maximumAmount",
+        with = "bitcoin::util::amount::serde::as_btc::opt",
+        skip_serializing_if = "Option::is_none"
+    )]
     pub maximum_amount: Option<Amount>,
-    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(rename = "maximumCount", skip_serializing_if = "Option::is_none")]
     pub maximum_count: Option<usize>,
-    #[serde(default, with = "bitcoin::util::amount::serde::as_btc::opt")]
+    #[serde(
+        rename = "minimumSumAmount",
+        with = "bitcoin::util::amount::serde::as_btc::opt",
+        skip_serializing_if = "Option::is_none"
+    )]
     pub maximum_sum_amount: Option<Amount>,
 }
 
@@ -394,7 +449,7 @@ pub struct ListUnspentResultEntry {
 #[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ListReceivedByAddressResult {
-    #[serde(rename = "involvesWatchonly")]
+    #[serde(default, rename = "involvesWatchonly")]
     pub involved_watch_only: bool,
     pub address: Address,
     #[serde(with = "bitcoin::util::amount::serde::as_btc")]
@@ -430,14 +485,14 @@ impl SignRawTransactionResult {
 }
 
 #[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
-pub struct TestMempoolAccept {
-    pub txid: String,
+pub struct TestMempoolAcceptResult {
+    pub txid: bitcoin::Txid,
     pub allowed: bool,
     #[serde(rename = "reject-reason")]
     pub reject_reason: Option<String>,
 }
 
-#[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
+#[derive(Copy, Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
 #[serde(rename_all = "snake_case")]
 pub enum Bip9SoftforkStatus {
     Defined,
@@ -459,15 +514,15 @@ pub struct Bip9SoftforkStatistics {
 #[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
 pub struct Bip9SoftforkInfo {
     pub status: Bip9SoftforkStatus,
-    pub bit: u8,
-    #[serde(rename = "startTime")]
-    pub start_time: u64,
+    pub bit: Option<u8>,
+    // Can be -1 for 0.18.x inactive ones.
+    pub start_time: i64,
     pub timeout: u64,
     pub since: u32,
-    pub statistics: Bip9SoftforkStatistics,
+    pub statistics: Option<Bip9SoftforkStatistics>,
 }
 
-#[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
+#[derive(Copy, Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
 #[serde(rename_all = "lowercase")]
 pub enum SoftforkType {
     Buried,
@@ -485,7 +540,7 @@ pub struct Softfork {
 }
 
 #[allow(non_camel_case_types)]
-#[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
+#[derive(Copy, Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
 #[serde(rename_all = "lowercase")]
 pub enum ScriptPubkeyType {
     Nonstandard,
@@ -513,23 +568,24 @@ pub struct GetAddressInfoResultEmbedded {
     pub witness_program: Vec<u8>,
     pub script: Option<ScriptPubkeyType>,
     /// The redeemscript for the p2sh address.
-    #[serde(with = "::serde_hex::opt")]
+    #[serde(default, with = "::serde_hex::opt")]
     pub hex: Option<Vec<u8>>,
     pub pubkeys: Option<Vec<PublicKey>>,
     #[serde(rename = "sigsrequired")]
     pub n_signatures_required: Option<usize>,
     pub pubkey: Option<PublicKey>,
     #[serde(rename = "is_compressed")]
-    pub is_compressed: bool,
-    pub label: String,
+    pub is_compressed: Option<bool>,
+    pub label: Option<String>,
     #[serde(rename = "hdkeypath")]
     pub hd_key_path: Option<bip32::DerivationPath>,
     #[serde(rename = "hdseedid")]
     pub hd_seed_id: Option<bitcoin::XpubIdentifier>,
+    #[serde(default)]
     pub labels: Vec<GetAddressInfoResultLabel>,
 }
 
-#[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
+#[derive(Copy, Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
 #[serde(rename_all = "lowercase")]
 pub enum GetAddressInfoResultLabelPurpose {
     Send,
@@ -547,20 +603,20 @@ pub struct GetAddressInfoResult {
     pub address: Address,
     #[serde(rename = "scriptPubKey")]
     pub script_pub_key: Script,
-    #[serde(rename = "is_mine")]
+    #[serde(rename = "ismine")]
     pub is_mine: Option<bool>,
-    #[serde(rename = "is_watchonly")]
+    #[serde(rename = "iswatchonly")]
     pub is_watchonly: Option<bool>,
-    #[serde(rename = "is_script")]
+    #[serde(rename = "isscript")]
     pub is_script: Option<bool>,
-    #[serde(rename = "is_witness")]
+    #[serde(rename = "iswitness")]
     pub is_witness: Option<bool>,
     pub witness_version: Option<u32>,
-    #[serde(with = "::serde_hex")]
-    pub witness_program: Vec<u8>,
+    #[serde(default, with = "::serde_hex::opt")]
+    pub witness_program: Option<Vec<u8>>,
     pub script: Option<ScriptPubkeyType>,
     /// The redeemscript for the p2sh address.
-    #[serde(with = "::serde_hex::opt")]
+    #[serde(default, with = "::serde_hex::opt")]
     pub hex: Option<Vec<u8>>,
     pub pubkeys: Option<Vec<PublicKey>>,
     #[serde(rename = "sigsrequired")]
@@ -569,7 +625,7 @@ pub struct GetAddressInfoResult {
     /// Information about the address embedded in P2SH or P2WSH, if relevant and known.
     pub embedded: Option<GetAddressInfoResultEmbedded>,
     #[serde(rename = "is_compressed")]
-    pub is_compressed: bool,
+    pub is_compressed: Option<bool>,
     pub label: String,
     pub timestamp: Option<u64>,
     #[serde(rename = "hdkeypath")]
@@ -582,7 +638,6 @@ pub struct GetAddressInfoResult {
 /// Models the result of "getblockchaininfo"
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct GetBlockchainInfoResult {
-    // TODO: Use Network from rust-bitcoin
     /// Current network name as defined in BIP70 (main, test, regtest)
     pub chain: String,
     /// The current number of blocks processed in the server
@@ -590,29 +645,35 @@ pub struct GetBlockchainInfoResult {
     /// The current number of headers we have validated
     pub headers: u64,
     /// The hash of the currently best block
-    pub bestblockhash: bitcoin::BlockHash,
+    #[serde(rename = "bestblockhash")]
+    pub best_block_hash: bitcoin::BlockHash,
     /// The current difficulty
     pub difficulty: f64,
     /// Median time for the current best block
-    pub mediantime: u64,
+    #[serde(rename = "mediantime")]
+    pub median_time: u64,
     /// Estimate of verification progress [0..1]
-    pub verificationprogress: f64,
+    #[serde(rename = "verificationprogress")]
+    pub verification_progress: f64,
     /// Estimate of whether this node is in Initial Block Download mode
-    pub initialblockdownload: bool,
+    #[serde(rename = "initialblockdownload")]
+    pub initial_block_download: bool,
     /// Total amount of work in active chain, in hexadecimal
-    #[serde(with = "::serde_hex")]
-    pub chainwork: Vec<u8>,
+    #[serde(rename = "chainwork", with = "::serde_hex")]
+    pub chain_work: Vec<u8>,
     /// The estimated size of the block and undo files on disk
     pub size_on_disk: u64,
     /// If the blocks are subject to pruning
     pub pruned: bool,
     /// Lowest-height complete block stored (only present if pruning is enabled)
-    pub pruneheight: Option<u64>,
+    #[serde(rename = "pruneheight")]
+    pub prune_height: Option<u64>,
     /// Whether automatic pruning is enabled (only present if pruning is enabled)
     pub automatic_pruning: Option<bool>,
     /// The target size used by pruning (only present if automatic pruning is enabled)
     pub prune_target_size: Option<u64>,
     /// Status of softforks in progress
+    #[serde(default)]
     pub softforks: HashMap<String, Softfork>,
     /// Any network and blockchain warnings.
     pub warnings: String,
@@ -718,7 +779,7 @@ pub struct GetPeerInfoResult {
     pub addrbind: String,
     /// Local address as reported by the peer
     // TODO: use a type for addrlocal
-    pub addrlocal: String,
+    pub addrlocal: Option<String>,
     /// The services offered
     // TODO: use a type for services
     pub services: String,
@@ -735,13 +796,13 @@ pub struct GetPeerInfoResult {
     /// The connection time in seconds since epoch (Jan 1 1970 GMT)
     pub conntime: u64,
     /// The time offset in seconds
-    pub timeoffset: u64,
+    pub timeoffset: i64,
     /// ping time (if available)
-    pub pingtime: u64,
+    pub pingtime: f64,
     /// minimum observed ping time (if any at all)
-    pub minping: u64,
+    pub minping: f64,
     /// ping wait (if non-zero)
-    pub pingwait: u64,
+    pub pingwait: Option<f64>,
     /// The peer version, such as 70001
     pub version: u64,
     /// The string version
@@ -756,26 +817,32 @@ pub struct GetPeerInfoResult {
     /// The ban score
     pub banscore: i64,
     /// The last header we have in common with this peer
-    pub synced_headers: u64,
+    pub synced_headers: i64,
     /// The last block we have in common with this peer
-    pub synced_blocks: u64,
+    pub synced_blocks: i64,
     /// The heights of blocks we're currently asking from this peer
     pub inflight: Vec<u64>,
     /// Whether the peer is whitelisted
     pub whitelisted: bool,
+    #[serde(rename = "minfeefilter", default, with = "bitcoin::util::amount::serde::as_btc::opt")]
+    pub min_fee_filter: Option<Amount>,
     /// The total bytes sent aggregated by message type
-    // TODO: use a type for bytessent_per_msg
-    pub bytessent_per_msg: Value,
+    pub bytessent_per_msg: HashMap<String, u64>,
     /// The total bytes received aggregated by message type
-    // TODO: use a type for bytesrecv_per_msg
-    pub bytesrecv_per_msg: Value,
+    pub bytesrecv_per_msg: HashMap<String, u64>,
 }
 
 /// Models the result of "estimatesmartfee"
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct EstimateSmartFeeResult {
     /// Estimate fee rate in BTC/kB.
-    pub feerate: Option<Value>,
+    #[serde(
+        default,
+        rename = "feerate",
+        skip_serializing_if = "Option::is_none",
+        with = "bitcoin::util::amount::serde::as_btc::opt"
+    )]
+    pub fee_rate: Option<Amount>,
     /// Errors encountered during processing.
     pub errors: Option<Vec<String>>,
     /// Block number where estimate was found.
@@ -819,8 +886,8 @@ pub struct WalletCreateFundedPsbtOptions {
     pub change_address: Option<Address>,
     #[serde(rename = "changePosition", skip_serializing_if = "Option::is_none")]
     pub change_position: Option<u16>,
-    #[serde(rename = "changeType", skip_serializing_if = "Option::is_none")]
-    pub change_type: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub change_type: Option<AddressType>,
     #[serde(rename = "includeWatching", skip_serializing_if = "Option::is_none")]
     pub include_watching: Option<bool>,
     #[serde(rename = "lockUnspents", skip_serializing_if = "Option::is_none")]
@@ -834,19 +901,26 @@ pub struct WalletCreateFundedPsbtOptions {
     #[serde(rename = "subtractFeeFromOutputs", skip_serializing_if = "Vec::is_empty")]
     pub subtract_fee_from_outputs: Vec<u16>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub repleaceable: Option<bool>,
+    pub replaceable: Option<bool>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub conf_target: Option<u16>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub estimate_mode: Option<String>,
+    pub estimate_mode: Option<EstimateMode>,
 }
 
 /// Models the result of "finalizepsbt"
 #[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
 pub struct FinalizePsbtResult {
     pub psbt: Option<String>,
-    pub hex: Option<String>,
+    #[serde(default, with = "::serde_hex::opt")]
+    pub hex: Option<Vec<u8>>,
     pub complete: bool,
+}
+
+impl FinalizePsbtResult {
+    pub fn transaction(&self) -> Option<Result<Transaction, encode::Error>> {
+        self.hex.as_ref().map(|h| encode::deserialize(h))
+    }
 }
 
 // Custom types for input arguments.
@@ -908,8 +982,11 @@ pub struct FundRawTransactionOptions {
     pub include_watching: Option<bool>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub lock_unspents: Option<bool>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub fee_rate: Option<u64>,
+    #[serde(
+        with = "bitcoin::util::amount::serde::as_btc::opt",
+        skip_serializing_if = "Option::is_none"
+    )]
+    pub fee_rate: Option<Amount>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub subtract_fee_from_outputs: Option<Vec<u32>>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -955,7 +1032,7 @@ pub struct SignRawTransactionInput {
 }
 
 /// Used to represent an address type.
-#[derive(Serialize, Clone, PartialEq, Eq, Debug)]
+#[derive(Copy, Serialize, Deserialize, Clone, PartialEq, Eq, Debug)]
 #[serde(rename_all = "kebab-case")]
 pub enum AddressType {
     Legacy,
@@ -984,19 +1061,6 @@ impl<'a> serde::Serialize for PubKeyOrAddress<'a> {
 
 // Custom deserializer functions.
 
-fn deserialize_difficulty<'de, D>(deserializer: D) -> Result<BigUint, D::Error>
-where
-    D: serde::Deserializer<'de>,
-{
-    let s = f64::deserialize(deserializer)?.to_string();
-    let real = match s.split('.').nth(0) {
-        Some(r) => r,
-        None => return Err(D::Error::custom(&format!("error parsing difficulty: {}", s))),
-    };
-    BigUint::from_str(real)
-        .map_err(|_| D::Error::custom(&format!("error parsing difficulty: {}", s)))
-}
-
 /// deserialize_hex_array_opt deserializes a vector of hex-encoded byte arrays.
 fn deserialize_hex_array_opt<'de, D>(deserializer: D) -> Result<Option<Vec<Vec<u8>>>, D::Error>
 where
@@ -1011,482 +1075,4 @@ where
         res.push(FromHex::from_hex(&h).map_err(D::Error::custom)?);
     }
     Ok(Some(res))
-}
-
-#[allow(non_snake_case)]
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use bitcoin::hashes::hex::FromHex;
-    use serde_json;
-
-    macro_rules! hex {
-        ($h:expr) => {
-            Vec::<u8>::from_hex(&$h).unwrap()
-        };
-    }
-
-    macro_rules! deserializer {
-        ($j:expr) => {
-            &mut serde_json::Deserializer::from_str($j)
-        };
-    }
-
-    macro_rules! from_hex {
-        ($h:expr) => {
-            FromHex::from_hex($h).unwrap()
-        };
-    }
-
-    macro_rules! addr {
-        ($a:expr) => {
-            Address::from_str($a).unwrap()
-        };
-    }
-
-    macro_rules! script {
-        ($s:expr) => {
-            serde_json::from_str(&format!(r#""{}""#, $s)).unwrap()
-        };
-    }
-
-    #[test]
-    fn test_AddMultiSigAddressResult() {
-        let expected = AddMultiSigAddressResult {
-            address: addr!("2N3Cvw3s23W43MXnW28DKpuDGeXV147KTzc"),
-            redeem_script: script!("51210330aa51b444e2bac981235a0056112385057492c6cd06936af410c5af27c1f9462103dae74774a6cd35d948ee60bc7a1b35fdaed7b54698762e963e3677f795c7ad2a52ae"),
-        };
-        let json = r#"
-            {
-              "address": "2N3Cvw3s23W43MXnW28DKpuDGeXV147KTzc",
-              "redeemScript": "51210330aa51b444e2bac981235a0056112385057492c6cd06936af410c5af27c1f9462103dae74774a6cd35d948ee60bc7a1b35fdaed7b54698762e963e3677f795c7ad2a52ae"
-            }
-        "#;
-        assert_eq!(expected, serde_json::from_str(json).unwrap());
-    }
-
-    #[test]
-    fn test_GetBlockResult() {
-        let expected = GetBlockResult {
-            hash: from_hex!("000000006c02c8ea6e4ff69651f7fcde348fb9d557a06e6957b65552002a7820"),
-            confirmations: 1414401,
-            size: 190,
-            strippedsize: Some(190),
-            weight: 760,
-            height: 2,
-            version: 1,
-            version_hex: Some(hex!("00000001")),
-            merkleroot: from_hex!(
-                "20222eb90f5895556926c112bb5aa0df4ab5abc3107e21a6950aec3b2e3541e2"
-            ),
-            tx: vec![from_hex!("20222eb90f5895556926c112bb5aa0df4ab5abc3107e21a6950aec3b2e3541e2")],
-            time: 1296688946,
-            mediantime: Some(1296688928),
-            nonce: 875942400,
-            bits: "1d00ffff".into(),
-            difficulty: 1u64.into(),
-            chainwork: hex!("0000000000000000000000000000000000000000000000000000000300030003"),
-            n_tx: 1,
-            previousblockhash: Some(from_hex!(
-                "00000000b873e79784647a6c82962c70d228557d24a747ea4d1b8bbe878e1206"
-            )),
-            nextblockhash: Some(from_hex!(
-                "000000008b896e272758da5297bcd98fdc6d97c9b765ecec401e286dc1fdbe10"
-            )),
-        };
-        let json = r#"
-            {
-              "hash": "000000006c02c8ea6e4ff69651f7fcde348fb9d557a06e6957b65552002a7820",
-              "confirmations": 1414401,
-              "strippedsize": 190,
-              "size": 190,
-              "weight": 760,
-              "height": 2,
-              "version": 1,
-              "versionHex": "00000001",
-              "merkleroot": "20222eb90f5895556926c112bb5aa0df4ab5abc3107e21a6950aec3b2e3541e2",
-              "tx": [
-                "20222eb90f5895556926c112bb5aa0df4ab5abc3107e21a6950aec3b2e3541e2"
-              ],
-              "time": 1296688946,
-              "mediantime": 1296688928,
-              "nonce": 875942400,
-              "bits": "1d00ffff",
-              "difficulty": 1,
-              "chainwork": "0000000000000000000000000000000000000000000000000000000300030003",
-              "nTx": 1,
-              "previousblockhash": "00000000b873e79784647a6c82962c70d228557d24a747ea4d1b8bbe878e1206",
-              "nextblockhash": "000000008b896e272758da5297bcd98fdc6d97c9b765ecec401e286dc1fdbe10"
-            }
-        "#;
-        assert_eq!(expected, serde_json::from_str(json).unwrap());
-    }
-
-    #[test]
-    fn test_GetBlockHeaderResult() {
-        let expected = GetBlockHeaderResult {
-            hash: from_hex!("00000000000000039dc06adbd7666a8d1df9acf9d0329d73651b764167d63765"),
-            confirmations: 29341,
-            height: 1384958,
-            version: 536870912,
-            version_hex: Some(hex!("20000000")),
-            merkleroot: from_hex!(
-                "33d8a6f622182a4e844022bbc8aa51c63f6476708ad5cc5c451f2933753440d7"
-            ),
-            time: 1534935138,
-            mediantime: Some(1534932055),
-            nonce: 871182973,
-            bits: "1959273b".into(),
-            difficulty: 48174374u64.into(),
-            chainwork: hex!("0000000000000000000000000000000000000000000000a3c78921878ecbafd4"),
-            n_tx: 2647,
-            previousblockhash: Some(from_hex!(
-                "000000000000002937dcaffd8367cfb05cd9ef2e3bd7a081de82696f70e719d9"
-            )),
-            nextblockhash: Some(from_hex!(
-                "00000000000000331dddb553312687a4be62635ad950cde36ebc977c702d2791"
-            )),
-        };
-        let json = r#"
-            {
-              "hash": "00000000000000039dc06adbd7666a8d1df9acf9d0329d73651b764167d63765",
-              "confirmations": 29341,
-              "height": 1384958,
-              "version": 536870912,
-              "versionHex": "20000000",
-              "merkleroot": "33d8a6f622182a4e844022bbc8aa51c63f6476708ad5cc5c451f2933753440d7",
-              "time": 1534935138,
-              "mediantime": 1534932055,
-              "nonce": 871182973,
-              "bits": "1959273b",
-              "difficulty": 48174374.44122773,
-              "chainwork": "0000000000000000000000000000000000000000000000a3c78921878ecbafd4",
-              "nTx": 2647,
-              "previousblockhash": "000000000000002937dcaffd8367cfb05cd9ef2e3bd7a081de82696f70e719d9",
-              "nextblockhash": "00000000000000331dddb553312687a4be62635ad950cde36ebc977c702d2791"
-            }
-        "#;
-        assert_eq!(expected, serde_json::from_str(json).unwrap());
-    }
-
-    #[test]
-    fn test_GetMiningInfoResult() {
-        let expected = GetMiningInfoResult {
-            blocks: 1415011,
-            currentblockweight: Some(0),
-            currentblocktx: Some(0),
-            difficulty: 1u32.into(),
-            networkhashps: 11970022568515.56,
-            pooledtx: 110,
-            chain: "test".into(),
-            warnings: "Warning: unknown new rules activated (versionbit 28)".into(),
-        };
-        let json = r#"
-            {
-              "blocks": 1415011,
-              "currentblockweight": 0,
-              "currentblocktx": 0,
-              "difficulty": 1,
-              "networkhashps": 11970022568515.56,
-              "pooledtx": 110,
-              "chain": "test",
-              "warnings": "Warning: unknown new rules activated (versionbit 28)"
-            }
-        "#;
-        assert_eq!(expected, serde_json::from_str(json).unwrap());
-
-        let expected = GetMiningInfoResult {
-            blocks: 585966,
-            currentblockweight: None,
-            currentblocktx: None,
-            difficulty: "9064159826491".parse().unwrap(),
-            networkhashps: 5.276674407862246e+19,
-            pooledtx: 48870,
-            chain: "main".into(),
-            warnings: "".into(),
-        };
-        let json = r#"
-            {
-              "blocks": 585966,
-              "difficulty": 9064159826491.41,
-              "networkhashps": 5.276674407862246e+19,
-              "pooledtx": 48870,
-              "chain": "main",
-              "warnings": ""
-            }
-        "#;
-        assert_eq!(expected, serde_json::from_str(json).unwrap());
-    }
-
-    //TODO(stevenroose) coinbase variant
-    #[test]
-    fn test_GetRawTransactionResult() {
-        let expected = GetRawTransactionResult {
-            in_active_chain: None,
-            hex: hex!("0200000001586bd02815cf5faabfec986a4e50d25dbee089bd2758621e61c5fab06c334af0000000006b483045022100e85425f6d7c589972ee061413bcf08dc8c8e589ce37b217535a42af924f0e4d602205c9ba9cb14ef15513c9d946fa1c4b797883e748e8c32171bdf6166583946e35c012103dae30a4d7870cd87b45dd53e6012f71318fdd059c1c2623b8cc73f8af287bb2dfeffffff021dc4260c010000001976a914f602e88b2b5901d8aab15ebe4a97cf92ec6e03b388ac00e1f505000000001976a914687ffeffe8cf4e4c038da46a9b1d37db385a472d88acfd211500"),
-            txid: from_hex!("4a5b5266e1750488395ac15c0376c9d48abf45e4df620777fe8cff096f57aa91"),
-            hash: from_hex!("4a5b5266e1750488395ac15c0376c9d48abf45e4df620777fe8cff096f57aa91"),
-            size: 226,
-            vsize: 226,
-            version: 2,
-            locktime: 1384957,
-            vin: vec![GetRawTransactionResultVin{
-                txid: Some(from_hex!("f04a336cb0fac5611e625827bd89e0be5dd2504e6a98ecbfaa5fcf1528d06b58")),
-                vout: Some(0),
-                coinbase: None,
-                script_sig: Some(GetRawTransactionResultVinScriptSig{
-                    asm: "3045022100e85425f6d7c589972ee061413bcf08dc8c8e589ce37b217535a42af924f0e4d602205c9ba9cb14ef15513c9d946fa1c4b797883e748e8c32171bdf6166583946e35c[ALL] 03dae30a4d7870cd87b45dd53e6012f71318fdd059c1c2623b8cc73f8af287bb2d".into(),
-                    hex: hex!("483045022100e85425f6d7c589972ee061413bcf08dc8c8e589ce37b217535a42af924f0e4d602205c9ba9cb14ef15513c9d946fa1c4b797883e748e8c32171bdf6166583946e35c012103dae30a4d7870cd87b45dd53e6012f71318fdd059c1c2623b8cc73f8af287bb2d"),
-                }),
-                sequence: 4294967294,
-                txinwitness: None,
-
-            }],
-            vout: vec![GetRawTransactionResultVout{
-                value: Amount::from_btc(44.98834461).unwrap(),
-                n: 0,
-                script_pub_key: GetRawTransactionResultVoutScriptPubKey{
-                    asm: "OP_DUP OP_HASH160 f602e88b2b5901d8aab15ebe4a97cf92ec6e03b3 OP_EQUALVERIFY OP_CHECKSIG".into(),
-                    hex: hex!("76a914f602e88b2b5901d8aab15ebe4a97cf92ec6e03b388ac"),
-                    req_sigs: Some(1),
-                    type_: Some(ScriptPubkeyType::PubkeyHash),
-                    addresses: Some(vec![addr!("n3wk1KcFnVibGdqQa6jbwoR8gbVtRbYM4M")]),
-                },
-            }, GetRawTransactionResultVout{
-                value: Amount::from_btc(1.0).unwrap(),
-                n: 1,
-                script_pub_key: GetRawTransactionResultVoutScriptPubKey{
-                    asm: "OP_DUP OP_HASH160 687ffeffe8cf4e4c038da46a9b1d37db385a472d OP_EQUALVERIFY OP_CHECKSIG".into(),
-                    hex: hex!("76a914687ffeffe8cf4e4c038da46a9b1d37db385a472d88ac"),
-                    req_sigs: Some(1),
-                    type_: Some(ScriptPubkeyType::PubkeyHash),
-                    addresses: Some(vec![addr!("mq3VuL2K63VKWkp8vvqRiJPre4h9awrHfA")]),
-                },
-            }],
-            blockhash: Some(from_hex!("00000000000000039dc06adbd7666a8d1df9acf9d0329d73651b764167d63765")),
-            confirmations: Some(29446),
-            time: Some(1534935138),
-            blocktime: Some(1534935138),
-        };
-        let json = r#"
-            {
-              "txid": "4a5b5266e1750488395ac15c0376c9d48abf45e4df620777fe8cff096f57aa91",
-              "hash": "4a5b5266e1750488395ac15c0376c9d48abf45e4df620777fe8cff096f57aa91",
-              "version": 2,
-              "size": 226,
-              "vsize": 226,
-              "weight": 904,
-              "locktime": 1384957,
-              "vin": [
-                {
-                  "txid": "f04a336cb0fac5611e625827bd89e0be5dd2504e6a98ecbfaa5fcf1528d06b58",
-                  "vout": 0,
-                  "scriptSig": {
-                    "asm": "3045022100e85425f6d7c589972ee061413bcf08dc8c8e589ce37b217535a42af924f0e4d602205c9ba9cb14ef15513c9d946fa1c4b797883e748e8c32171bdf6166583946e35c[ALL] 03dae30a4d7870cd87b45dd53e6012f71318fdd059c1c2623b8cc73f8af287bb2d",
-                    "hex": "483045022100e85425f6d7c589972ee061413bcf08dc8c8e589ce37b217535a42af924f0e4d602205c9ba9cb14ef15513c9d946fa1c4b797883e748e8c32171bdf6166583946e35c012103dae30a4d7870cd87b45dd53e6012f71318fdd059c1c2623b8cc73f8af287bb2d"
-                  },
-                  "sequence": 4294967294
-                }
-              ],
-              "vout": [
-                {
-                  "value": 44.98834461,
-                  "n": 0,
-                  "scriptPubKey": {
-                    "asm": "OP_DUP OP_HASH160 f602e88b2b5901d8aab15ebe4a97cf92ec6e03b3 OP_EQUALVERIFY OP_CHECKSIG",
-                    "hex": "76a914f602e88b2b5901d8aab15ebe4a97cf92ec6e03b388ac",
-                    "reqSigs": 1,
-                    "type": "pubkeyhash",
-                    "addresses": [
-                      "n3wk1KcFnVibGdqQa6jbwoR8gbVtRbYM4M"
-                    ]
-                  }
-                },
-                {
-                  "value": 1.00000000,
-                  "n": 1,
-                  "scriptPubKey": {
-                    "asm": "OP_DUP OP_HASH160 687ffeffe8cf4e4c038da46a9b1d37db385a472d OP_EQUALVERIFY OP_CHECKSIG",
-                    "hex": "76a914687ffeffe8cf4e4c038da46a9b1d37db385a472d88ac",
-                    "reqSigs": 1,
-                    "type": "pubkeyhash",
-                    "addresses": [
-                      "mq3VuL2K63VKWkp8vvqRiJPre4h9awrHfA"
-                    ]
-                  }
-                }
-              ],
-              "hex": "0200000001586bd02815cf5faabfec986a4e50d25dbee089bd2758621e61c5fab06c334af0000000006b483045022100e85425f6d7c589972ee061413bcf08dc8c8e589ce37b217535a42af924f0e4d602205c9ba9cb14ef15513c9d946fa1c4b797883e748e8c32171bdf6166583946e35c012103dae30a4d7870cd87b45dd53e6012f71318fdd059c1c2623b8cc73f8af287bb2dfeffffff021dc4260c010000001976a914f602e88b2b5901d8aab15ebe4a97cf92ec6e03b388ac00e1f505000000001976a914687ffeffe8cf4e4c038da46a9b1d37db385a472d88acfd211500",
-              "blockhash": "00000000000000039dc06adbd7666a8d1df9acf9d0329d73651b764167d63765",
-              "confirmations": 29446,
-              "time": 1534935138,
-              "blocktime": 1534935138
-            }
-        "#;
-        assert_eq!(expected, serde_json::from_str(json).unwrap());
-        assert!(expected.transaction().is_ok());
-        assert_eq!(
-            expected.transaction().unwrap().input[0].previous_output.txid,
-            from_hex!("f04a336cb0fac5611e625827bd89e0be5dd2504e6a98ecbfaa5fcf1528d06b58")
-        );
-        assert!(expected.vin[0].script_sig.as_ref().unwrap().script().is_ok());
-        assert!(expected.vout[0].script_pub_key.script().is_ok());
-    }
-
-    #[test]
-    fn test_GetTransactionResult() {
-        let expected = GetTransactionResult {
-            amount: Amount::from_btc(1.0).unwrap(),
-            fee: None,
-            info: WalletTxInfo {
-                confirmations: 30104,
-                blockhash: Some(from_hex!("00000000000000039dc06adbd7666a8d1df9acf9d0329d73651b764167d63765")),
-                blockindex: Some(2028),
-                blocktime: Some(1534935138),
-                txid: from_hex!("4a5b5266e1750488395ac15c0376c9d48abf45e4df620777fe8cff096f57aa91"),
-                time: 1534934745,
-                timereceived: 1534934745,
-                bip125_replaceable: Bip125Replaceable::No,
-            },
-            details: vec![
-                GetTransactionResultDetail {
-                    address: addr!("mq3VuL2K63VKWkp8vvqRiJPre4h9awrHfA"),
-                    category: GetTransactionResultDetailCategory::Receive,
-                    amount: Amount::from_btc(1.0).unwrap(),
-                    label: Some("".into()),
-                    vout: 1,
-                    fee: None,
-                    abandoned: None,
-                },
-            ],
-            hex: hex!("0200000001586bd02815cf5faabfec986a4e50d25dbee089bd2758621e61c5fab06c334af0000000006b483045022100e85425f6d7c589972ee061413bcf08dc8c8e589ce37b217535a42af924f0e4d602205c9ba9cb14ef15513c9d946fa1c4b797883e748e8c32171bdf6166583946e35c012103dae30a4d7870cd87b45dd53e6012f71318fdd059c1c2623b8cc73f8af287bb2dfeffffff021dc4260c010000001976a914f602e88b2b5901d8aab15ebe4a97cf92ec6e03b388ac00e1f505000000001976a914687ffeffe8cf4e4c038da46a9b1d37db385a472d88acfd211500"),
-        };
-        let json = r#"
-            {
-              "amount": 1.00000000,
-              "confirmations": 30104,
-              "blockhash": "00000000000000039dc06adbd7666a8d1df9acf9d0329d73651b764167d63765",
-              "blockindex": 2028,
-              "blocktime": 1534935138,
-              "txid": "4a5b5266e1750488395ac15c0376c9d48abf45e4df620777fe8cff096f57aa91",
-              "walletconflicts": [
-              ],
-              "time": 1534934745,
-              "timereceived": 1534934745,
-              "bip125-replaceable": "no",
-              "details": [
-                {
-                  "address": "mq3VuL2K63VKWkp8vvqRiJPre4h9awrHfA",
-                  "category": "receive",
-                  "amount": 1.00000000,
-                  "label": "",
-                  "vout": 1
-                }
-              ],
-              "hex": "0200000001586bd02815cf5faabfec986a4e50d25dbee089bd2758621e61c5fab06c334af0000000006b483045022100e85425f6d7c589972ee061413bcf08dc8c8e589ce37b217535a42af924f0e4d602205c9ba9cb14ef15513c9d946fa1c4b797883e748e8c32171bdf6166583946e35c012103dae30a4d7870cd87b45dd53e6012f71318fdd059c1c2623b8cc73f8af287bb2dfeffffff021dc4260c010000001976a914f602e88b2b5901d8aab15ebe4a97cf92ec6e03b388ac00e1f505000000001976a914687ffeffe8cf4e4c038da46a9b1d37db385a472d88acfd211500"
-            }
-        "#;
-        assert_eq!(expected, serde_json::from_str(json).unwrap());
-        assert!(expected.transaction().is_ok());
-    }
-
-    #[test]
-    fn test_GetTxOutResult() {
-        let expected = GetTxOutResult {
-            bestblock: from_hex!("000000000000002a1fde7234dc2bc016863f3d672af749497eb5c227421e44d5"),
-            confirmations: 29505,
-            value: Amount::from_btc(1.0).unwrap(),
-            script_pub_key: GetRawTransactionResultVoutScriptPubKey{
-                asm: "OP_DUP OP_HASH160 687ffeffe8cf4e4c038da46a9b1d37db385a472d OP_EQUALVERIFY OP_CHECKSIG".into(),
-                hex: hex!("76a914687ffeffe8cf4e4c038da46a9b1d37db385a472d88ac"),
-                req_sigs: Some(1),
-                type_: Some(ScriptPubkeyType::PubkeyHash),
-                addresses: Some(vec![addr!("mq3VuL2K63VKWkp8vvqRiJPre4h9awrHfA")]),
-            },
-            coinbase: false,
-        };
-        let json = r#"
-            {
-              "bestblock": "000000000000002a1fde7234dc2bc016863f3d672af749497eb5c227421e44d5",
-              "confirmations": 29505,
-              "value": 1.00000000,
-              "scriptPubKey": {
-                "asm": "OP_DUP OP_HASH160 687ffeffe8cf4e4c038da46a9b1d37db385a472d OP_EQUALVERIFY OP_CHECKSIG",
-                "hex": "76a914687ffeffe8cf4e4c038da46a9b1d37db385a472d88ac",
-                "reqSigs": 1,
-                "type": "pubkeyhash",
-                "addresses": [
-                  "mq3VuL2K63VKWkp8vvqRiJPre4h9awrHfA"
-                ]
-              },
-              "coinbase": false
-            }
-        "#;
-        assert_eq!(expected, serde_json::from_str(json).unwrap());
-        println!("{:?}", expected.script_pub_key.script());
-        assert!(expected.script_pub_key.script().is_ok());
-    }
-
-    #[test]
-    fn test_ListUnspentResult() {
-        let expected = ListUnspentResultEntry {
-            txid: from_hex!("1e66743d6384496fe631501ba3f5b788d4bc193980b847f9e7d4e20d9202489f"),
-            vout: 1,
-            address: Some(addr!("2N56rvr9bGj862UZMNQhv57nU4GXfMof1Xu")),
-            script_pub_key: script!("a914820c9a334a89cb72bc4abfce96efc1fb202cdd9087"),
-            amount: Amount::from_btc(2.0).unwrap(),
-            confirmations: 29503,
-            redeem_script: Some(script!("0014b1a84f7a5c60e58e2c6eee4b33e7585483399af0")),
-            spendable: true,
-            solvable: true,
-            safe: true,
-            descriptor: None,
-            label: Some("test".to_owned()),
-            witness_script: Some(script!("a914820c9a334a89cb72bc4abfce96efc1fb202cdd9087")),
-        };
-        let json = r#"
-            {
-              "txid": "1e66743d6384496fe631501ba3f5b788d4bc193980b847f9e7d4e20d9202489f",
-              "vout": 1,
-              "address": "2N56rvr9bGj862UZMNQhv57nU4GXfMof1Xu",
-              "redeemScript": "0014b1a84f7a5c60e58e2c6eee4b33e7585483399af0",
-              "scriptPubKey": "a914820c9a334a89cb72bc4abfce96efc1fb202cdd9087",
-              "amount": 2.00000000,
-              "confirmations": 29503,
-              "spendable": true,
-              "solvable": true,
-              "safe": true,
-              "label": "test",
-              "witnessScript": "a914820c9a334a89cb72bc4abfce96efc1fb202cdd9087"
-            }
-        "#;
-        assert_eq!(expected, serde_json::from_str(json).unwrap());
-    }
-
-    //TODO(stevenroose) test SignRawTransactionResult
-
-    //TODO(stevenroose) test UTXO
-
-    #[test]
-    fn test_deserialize_difficulty() {
-        let vectors = vec![
-            ("1.0", 1u64.into()),
-            ("0", 0u64.into()),
-            ("123.12345", 123u64.into()),
-            ("10000000.00000001", 10000000u64.into()),
-        ];
-        for vector in vectors.into_iter() {
-            let d = deserialize_difficulty(deserializer!(vector.0)).unwrap();
-            assert_eq!(d, vector.1);
-        }
-    }
-
-    #[test]
-    fn test_deserialize_hex_array_opt() {
-        let vectors = vec![(r#"["0102","a1ff"]"#, Some(vec![vec![1, 2], vec![161, 255]]))];
-        for vector in vectors.into_iter() {
-            let d = deserialize_hex_array_opt(deserializer!(vector.0)).unwrap();
-            assert_eq!(d, vector.1);
-        }
-    }
 }

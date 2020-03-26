@@ -27,6 +27,8 @@ pub enum Error {
     Io(io::Error),
     InvalidAmount(bitcoin::util::amount::ParseAmountError),
     InvalidCookieFile,
+    /// The JSON result had an unexpected structure.
+    UnexpectedStructure,
 }
 
 impl From<jsonrpc::error::Error> for Error {
@@ -82,6 +84,7 @@ impl fmt::Display for Error {
             Error::Io(ref e) => write!(f, "I/O error: {}", e),
             Error::InvalidAmount(ref e) => write!(f, "invalid amount: {}", e),
             Error::InvalidCookieFile => write!(f, "invalid cookie file"),
+            Error::UnexpectedStructure => write!(f, "the JSON result had an unexpected structure"),
         }
     }
 }
