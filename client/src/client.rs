@@ -924,9 +924,17 @@ pub trait RpcApi: Sized {
         &self,
         start_from: Option<usize>,
         stop_height: Option<usize>,
-    ) -> Result<()> {
+    ) -> Result<(usize, Option<usize>)> {
         let mut args = [opt_into_json(start_from)?, opt_into_json(stop_height)?];
-        self.call("rescanblockchain", handle_defaults(&mut args, &[0.into(), null()]))
+
+        #[derive(Deserialize)]
+        struct Response {
+            pub start_height: usize,
+            pub stop_height: Option<usize>,
+        }
+        let res: Response = self.call(
+            "rescanblockchain", handle_defaults(&mut args, &[0.into(), null()]))?;
+        Ok((res.start_height, res.stop_height))
     }
 }
 
