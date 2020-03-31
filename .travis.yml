@@ -4,6 +4,11 @@ rust:
   - beta
   - nightly
   - 1.24.0
+env:
+  - BITCOINVERSION=0.18.0
+  - BITCOINVERSION=0.18.1
+  - BITCOINVERSION=0.19.0.1
+  - BITCOINVERSION=0.19.1
 
 matrix:
   allow_failures:
@@ -13,4 +18,9 @@ script:
   - cargo build --verbose
   - cargo test --verbose
   - cargo build --verbose --examples
+  # Integration test
+  - wget https://bitcoincore.org/bin/bitcoin-core-$BITCOINVERSION/bitcoin-$BITCOINVERSION-x86_64-linux-gnu.tar.gz
+  - tar -xzvf bitcoin-$BITCOINVERSION-x86_64-linux-gnu.tar.gz
+  - export PATH=$PATH:$(pwd)/bitcoin-$BITCOINVERSION/bin
+  - (cd integration_test && ./run.sh)
 
