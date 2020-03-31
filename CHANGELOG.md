@@ -1,4 +1,37 @@
 
+# 0.10.0
+
+- rename `dump_priv_key` -> `dump_private_key` + change return type
+- rename `get_block_header_xxx` methods to conform with `get_block_xxx` methods
+- rename `get_raw_transaction_xxx` methods to conform with `get_block_xxx` methods
+- rename `GetBlockHeaderResult` fields
+- rename `GetMiningInfoResult` fields
+- represent difficulty values as `f64` instead of `BigUint`
+- fix `get_peer_info`
+- fix `get_transaction`
+- fix `get_balance`
+- fix `get_blockchain_info` and make compatible with both 0.18 and 0.19
+- fix `get_address_info`
+- fix `send_to_address`
+- fix `estimate_smart_fee`
+- fix `import_private_key`
+- fix `list_received_by_address`
+- fix `import_address`
+- fix `finalize_psbt`
+- fix `fund_raw_transaction`
+- fix `test_mempool_accept`
+- fix `stop`
+- fix `rescan_blockchain`
+- add `import_address_script`
+- add `get_network_info`
+- add `version`
+- add `Error::UnexpectedStructure`
+- add `GetTransactionResultDetailCategory::Immature`
+- make `list_unspent` more ergonomic
+- made all exported enum types implement `Copy`
+- export `jsonrpc` dependency.
+- remove `num_bigint` dependency
+
 # v0.9.1
 
 - Add `wallet_create_funded_psbt`
