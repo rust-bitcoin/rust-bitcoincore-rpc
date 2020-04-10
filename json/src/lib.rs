@@ -423,7 +423,7 @@ pub struct ListUnspentQueryOptions {
         with = "bitcoin::util::amount::serde::as_btc::opt",
         skip_serializing_if = "Option::is_none"
     )]
-    pub maximum_sum_amount: Option<Amount>,
+    pub minimum_sum_amount: Option<Amount>,
 }
 
 #[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
