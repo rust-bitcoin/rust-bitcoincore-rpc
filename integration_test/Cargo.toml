@@ -1,0 +1,9 @@
+[package]
+name = "integration_test"
+version = "0.1.0"
+authors = ["Steven Roose <steven@stevenroose.org>"]
+
+[dependencies]
+bitcoincore-rpc = { path = "../client" }
+lazy_static = "1.4.0"
+bitcoin = { version = "0.23", features = [ "use-serde", "rand" ] }
