@@ -711,9 +711,11 @@ impl<'a> serde::Serialize for ImportMultiRequestScriptPubkey<'a> {
 }
 
 /// A import request for importmulti.
+///
+/// Note: unlike in bitcoind, `timestamp` defaults to 0.
 #[derive(Clone, PartialEq, Eq, Debug, Default, Serialize)]
 pub struct ImportMultiRequest<'a> {
-    pub timestamp: u64,
+    pub timestamp: ImportMultiRescanSince,
     /// If using descriptor, do not also provide address/scriptPubKey, scripts, or pubkeys.
     #[serde(rename = "desc", skip_serializing_if = "Option::is_none")]
     pub descriptor: Option<&'a str>,
@@ -743,6 +745,34 @@ pub struct ImportMultiRequest<'a> {
 pub struct ImportMultiOptions {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub rescan: Option<bool>,
+}
+
+#[derive(Clone, PartialEq, Eq, Copy, Debug)]
+pub enum ImportMultiRescanSince {
+    Now,
+    Timestamp(u64),
+}
+
+impl serde::Serialize for ImportMultiRescanSince {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        match *self {
+            ImportMultiRescanSince::Now => {
+                serializer.serialize_str("now")
+            }
+            ImportMultiRescanSince::Timestamp(timestamp) => {
+                serializer.serialize_u64(timestamp)
+            }
+        }
+    }
+}
+
+impl Default for ImportMultiRescanSince {
+    fn default() -> Self {
+        ImportMultiRescanSince::Timestamp(0)
+    }
 }
 
 #[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
