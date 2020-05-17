@@ -324,7 +324,7 @@ pub enum Bip125Replaceable {
     Unknown,
 }
 
-/// Enum to represent the BIP125 replaceable status for a transaction.
+/// Enum to represent the category of a transaction.
 #[derive(Copy, Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
 #[serde(rename_all = "lowercase")]
 pub enum GetTransactionResultDetailCategory {
@@ -332,6 +332,7 @@ pub enum GetTransactionResultDetailCategory {
     Receive,
     Generate,
     Immature,
+    Orphan,
 }
 
 #[derive(Clone, PartialEq, Eq, Debug, Deserialize)]
