@@ -1,4 +1,13 @@
 
+# 0.11.0
+
+- fix `minimum_sum_amount` field name in `ListUnspentQueryOptions`
+- add missing "orphan" variant for `GetTransactionResultDetailCategory`
+- add `ImportMultiRescanSince` to support "now" for `importmulti`'s
+  `timestamp` parameter
+- rename logging target to `bitcoincore_rpc` instead of `bitcoincore_rpc::client`
+- other logging improvements
+
 # 0.10.0
 
 - rename `dump_priv_key` -> `dump_private_key` + change return type
