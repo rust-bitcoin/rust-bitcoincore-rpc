@@ -9,11 +9,10 @@
 //
 
 use std::collections::HashMap;
-use std::fmt::{self, Write};
 use std::fs::File;
 use std::iter::FromIterator;
 use std::path::PathBuf;
-use std::result;
+use std::{fmt, result};
 
 use bitcoin;
 use jsonrpc;
