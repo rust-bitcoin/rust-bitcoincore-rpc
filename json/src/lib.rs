@@ -829,9 +829,9 @@ pub struct GetPeerInfoResult {
     /// The time offset in seconds
     pub timeoffset: i64,
     /// ping time (if available)
-    pub pingtime: f64,
+    pub pingtime: Option<f64>,
     /// minimum observed ping time (if any at all)
-    pub minping: f64,
+    pub minping: Option<f64>,
     /// ping wait (if non-zero)
     pub pingwait: Option<f64>,
     /// The peer version, such as 70001
@@ -844,7 +844,7 @@ pub struct GetPeerInfoResult {
     /// automatic/inbound connection
     pub addnode: bool,
     /// The starting height (block) of the peer
-    pub startingheight: u64,
+    pub startingheight: i64,
     /// The ban score
     pub banscore: i64,
     /// The last header we have in common with this peer
