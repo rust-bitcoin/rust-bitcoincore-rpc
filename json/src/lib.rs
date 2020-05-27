@@ -96,7 +96,7 @@ pub struct GetNetworkInfoResult {
     #[serde(rename = "localrelay")]
     pub local_relay: bool,
     #[serde(rename = "timeoffset")]
-    pub time_offset: usize,
+    pub time_offset: isize,
     pub connections: usize,
     #[serde(rename = "networkactive")]
     pub network_active: bool,
