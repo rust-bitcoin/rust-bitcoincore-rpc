@@ -113,6 +113,7 @@ fn main() {
     test_get_raw_mempool(&cl);
     test_get_transaction(&cl);
     test_list_transactions(&cl);
+    test_list_since_block(&cl);
     test_get_tx_out(&cl);
     test_get_tx_out_proof(&cl);
     test_lock_unspent_unlock_unspent(&cl);
@@ -354,6 +355,13 @@ fn test_list_transactions(cl: &Client) {
     let _ = cl.list_transactions(None, None, Some(3), None).unwrap();
     let _ = cl.list_transactions(None, None, None, Some(true)).unwrap();
 }
+
+fn test_list_since_block(cl: &Client) {
+    let r = cl.list_since_block(None, None, None, None).unwrap();
+    assert_eq!(r.lastblock, cl.get_best_block_hash().unwrap());
+    assert!(!r.transactions.is_empty());
+}
+
 
 fn test_get_tx_out(cl: &Client) {
     let txid =

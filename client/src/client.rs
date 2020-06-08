@@ -487,6 +487,22 @@ pub trait RpcApi: Sized {
         self.call("listtransactions", handle_defaults(&mut args, &[10.into(), 0.into(), null()]))
     }
 
+    fn list_since_block(
+        &self,
+        blockhash: Option<&bitcoin::BlockHash>,
+        target_confirmations: Option<usize>,
+        include_watchonly: Option<bool>,
+        include_removed: Option<bool>,
+    ) -> Result<json::ListSinceBlockResult> {
+        let mut args = [
+            opt_into_json(blockhash)?,
+            opt_into_json(target_confirmations)?,
+            opt_into_json(include_watchonly)?,
+            opt_into_json(include_removed)?,
+        ];
+        self.call("listsinceblock", handle_defaults(&mut args, &[null()]))
+    }
+
     fn get_tx_out(
         &self,
         txid: &bitcoin::Txid,

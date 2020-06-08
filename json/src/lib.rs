@@ -391,6 +391,14 @@ pub struct ListTransactionResult {
     pub comment: Option<String>,
 }
 
+#[derive(Clone, PartialEq, Eq, Debug, Deserialize)]
+pub struct ListSinceBlockResult {
+    pub transactions: Vec<ListTransactionResult>,
+    #[serde(default)]
+    pub removed: Vec<ListTransactionResult>,
+    pub lastblock: bitcoin::BlockHash,
+}
+
 #[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct GetTxOutResult {
