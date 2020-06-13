@@ -10,7 +10,7 @@ This git package compiles into two crates.
 the Bitcoin Core JSON-RPC APIs as rust functions.
 
 2. [bitcoincore-rpc-json](https://crates.io/crates/bitcoincore-rpc-json) -  contains rust data structures that represent 
-the json responses from the Bitcoin Core JSON-RPC APIs. bitcoincore-rcp depends on this.
+the json responses from the Bitcoin Core JSON-RPC APIs. bitcoincore-rpc depends on this.
 
 # Usage
 Given below is an example of how to connect to the Bitcoin Core JSON-RPC for a Bitcoin Core node running on `localhost`
