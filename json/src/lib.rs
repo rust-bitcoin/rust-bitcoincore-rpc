@@ -1039,6 +1039,23 @@ pub struct FundRawTransactionResult {
     pub change_position: i32,
 }
 
+#[derive(Deserialize, Clone, PartialEq, Eq, Debug)]
+pub struct GetBalancesResultEntry {
+    #[serde(with = "bitcoin::util::amount::serde::as_btc")]
+    pub trusted: Amount,
+    #[serde(with = "bitcoin::util::amount::serde::as_btc")]
+    pub untrusted_pending: Amount,
+    #[serde(with = "bitcoin::util::amount::serde::as_btc")]
+    pub immature: Amount,
+}
+
+#[derive(Deserialize, Clone, PartialEq, Eq, Debug)]
+#[serde(rename_all = "camelCase")]
+pub struct GetBalancesResult {
+    pub mine: GetBalancesResultEntry,
+    pub watchonly: Option<GetBalancesResultEntry>,
+}
+
 impl FundRawTransactionResult {
     pub fn transaction(&self) -> Result<Transaction, encode::Error> {
         encode::deserialize(&self.hex)

@@ -455,6 +455,10 @@ pub trait RpcApi: Sized {
         )?)
     }
 
+    fn get_balances(&self) -> Result<json::GetBalancesResult> {
+        Ok(self.call("getbalances", &[])?)
+    }
+
     fn get_received_by_address(&self, address: &Address, minconf: Option<u32>) -> Result<Amount> {
         let mut args = [address.to_string().into(), opt_into_json(minconf)?];
         Ok(Amount::from_btc(
