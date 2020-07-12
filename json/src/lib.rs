@@ -337,7 +337,7 @@ pub enum GetTransactionResultDetailCategory {
 
 #[derive(Clone, PartialEq, Eq, Debug, Deserialize)]
 pub struct GetTransactionResultDetail {
-    pub address: Address,
+    pub address: Option<Address>,
     pub category: GetTransactionResultDetailCategory,
     #[serde(with = "bitcoin::util::amount::serde::as_btc")]
     pub amount: SignedAmount,
