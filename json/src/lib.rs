@@ -690,6 +690,7 @@ pub enum ImportMultiRequestScriptPubkey<'a> {
 pub struct GetMempoolEntryResult {
     /// Virtual transaction size as defined in BIP 141. This is different from actual serialized
     /// size for witness transactions as witness data is discounted.
+    #[serde(alias = "size")]
     pub vsize: u64,
     /// Transaction weight as defined in BIP 141. Added in Core v0.19.0.
     pub weight: Option<u64>,
