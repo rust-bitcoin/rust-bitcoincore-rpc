@@ -115,6 +115,7 @@ fn main() {
     test_list_transactions(&cl);
     test_get_tx_out(&cl);
     test_get_tx_out_proof(&cl);
+    test_get_mempool_entry(&cl);
     test_lock_unspent_unlock_unspent(&cl);
     test_get_block_filter(&cl);
     test_sign_raw_transaction_with_send_raw_transaction(&cl);
@@ -373,6 +374,16 @@ fn test_get_tx_out_proof(cl: &Client) {
     let blocks = cl.generate_to_address(7, &cl.get_new_address(None, None).unwrap()).unwrap();
     let proof = cl.get_tx_out_proof(&[txid1, txid2], Some(&blocks[0])).unwrap();
     assert!(!proof.is_empty());
+}
+
+fn test_get_mempool_entry(cl: &Client) {
+    let txid =
+        cl.send_to_address(&RANDOM_ADDRESS, btc(1), None, None, None, None, None, None).unwrap();
+    let entry = cl.get_mempool_entry(&txid).unwrap();
+    assert!(entry.spent_by.is_empty());
+
+    let fake = Txid::hash(&[1, 2]);
+    assert!(cl.get_mempool_entry(&fake).is_err());
 }
 
 fn test_lock_unspent_unlock_unspent(cl: &Client) {
