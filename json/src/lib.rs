@@ -354,6 +354,7 @@ pub struct WalletTxInfo {
     pub blockhash: Option<bitcoin::BlockHash>,
     pub blockindex: Option<usize>,
     pub blocktime: Option<u64>,
+    pub blockheight: Option<u32>,
     pub txid: bitcoin::Txid,
     pub time: u64,
     pub timereceived: u64,
