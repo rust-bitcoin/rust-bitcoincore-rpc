@@ -272,9 +272,27 @@ pub trait RpcApi: Sized {
         &self,
         wallet: &str,
         disable_private_keys: Option<bool>,
+        blank: Option<bool>,
+        passphrase: Option<&str>,
+        avoid_reuse: Option<bool>,
     ) -> Result<json::LoadWalletResult> {
-        let mut args = [wallet.into(), opt_into_json(disable_private_keys)?];
-        self.call("createwallet", handle_defaults(&mut args, &[null()]))
+        let mut args = [
+            wallet.into(),
+            opt_into_json(disable_private_keys)?,
+            opt_into_json(blank)?,
+            opt_into_json(passphrase)?,
+            opt_into_json(avoid_reuse)?,
+        ];
+        self.call("createwallet", handle_defaults(
+            &mut args, &[false.into(), false.into(), into_json("")?, false.into()]))
+    }
+
+    fn list_wallets(&self) -> Result<Vec<String>> {
+        self.call("listwallets", &[])
+    }
+
+    fn get_wallet_info(&self) -> Result<json::GetWalletInfoResult> {
+        self.call("getwalletinfo", &[])
     }
 
     fn backup_wallet(&self, destination: Option<&str>) -> Result<()> {

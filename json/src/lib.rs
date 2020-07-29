@@ -123,6 +123,35 @@ pub struct LoadWalletResult {
     pub warning: Option<String>,
 }
 
+#[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
+pub struct GetWalletInfoResult {
+    #[serde(rename = "walletname")]
+    pub wallet_name: String,
+    #[serde(rename = "walletversion")]
+    pub wallet_version: u32,
+    #[serde(with = "bitcoin::util::amount::serde::as_btc")]
+    pub balance: Amount,
+    #[serde(with = "bitcoin::util::amount::serde::as_btc")]
+    pub unconfirmed_balance: Amount,
+    #[serde(with = "bitcoin::util::amount::serde::as_btc")]
+    pub immature_balance: Amount,
+    #[serde(rename = "txcount")]
+    pub tx_count: usize,
+    #[serde(rename = "keypoololdest")]
+    pub keypool_oldest: usize,
+    #[serde(rename = "keypoolsize")]
+    pub keypool_size: usize,
+    #[serde(rename = "keypoolsize_hd_internal")]
+    pub keypool_size_hd_internal: usize,
+    pub unlocked_until: Option<u64>,
+    #[serde(rename = "paytxfee", with = "bitcoin::util::amount::serde::as_btc")]
+    pub pay_tx_fee: Amount,
+    #[serde(rename = "hdseedid")]
+    pub hd_seed_id: Option<bitcoin::XpubIdentifier>,
+    pub private_keys_enabled: bool,
+    pub avoid_reuse: Option<bool>,
+}
+
 #[derive(Clone, PartialEq, Debug, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct GetBlockResult {
