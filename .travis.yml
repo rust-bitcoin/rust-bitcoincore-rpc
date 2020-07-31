@@ -9,6 +9,7 @@ env:
   - BITCOINVERSION=0.18.1
   - BITCOINVERSION=0.19.0.1
   - BITCOINVERSION=0.19.1
+  - BITCOINVERSION=0.20.0
 
 matrix:
   allow_failures:
