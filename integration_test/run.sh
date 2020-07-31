@@ -19,7 +19,7 @@ PID1=$!
 sleep 3
 
 BLOCKFILTERARG=""
-if bitcoind -version | grep -q "0\.19"; then
+if bitcoind -version | grep -q "0\.19\|0\.20"; then
     BLOCKFILTERARG="-blockfilterindex=1"
 fi
 
