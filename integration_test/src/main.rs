@@ -97,6 +97,7 @@ fn main() {
     test_dump_private_key(&cl);
     test_generate(&cl);
     test_get_balance_generate_to_address(&cl);
+    test_get_balances_generate_to_address(&cl);
     test_get_best_block_hash(&cl);
     test_get_block_count(&cl);
     test_get_block_hash(&cl);
@@ -200,6 +201,14 @@ fn test_get_balance_generate_to_address(cl: &Client) {
     let blocks = cl.generate_to_address(500, &cl.get_new_address(None, None).unwrap()).unwrap();
     assert_eq!(blocks.len(), 500);
     assert_ne!(cl.get_balance(None, None).unwrap(), initial);
+}
+
+fn test_get_balances_generate_to_address(cl: &Client) {
+    let initial = cl.get_balances().unwrap();
+
+    let blocks = cl.generate_to_address(500, &cl.get_new_address(None, None).unwrap()).unwrap();
+    assert_eq!(blocks.len(), 500);
+    assert_ne!(cl.get_balances().unwrap(), initial);
 }
 
 fn test_get_best_block_hash(cl: &Client) {
