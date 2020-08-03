@@ -150,7 +150,17 @@ pub struct GetWalletInfoResult {
     pub hd_seed_id: Option<bitcoin::XpubIdentifier>,
     pub private_keys_enabled: bool,
     pub avoid_reuse: Option<bool>,
+    pub scanning: Option<ScanningDetails>,
 }
+
+#[derive(Clone, PartialEq, Debug, Deserialize, Serialize)]
+#[serde(untagged)]
+pub enum ScanningDetails {
+    Scanning { duration: usize, progress: f32 },
+    NotScanning(bool),
+}
+
+impl Eq for ScanningDetails {}
 
 #[derive(Clone, PartialEq, Debug, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]

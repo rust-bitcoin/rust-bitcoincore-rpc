@@ -872,6 +872,9 @@ fn test_create_wallet(cl: &Client) {
         assert_eq!(wallet_info.hd_seed_id.is_some(), has_hd_seed);
         let has_avoid_reuse = wallet_param.avoid_reuse.unwrap_or(false);
         assert_eq!(wallet_info.avoid_reuse.unwrap_or(false), has_avoid_reuse);
+        assert_eq!(
+            wallet_info.scanning.unwrap_or(json::ScanningDetails::NotScanning(false)),
+            json::ScanningDetails::NotScanning(false));
     }
 
     let mut wallet_list = cl.list_wallets().unwrap();
