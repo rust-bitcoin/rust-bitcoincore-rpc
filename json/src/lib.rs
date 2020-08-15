@@ -1253,6 +1253,30 @@ pub enum PubKeyOrAddress<'a> {
     PubKey(&'a PublicKey),
 }
 
+#[derive(Serialize, Deserialize, Clone, PartialEq, Eq, Debug)]
+pub struct ScanUtxoResult {
+    pub success: bool,
+    pub txouts: u64,
+    pub height: u64,
+    pub bestblock: bitcoin::BlockHash,
+    pub unspents: Vec<Utxo>,
+    #[serde(with = "bitcoin::util::amount::serde::as_btc")]
+    pub total_amount: bitcoin::Amount,
+}
+
+#[derive(Serialize, Deserialize, Clone, PartialEq, Eq, Debug)]
+#[serde(rename_all = "camelCase")]
+pub struct Utxo {
+    pub txid: bitcoin::Txid,
+    pub vout: u32,
+    pub script_pub_key: bitcoin::Script,
+    #[serde(rename = "desc")]
+    pub descriptor: String,
+    #[serde(with = "bitcoin::util::amount::serde::as_btc")]
+    pub amount: bitcoin::Amount,
+    pub height: u64,
+}
+
 impl<'a> serde::Serialize for PubKeyOrAddress<'a> {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where

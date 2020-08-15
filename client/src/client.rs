@@ -1013,6 +1013,10 @@ pub trait RpcApi: Sized {
     fn uptime(&self) -> Result<u64> {
         self.call("uptime", &[])
     }
+
+    fn scan_txout_set(&self, descriptors: &[String]) -> Result<json::ScanUtxoResult> {
+        self.call("scantxoutset", &["start".into(), descriptors.into()])
+    }
 }
 
 /// Client implements a JSON-RPC client for the Bitcoin Core daemon or compatible APIs.
