@@ -1254,11 +1254,28 @@ pub enum PubKeyOrAddress<'a> {
 }
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, Eq, Debug)]
-pub struct ScanUtxoResult {
-    pub success: bool,
-    pub txouts: u64,
-    pub height: u64,
-    pub bestblock: bitcoin::BlockHash,
+#[serde(untagged)]
+/// Start a scan of the UTXO set for an [output descriptor](https://github.com/bitcoin/bitcoin/blob/master/doc/descriptors.md).
+pub enum ScanTxoutRequest {
+    /// Scan for a single descriptor
+    Single(String),
+    /// Scan for a descriptor with xpubs
+    Extended {
+        /// Descriptor
+        desc: String,
+        /// Range of the xpub derivations to scan
+        range: (u64, u64),
+    },
+}
+
+#[derive(Serialize, Deserialize, Clone, PartialEq, Eq, Debug)]
+pub struct ScanTxoutResult {
+    pub success: Option<bool>,
+    #[serde(rename = "txouts")]
+    pub tx_outs: Option<u64>,
+    pub height: Option<u64>,
+    #[serde(rename = "bestblock")]
+    pub best_block_hash: Option<bitcoin::BlockHash>,
     pub unspents: Vec<Utxo>,
     #[serde(with = "bitcoin::util::amount::serde::as_btc")]
     pub total_amount: bitcoin::Amount,
