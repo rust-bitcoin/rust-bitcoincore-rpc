@@ -147,6 +147,7 @@ fn main() {
     test_get_peer_info(&cl);
     test_rescan_blockchain(&cl);
     test_create_wallet(&cl);
+    test_get_network_hash_ps(&cl);
     //TODO import_multi(
     //TODO verify_message(
     //TODO wait_for_new_block(&self, timeout: u64) -> Result<json::BlockRef> {
@@ -894,6 +895,10 @@ fn test_create_wallet(cl: &Client) {
 
     // Created wallets
     assert!(wallet_list.iter().zip(wallet_names).all(|(a, b)| a == b));
+}
+
+fn test_get_network_hash_ps(cl: &Client) {
+    cl.get_network_hash_ps(None, None).unwrap();
 }
 
 fn test_stop(cl: Client) {

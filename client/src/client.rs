@@ -988,6 +988,12 @@ pub trait RpcApi: Sized {
             self.call("rescanblockchain", handle_defaults(&mut args, &[0.into(), null()]))?;
         Ok((res.start_height, res.stop_height))
     }
+
+    /// Returns the estimated network hashes per second based on the last n blocks.
+    fn get_network_hash_ps(&self, nblocks: Option<u64>, height: Option<u64>) -> Result<f64> {
+        let mut args = [opt_into_json(nblocks)?, opt_into_json(height)?];
+        self.call("getnetworkhashps", handle_defaults(&mut args, &[null(), null()]))
+    }
 }
 
 /// Client implements a JSON-RPC client for the Bitcoin Core daemon or compatible APIs.
