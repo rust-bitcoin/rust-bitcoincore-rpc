@@ -988,6 +988,12 @@ pub trait RpcApi: Sized {
             self.call("rescanblockchain", handle_defaults(&mut args, &[0.into(), null()]))?;
         Ok((res.start_height, res.stop_height))
     }
+
+    /// Returns statistics about the unspent transaction output set.
+    /// This call may take some time.
+    fn get_tx_out_set_info(&self) -> Result<json::GetTxOutSetInfoResult> {
+        self.call("gettxoutsetinfo", &[])
+    }
 }
 
 /// Client implements a JSON-RPC client for the Bitcoin Core daemon or compatible APIs.
