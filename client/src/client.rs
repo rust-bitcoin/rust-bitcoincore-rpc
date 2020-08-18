@@ -988,6 +988,12 @@ pub trait RpcApi: Sized {
             self.call("rescanblockchain", handle_defaults(&mut args, &[0.into(), null()]))?;
         Ok((res.start_height, res.stop_height))
     }
+
+    /// Returns information about network traffic, including bytes in, bytes out,
+    /// and current time.
+    fn get_net_totals(&self) -> Result<json::GetNetTotalsResult> {
+        self.call("getnettotals", &[])
+    }
 }
 
 /// Client implements a JSON-RPC client for the Bitcoin Core daemon or compatible APIs.
