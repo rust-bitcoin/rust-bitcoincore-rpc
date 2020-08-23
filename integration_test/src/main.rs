@@ -75,15 +75,23 @@ fn sbtc<F: Into<f64>>(btc: F) -> SignedAmount {
     SignedAmount::from_btc(btc.into()).unwrap()
 }
 
-fn main() {
-    let rpc_url = std::env::var("RPC_URL").expect("RPC_URL must be set");
-    let auth = if let Ok(cookie) = std::env::var("RPC_COOKIE") {
-        Auth::CookieFile(cookie.into())
+fn get_rpc_url() -> String {
+    return std::env::var("RPC_URL").expect("RPC_URL must be set");
+}
+
+fn get_auth() -> bitcoincore_rpc::Auth {
+    if let Ok(cookie) = std::env::var("RPC_COOKIE") {
+        return Auth::CookieFile(cookie.into());
     } else if let Ok(user) = std::env::var("RPC_USER") {
-        Auth::UserPass(user, std::env::var("RPC_PASS").unwrap_or_default())
+        return Auth::UserPass(user, std::env::var("RPC_PASS").unwrap_or_default());
     } else {
         panic!("Either RPC_COOKIE or RPC_USER + RPC_PASS must be set.");
     };
+}
+
+fn main() {
+    let rpc_url = get_rpc_url();
+    let auth = get_auth();
 
     let cl = Client::new(rpc_url, auth).unwrap();
 
@@ -138,6 +146,7 @@ fn main() {
     test_ping(&cl);
     test_get_peer_info(&cl);
     test_rescan_blockchain(&cl);
+    test_create_wallet(&cl);
     //TODO import_multi(
     //TODO verify_message(
     //TODO wait_for_new_block(&self, timeout: u64) -> Result<json::BlockRef> {
@@ -149,7 +158,6 @@ fn main() {
     //TODO add_multisig_address(
     //TODO load_wallet(&self, wallet: &str) -> Result<json::LoadWalletResult> {
     //TODO unload_wallet(&self, wallet: Option<&str>) -> Result<()> {
-    //TODO create_wallet(
     //TODO backup_wallet(&self, destination: Option<&str>) -> Result<()> {
     test_stop(cl);
 }
@@ -785,6 +793,108 @@ fn test_rescan_blockchain(cl: &Client) {
     let (start, stop) = cl.rescan_blockchain(Some(count - 20), Some(count - 1)).unwrap();
     assert_eq!(start, count - 20);
     assert_eq!(stop, Some(count - 1));
+}
+
+fn test_create_wallet(cl: &Client) {
+    let wallet_names = vec!["alice", "bob", "carol", "denise", "emily"];
+
+    struct WalletParams<'a> {
+        name: &'a str,
+        disable_private_keys: Option<bool>,
+        blank: Option<bool>,
+        passphrase: Option<&'a str>,
+        avoid_reuse: Option<bool>,
+    }
+
+    let mut wallet_params = vec![
+        WalletParams {
+            name: wallet_names[0],
+            disable_private_keys: None,
+            blank: None,
+            passphrase: None,
+            avoid_reuse: None,
+        },
+        WalletParams {
+            name: wallet_names[1],
+            disable_private_keys: Some(true),
+            blank: None,
+            passphrase: None,
+            avoid_reuse: None,
+        },
+        WalletParams {
+            name: wallet_names[2],
+            disable_private_keys: None,
+            blank: Some(true),
+            passphrase: None,
+            avoid_reuse: None,
+        }
+    ];
+
+    if version() >= 190000 {
+        wallet_params.push(
+            WalletParams {
+                name: wallet_names[3],
+                disable_private_keys: None,
+                blank: None,
+                passphrase: Some("pass"),
+                avoid_reuse: None,
+            }
+        );
+        wallet_params.push(
+            WalletParams {
+                name: wallet_names[4],
+                disable_private_keys: None,
+                blank: None,
+                passphrase: None,
+                avoid_reuse: Some(true),
+            }
+        );
+    }
+
+    for wallet_param in wallet_params {
+        let result = cl
+        .create_wallet(
+            wallet_param.name,
+            wallet_param.disable_private_keys,
+            wallet_param.blank,
+            wallet_param.passphrase,
+            wallet_param.avoid_reuse,
+        )
+        .unwrap();
+
+        assert_eq!(result.name, wallet_param.name);
+        let expected_warning = match (wallet_param.passphrase, wallet_param.avoid_reuse) {
+            (None, Some(true)) => Some("Empty string given as passphrase, wallet will not be encrypted.".to_string()),
+            _ => Some("".to_string()),
+        };
+        assert_eq!(result.warning, expected_warning);
+
+        let wallet_client_url = format!("{}{}{}", get_rpc_url(), "/wallet/", wallet_param.name);
+        let wallet_client = Client::new(wallet_client_url, get_auth()).unwrap();
+        let wallet_info = wallet_client.get_wallet_info().unwrap();
+
+        assert_eq!(wallet_info.wallet_name, wallet_param.name);
+
+        let has_private_keys = !wallet_param.disable_private_keys.unwrap_or(false);
+        assert_eq!(wallet_info.private_keys_enabled, has_private_keys);
+        let has_hd_seed = has_private_keys && !wallet_param.blank.unwrap_or(false);
+        assert_eq!(wallet_info.hd_seed_id.is_some(), has_hd_seed);
+        let has_avoid_reuse = wallet_param.avoid_reuse.unwrap_or(false);
+        assert_eq!(wallet_info.avoid_reuse.unwrap_or(false), has_avoid_reuse);
+        assert_eq!(
+            wallet_info.scanning.unwrap_or(json::ScanningDetails::NotScanning(false)),
+            json::ScanningDetails::NotScanning(false));
+    }
+
+    let mut wallet_list = cl.list_wallets().unwrap();
+
+    wallet_list.sort();
+
+    // Default wallet
+    assert_eq!(wallet_list.remove(0), "");
+
+    // Created wallets
+    assert!(wallet_list.iter().zip(wallet_names).all(|(a, b)| a == b));
 }
 
 fn test_stop(cl: Client) {
