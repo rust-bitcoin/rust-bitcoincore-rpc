@@ -21,7 +21,9 @@ use serde_json;
 
 use bitcoin::hashes::hex::{FromHex, ToHex};
 use bitcoin::secp256k1::Signature;
-use bitcoin::{Address, Amount, Block, BlockHeader, OutPoint, PrivateKey, PublicKey, Script, Transaction};
+use bitcoin::{
+    Address, Amount, Block, BlockHeader, OutPoint, PrivateKey, PublicKey, Script, Transaction,
+};
 use log::Level::{Debug, Trace, Warn};
 use serde::{Deserialize, Serialize};
 
@@ -372,12 +374,15 @@ pub trait RpcApi: Sized {
                 let id = json.get("id").ok_or(err)?.as_str().ok_or(err)?;
                 let reject = json.get("reject").ok_or(err)?.as_object().ok_or(err)?;
                 let active = reject.get("status").ok_or(err)?.as_bool().ok_or(err)?;
-                ret.softforks.insert(id.into(), json::Softfork {
-                    type_: json::SoftforkType::Buried,
-                    bip9: None,
-                    height: None,
-                    active: active,
-                });
+                ret.softforks.insert(
+                    id.into(),
+                    json::Softfork {
+                        type_: json::SoftforkType::Buried,
+                        bip9: None,
+                        height: None,
+                        active: active,
+                    },
+                );
             }
             for (id, sf) in bip9_softforks.as_object().ok_or(err)?.iter() {
                 #[derive(Deserialize)]
@@ -391,19 +396,22 @@ pub trait RpcApi: Sized {
                     pub statistics: Option<json::Bip9SoftforkStatistics>,
                 }
                 let sf: OldBip9SoftFork = serde_json::from_value(sf.clone())?;
-                ret.softforks.insert(id.into(), json::Softfork {
-                    type_: json::SoftforkType::Bip9,
-                    bip9: Some(json::Bip9SoftforkInfo {
-                        status: sf.status,
-                        bit: sf.bit,
-                        start_time: sf.start_time,
-                        timeout: sf.timeout,
-                        since: sf.since,
-                        statistics: sf.statistics,
-                    }),
-                    height: None,
-                    active: sf.status == json::Bip9SoftforkStatus::Active,
-                });
+                ret.softforks.insert(
+                    id.into(),
+                    json::Softfork {
+                        type_: json::SoftforkType::Bip9,
+                        bip9: Some(json::Bip9SoftforkInfo {
+                            status: sf.status,
+                            bit: sf.bit,
+                            start_time: sf.start_time,
+                            timeout: sf.timeout,
+                            since: sf.since,
+                            statistics: sf.statistics,
+                        }),
+                        height: None,
+                        active: sf.status == json::Bip9SoftforkStatus::Active,
+                    },
+                );
             }
             ret
         } else {
@@ -571,15 +579,8 @@ pub trait RpcApi: Sized {
         label: Option<&str>,
         rescan: Option<bool>,
     ) -> Result<()> {
-        let mut args = [
-            address.to_string().into(),
-            opt_into_json(label)?,
-            opt_into_json(rescan)?,
-        ];
-        self.call(
-            "importaddress",
-            handle_defaults(&mut args, &[into_json("")?, null()]),
-        )
+        let mut args = [address.to_string().into(), opt_into_json(label)?, opt_into_json(rescan)?];
+        self.call("importaddress", handle_defaults(&mut args, &[into_json("")?, null()]))
     }
 
     fn import_address_script(
@@ -765,7 +766,10 @@ pub trait RpcApi: Sized {
         self.call("signrawtransactionwithkey", handle_defaults(&mut args, &defaults))
     }
 
-    fn test_mempool_accept<R: RawTx>(&self, rawtxs: &[R]) -> Result<Vec<json::TestMempoolAcceptResult>> {
+    fn test_mempool_accept<R: RawTx>(
+        &self,
+        rawtxs: &[R],
+    ) -> Result<Vec<json::TestMempoolAcceptResult>> {
         let hexes: Vec<serde_json::Value> =
             rawtxs.to_vec().into_iter().map(|r| r.raw_hex().into()).collect();
         self.call("testmempoolaccept", &[hexes.into()])
@@ -856,9 +860,13 @@ pub trait RpcApi: Sized {
             opt_into_json(confirmation_target)?,
             opt_into_json(estimate_mode)?,
         ];
-        self.call("sendtoaddress", handle_defaults(&mut args, &[
-            "".into(), "".into(), false.into(), false.into(), 6.into(), null()
-        ]))
+        self.call(
+            "sendtoaddress",
+            handle_defaults(
+                &mut args,
+                &["".into(), "".into(), false.into(), false.into(), 6.into(), null()],
+            ),
+        )
     }
 
     /// Returns data about each connected network node as an array of
@@ -940,9 +948,10 @@ pub trait RpcApi: Sized {
             opt_into_json(options)?,
             opt_into_json(bip32derivs)?,
         ];
-        self.call("walletcreatefundedpsbt", handle_defaults(&mut args, &[
-            0.into(), serde_json::Map::new().into(), false.into()
-        ]))
+        self.call(
+            "walletcreatefundedpsbt",
+            handle_defaults(&mut args, &[0.into(), serde_json::Map::new().into(), false.into()]),
+        )
     }
 
     fn get_descriptor_info(&self, desc: &str) -> Result<json::GetDescriptorInfoResult> {
@@ -975,8 +984,8 @@ pub trait RpcApi: Sized {
             pub start_height: usize,
             pub stop_height: Option<usize>,
         }
-        let res: Response = self.call(
-            "rescanblockchain", handle_defaults(&mut args, &[0.into(), null()]))?;
+        let res: Response =
+            self.call("rescanblockchain", handle_defaults(&mut args, &[0.into(), null()]))?;
         Ok((res.start_height, res.stop_height))
     }
 }
@@ -1045,7 +1054,7 @@ fn log_response(cmd: &str, resp: &Result<jsonrpc::Response>) {
                 if log_enabled!(Debug) {
                     debug!(target: "bitcoincore_rpc", "JSON-RPC failed parsing reply of {}: {:?}", cmd, e);
                 }
-            },
+            }
             Ok(ref resp) => {
                 if let Some(ref e) = resp.error {
                     if log_enabled!(Debug) {
@@ -1055,7 +1064,7 @@ fn log_response(cmd: &str, resp: &Result<jsonrpc::Response>) {
                     let result = resp.result.as_ref().unwrap_or(&serde_json::Value::Null);
                     trace!(target: "bitcoincore_rpc", "JSON-RPC response for {}: {}", cmd, result);
                 }
-            },
+            }
         }
     }
 }

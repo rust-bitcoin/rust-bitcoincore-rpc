@@ -42,22 +42,22 @@ lazy_static! {
 
 /// Assert that the call returns a "deprecated" error.
 macro_rules! assert_deprecated {
-	($call:expr) => {
-		match $call.unwrap_err() {
+    ($call:expr) => {
+        match $call.unwrap_err() {
             Error::JsonRpc(JsonRpcError::Rpc(e)) if e.code == -32 => {}
             e => panic!("expected deprecated error for {}, got: {}", stringify!($call), e),
-		}
-	}
+        }
+    };
 }
 
 /// Assert that the call returns a "method not found" error.
 macro_rules! assert_not_found {
-	($call:expr) => {
-		match $call.unwrap_err() {
-			Error::JsonRpc(JsonRpcError::Rpc(e)) if e.code == -32601 => {}
+    ($call:expr) => {
+        match $call.unwrap_err() {
+            Error::JsonRpc(JsonRpcError::Rpc(e)) if e.code == -32601 => {}
             e => panic!("expected method not found error for {}, got: {}", stringify!($call), e),
-		}
-	}
+        }
+    };
 }
 
 static mut VERSION: usize = 0;
@@ -199,9 +199,9 @@ fn test_generate(cl: &Client) {
         let blocks = cl.generate(6, Some(45)).unwrap();
         assert_eq!(blocks.len(), 6);
     } else if version() < 190000 {
-		assert_deprecated!(cl.generate(5, None));
+        assert_deprecated!(cl.generate(5, None));
     } else {
-		assert_not_found!(cl.generate(5, None));
+        assert_not_found!(cl.generate(5, None));
     }
 }
 
@@ -380,7 +380,6 @@ fn test_list_since_block(cl: &Client) {
     assert!(!r.transactions.is_empty());
 }
 
-
 fn test_get_tx_out(cl: &Client) {
     let txid =
         cl.send_to_address(&RANDOM_ADDRESS, btc(1), None, None, None, None, None, None).unwrap();
@@ -422,10 +421,10 @@ fn test_lock_unspent_unlock_unspent(cl: &Client) {
 fn test_get_block_filter(cl: &Client) {
     let blocks = cl.generate_to_address(7, &cl.get_new_address(None, None).unwrap()).unwrap();
     if version() >= 190000 {
-		let _ = cl.get_block_filter(&blocks[0]).unwrap();
+        let _ = cl.get_block_filter(&blocks[0]).unwrap();
     } else {
-		assert_not_found!(cl.get_block_filter(&blocks[0]));
-	}
+        assert_not_found!(cl.get_block_filter(&blocks[0]));
+    }
 }
 
 fn test_sign_raw_transaction_with_send_raw_transaction(cl: &Client) {
