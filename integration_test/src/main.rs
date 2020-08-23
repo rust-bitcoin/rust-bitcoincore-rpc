@@ -826,44 +826,42 @@ fn test_create_wallet(cl: &Client) {
             blank: Some(true),
             passphrase: None,
             avoid_reuse: None,
-        }
+        },
     ];
 
     if version() >= 190000 {
-        wallet_params.push(
-            WalletParams {
-                name: wallet_names[3],
-                disable_private_keys: None,
-                blank: None,
-                passphrase: Some("pass"),
-                avoid_reuse: None,
-            }
-        );
-        wallet_params.push(
-            WalletParams {
-                name: wallet_names[4],
-                disable_private_keys: None,
-                blank: None,
-                passphrase: None,
-                avoid_reuse: Some(true),
-            }
-        );
+        wallet_params.push(WalletParams {
+            name: wallet_names[3],
+            disable_private_keys: None,
+            blank: None,
+            passphrase: Some("pass"),
+            avoid_reuse: None,
+        });
+        wallet_params.push(WalletParams {
+            name: wallet_names[4],
+            disable_private_keys: None,
+            blank: None,
+            passphrase: None,
+            avoid_reuse: Some(true),
+        });
     }
 
     for wallet_param in wallet_params {
         let result = cl
-        .create_wallet(
-            wallet_param.name,
-            wallet_param.disable_private_keys,
-            wallet_param.blank,
-            wallet_param.passphrase,
-            wallet_param.avoid_reuse,
-        )
-        .unwrap();
+            .create_wallet(
+                wallet_param.name,
+                wallet_param.disable_private_keys,
+                wallet_param.blank,
+                wallet_param.passphrase,
+                wallet_param.avoid_reuse,
+            )
+            .unwrap();
 
         assert_eq!(result.name, wallet_param.name);
         let expected_warning = match (wallet_param.passphrase, wallet_param.avoid_reuse) {
-            (None, Some(true)) => Some("Empty string given as passphrase, wallet will not be encrypted.".to_string()),
+            (None, Some(true)) => {
+                Some("Empty string given as passphrase, wallet will not be encrypted.".to_string())
+            }
             _ => Some("".to_string()),
         };
         assert_eq!(result.warning, expected_warning);
@@ -882,7 +880,8 @@ fn test_create_wallet(cl: &Client) {
         assert_eq!(wallet_info.avoid_reuse.unwrap_or(false), has_avoid_reuse);
         assert_eq!(
             wallet_info.scanning.unwrap_or(json::ScanningDetails::NotScanning(false)),
-            json::ScanningDetails::NotScanning(false));
+            json::ScanningDetails::NotScanning(false)
+        );
     }
 
     let mut wallet_list = cl.list_wallets().unwrap();
