@@ -214,11 +214,13 @@ fn test_get_balance_generate_to_address(cl: &Client) {
 }
 
 fn test_get_balances_generate_to_address(cl: &Client) {
-    let initial = cl.get_balances().unwrap();
+    if version() >= 190000 {
+        let initial = cl.get_balances().unwrap();
 
-    let blocks = cl.generate_to_address(500, &cl.get_new_address(None, None).unwrap()).unwrap();
-    assert_eq!(blocks.len(), 500);
-    assert_ne!(cl.get_balances().unwrap(), initial);
+        let blocks = cl.generate_to_address(500, &cl.get_new_address(None, None).unwrap()).unwrap();
+        assert_eq!(blocks.len(), 500);
+        assert_ne!(cl.get_balances().unwrap(), initial);
+    }
 }
 
 fn test_get_best_block_hash(cl: &Client) {
