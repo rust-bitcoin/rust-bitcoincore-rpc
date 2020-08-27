@@ -285,8 +285,10 @@ pub trait RpcApi: Sized {
             opt_into_json(passphrase)?,
             opt_into_json(avoid_reuse)?,
         ];
-        self.call("createwallet", handle_defaults(
-            &mut args, &[false.into(), false.into(), into_json("")?, false.into()]))
+        self.call(
+            "createwallet",
+            handle_defaults(&mut args, &[false.into(), false.into(), into_json("")?, false.into()]),
+        )
     }
 
     fn list_wallets(&self) -> Result<Vec<String>> {
