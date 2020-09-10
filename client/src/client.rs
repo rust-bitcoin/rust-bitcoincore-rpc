@@ -990,6 +990,11 @@ pub trait RpcApi: Sized {
             self.call("rescanblockchain", handle_defaults(&mut args, &[0.into(), null()]))?;
         Ok((res.start_height, res.stop_height))
     }
+
+    /// Returns the total uptime of the server in seconds
+    fn uptime(&self) -> Result<u64> {
+        self.call("uptime", &[])
+    }
 }
 
 /// Client implements a JSON-RPC client for the Bitcoin Core daemon or compatible APIs.

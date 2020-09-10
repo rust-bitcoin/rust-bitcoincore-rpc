@@ -147,6 +147,7 @@ fn main() {
     test_get_peer_info(&cl);
     test_rescan_blockchain(&cl);
     test_create_wallet(&cl);
+    test_uptime(&cl);
     //TODO import_multi(
     //TODO verify_message(
     //TODO wait_for_new_block(&self, timeout: u64) -> Result<json::BlockRef> {
@@ -895,6 +896,10 @@ fn test_create_wallet(cl: &Client) {
 
     // Created wallets
     assert!(wallet_list.iter().zip(wallet_names).all(|(a, b)| a == b));
+}
+
+fn test_uptime(cl: &Client) {
+    cl.uptime().unwrap();
 }
 
 fn test_stop(cl: Client) {
