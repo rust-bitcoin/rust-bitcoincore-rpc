@@ -148,6 +148,7 @@ fn main() {
     test_rescan_blockchain(&cl);
     test_create_wallet(&cl);
     test_get_network_hash_ps(&cl);
+    test_uptime(&cl);
     //TODO import_multi(
     //TODO verify_message(
     //TODO wait_for_new_block(&self, timeout: u64) -> Result<json::BlockRef> {
@@ -215,11 +216,13 @@ fn test_get_balance_generate_to_address(cl: &Client) {
 }
 
 fn test_get_balances_generate_to_address(cl: &Client) {
-    let initial = cl.get_balances().unwrap();
+    if version() >= 190000 {
+        let initial = cl.get_balances().unwrap();
 
-    let blocks = cl.generate_to_address(500, &cl.get_new_address(None, None).unwrap()).unwrap();
-    assert_eq!(blocks.len(), 500);
-    assert_ne!(cl.get_balances().unwrap(), initial);
+        let blocks = cl.generate_to_address(500, &cl.get_new_address(None, None).unwrap()).unwrap();
+        assert_eq!(blocks.len(), 500);
+        assert_ne!(cl.get_balances().unwrap(), initial);
+    }
 }
 
 fn test_get_best_block_hash(cl: &Client) {
@@ -827,44 +830,42 @@ fn test_create_wallet(cl: &Client) {
             blank: Some(true),
             passphrase: None,
             avoid_reuse: None,
-        }
+        },
     ];
 
     if version() >= 190000 {
-        wallet_params.push(
-            WalletParams {
-                name: wallet_names[3],
-                disable_private_keys: None,
-                blank: None,
-                passphrase: Some("pass"),
-                avoid_reuse: None,
-            }
-        );
-        wallet_params.push(
-            WalletParams {
-                name: wallet_names[4],
-                disable_private_keys: None,
-                blank: None,
-                passphrase: None,
-                avoid_reuse: Some(true),
-            }
-        );
+        wallet_params.push(WalletParams {
+            name: wallet_names[3],
+            disable_private_keys: None,
+            blank: None,
+            passphrase: Some("pass"),
+            avoid_reuse: None,
+        });
+        wallet_params.push(WalletParams {
+            name: wallet_names[4],
+            disable_private_keys: None,
+            blank: None,
+            passphrase: None,
+            avoid_reuse: Some(true),
+        });
     }
 
     for wallet_param in wallet_params {
         let result = cl
-        .create_wallet(
-            wallet_param.name,
-            wallet_param.disable_private_keys,
-            wallet_param.blank,
-            wallet_param.passphrase,
-            wallet_param.avoid_reuse,
-        )
-        .unwrap();
+            .create_wallet(
+                wallet_param.name,
+                wallet_param.disable_private_keys,
+                wallet_param.blank,
+                wallet_param.passphrase,
+                wallet_param.avoid_reuse,
+            )
+            .unwrap();
 
         assert_eq!(result.name, wallet_param.name);
         let expected_warning = match (wallet_param.passphrase, wallet_param.avoid_reuse) {
-            (None, Some(true)) => Some("Empty string given as passphrase, wallet will not be encrypted.".to_string()),
+            (None, Some(true)) => {
+                Some("Empty string given as passphrase, wallet will not be encrypted.".to_string())
+            }
             _ => Some("".to_string()),
         };
         assert_eq!(result.warning, expected_warning);
@@ -883,7 +884,8 @@ fn test_create_wallet(cl: &Client) {
         assert_eq!(wallet_info.avoid_reuse.unwrap_or(false), has_avoid_reuse);
         assert_eq!(
             wallet_info.scanning.unwrap_or(json::ScanningDetails::NotScanning(false)),
-            json::ScanningDetails::NotScanning(false));
+            json::ScanningDetails::NotScanning(false)
+        );
     }
 
     let mut wallet_list = cl.list_wallets().unwrap();
@@ -899,6 +901,10 @@ fn test_create_wallet(cl: &Client) {
 
 fn test_get_network_hash_ps(cl: &Client) {
     cl.get_network_hash_ps(None, None).unwrap();
+}
+
+fn test_uptime(cl: &Client) {
+    cl.uptime().unwrap();
 }
 
 fn test_stop(cl: Client) {
