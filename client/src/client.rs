@@ -991,6 +991,12 @@ pub trait RpcApi: Sized {
         Ok((res.start_height, res.stop_height))
     }
 
+    /// Returns information about network traffic, including bytes in, bytes out,
+    /// and current time.
+    fn get_net_totals(&self) -> Result<json::GetNetTotalsResult> {
+        self.call("getnettotals", &[])
+    }
+
     /// Returns the estimated network hashes per second based on the last n blocks.
     fn get_network_hash_ps(&self, nblocks: Option<u64>, height: Option<u64>) -> Result<f64> {
         let mut args = [opt_into_json(nblocks)?, opt_into_json(height)?];

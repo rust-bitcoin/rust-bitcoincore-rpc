@@ -147,6 +147,7 @@ fn main() {
     test_get_peer_info(&cl);
     test_rescan_blockchain(&cl);
     test_create_wallet(&cl);
+    test_get_net_totals(&cl);
     test_get_network_hash_ps(&cl);
     test_uptime(&cl);
     //TODO import_multi(
@@ -897,6 +898,10 @@ fn test_create_wallet(cl: &Client) {
 
     // Created wallets
     assert!(wallet_list.iter().zip(wallet_names).all(|(a, b)| a == b));
+}
+
+fn test_get_net_totals(cl: &Client) {
+    cl.get_net_totals().unwrap();
 }
 
 fn test_get_network_hash_ps(cl: &Client) {
