@@ -285,8 +285,10 @@ pub trait RpcApi: Sized {
             opt_into_json(passphrase)?,
             opt_into_json(avoid_reuse)?,
         ];
-        self.call("createwallet", handle_defaults(
-            &mut args, &[false.into(), false.into(), into_json("")?, false.into()]))
+        self.call(
+            "createwallet",
+            handle_defaults(&mut args, &[false.into(), false.into(), into_json("")?, false.into()]),
+        )
     }
 
     fn list_wallets(&self) -> Result<Vec<String>> {
@@ -993,6 +995,17 @@ pub trait RpcApi: Sized {
     /// and current time.
     fn get_net_totals(&self) -> Result<json::GetNetTotalsResult> {
         self.call("getnettotals", &[])
+    }
+
+    /// Returns the estimated network hashes per second based on the last n blocks.
+    fn get_network_hash_ps(&self, nblocks: Option<u64>, height: Option<u64>) -> Result<f64> {
+        let mut args = [opt_into_json(nblocks)?, opt_into_json(height)?];
+        self.call("getnetworkhashps", handle_defaults(&mut args, &[null(), null()]))
+    }
+
+    /// Returns the total uptime of the server in seconds
+    fn uptime(&self) -> Result<u64> {
+        self.call("uptime", &[])
     }
 }
 
