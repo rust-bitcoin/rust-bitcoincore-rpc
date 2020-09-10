@@ -156,7 +156,10 @@ pub struct GetWalletInfoResult {
 #[derive(Clone, PartialEq, Debug, Deserialize, Serialize)]
 #[serde(untagged)]
 pub enum ScanningDetails {
-    Scanning { duration: usize, progress: f32 },
+    Scanning {
+        duration: usize,
+        progress: f32,
+    },
     NotScanning(bool),
 }
 
