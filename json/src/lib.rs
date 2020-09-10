@@ -157,7 +157,10 @@ pub struct GetWalletInfoResult {
 #[derive(Clone, PartialEq, Debug, Deserialize, Serialize)]
 #[serde(untagged)]
 pub enum ScanningDetails {
-    Scanning { duration: usize, progress: f32 },
+    Scanning {
+        duration: usize,
+        progress: f32,
+    },
     NotScanning(bool),
 }
 
@@ -394,6 +397,7 @@ pub struct WalletTxInfo {
     pub blockhash: Option<bitcoin::BlockHash>,
     pub blockindex: Option<usize>,
     pub blocktime: Option<u64>,
+    pub blockheight: Option<u32>,
     pub txid: bitcoin::Txid,
     pub time: u64,
     pub timereceived: u64,
@@ -1198,6 +1202,39 @@ pub struct GetTxOutSetInfoResult {
     /// The total amount
     #[serde(with = "bitcoin::util::amount::serde::as_btc")]
     pub total_amount: Amount,
+}
+
+#[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
+pub struct GetNetTotalsResult {
+    /// Total bytes received
+    #[serde(rename = "totalbytesrecv")]
+    pub total_bytes_recv: u64,
+    /// Total bytes sent
+    #[serde(rename = "totalbytessent")]
+    pub total_bytes_sent: u64,
+    /// Current UNIX time in milliseconds
+    #[serde(rename = "timemillis")]
+    pub time_millis: u64,
+    /// Upload target statistics
+    #[serde(rename = "uploadtarget")]
+    pub upload_target: GetNetTotalsResultUploadTarget,
+}
+
+#[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
+pub struct GetNetTotalsResultUploadTarget {
+    /// Length of the measuring timeframe in seconds
+    #[serde(rename = "timeframe")]
+    pub time_frame: u64,
+    /// Target in bytes
+    pub target: u64,
+    /// True if target is reached
+    pub target_reached: bool,
+    /// True if serving historical blocks
+    pub serve_historical_blocks: bool,
+    /// Bytes left in current time cycle
+    pub bytes_left_in_cycle: u64,
+    /// Seconds left in current time cycle
+    pub time_left_in_cycle: u64,
 }
 
 /// Used to represent an address type.
