@@ -9,6 +9,7 @@ env:
   - BITCOINVERSION=0.18.1
   - BITCOINVERSION=0.19.0.1
   - BITCOINVERSION=0.19.1
+  - CARGO_FMT_CHECK=true
 
 matrix:
   allow_failures:
@@ -16,10 +17,11 @@ matrix:
 
 script:
   - |
-    if [[ "$TRAVIS_RUST_VERSION" == stable ]]
+    if [ "$CARGO_FMT_CHECK" == true ];
     then
       rustup component add rustfmt
       cargo fmt --all -- --check
+      travis_terminate 0
     fi
   - cargo build --verbose
   - cargo test --verbose
