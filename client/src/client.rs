@@ -991,6 +991,12 @@ pub trait RpcApi: Sized {
         Ok((res.start_height, res.stop_height))
     }
 
+    /// Returns statistics about the unspent transaction output set.
+    /// This call may take some time.
+    fn get_tx_out_set_info(&self) -> Result<json::GetTxOutSetInfoResult> {
+        self.call("gettxoutsetinfo", &[])
+    }
+
     /// Returns information about network traffic, including bytes in, bytes out,
     /// and current time.
     fn get_net_totals(&self) -> Result<json::GetNetTotalsResult> {
