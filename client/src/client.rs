@@ -1015,10 +1015,10 @@ pub trait RpcApi: Sized {
         self.call("uptime", &[])
     }
 
-    fn scan_txout_set_blocking(
+    fn scan_tx_out_set_blocking(
         &self,
-        descriptors: &[json::ScanTxoutRequest],
-    ) -> Result<json::ScanTxoutResult> {
+        descriptors: &[json::ScanTxOutRequest],
+    ) -> Result<json::ScanTxOutResult> {
         self.call("scantxoutset", &["start".into(), into_json(descriptors)?])
     }
 }

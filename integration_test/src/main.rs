@@ -30,7 +30,7 @@ use bitcoin::{
     Address, Amount, Network, OutPoint, PrivateKey, Script, SigHashType, SignedAmount, Transaction,
     TxIn, TxOut, Txid,
 };
-use bitcoincore_rpc::bitcoincore_rpc_json::ScanTxoutRequest;
+use bitcoincore_rpc::bitcoincore_rpc_json::ScanTxOutRequest;
 
 lazy_static! {
     static ref SECP: secp256k1::Secp256k1<secp256k1::All> = secp256k1::Secp256k1::new();
@@ -925,8 +925,9 @@ fn test_scantxoutset(cl: &Client) {
     cl.generate_to_address(2, &addr).unwrap();
     cl.generate_to_address(7, &cl.get_new_address(None, None).unwrap()).unwrap();
 
-    let utxos =
-        cl.scan_txout_set_blocking(&[ScanTxoutRequest::Single(format!("addr({})", addr))]).unwrap();
+    let utxos = cl
+        .scan_tx_out_set_blocking(&[ScanTxOutRequest::Single(format!("addr({})", addr))])
+        .unwrap();
 
     assert_eq!(utxos.unspents.len(), 2);
     assert_eq!(utxos.success, Some(true));

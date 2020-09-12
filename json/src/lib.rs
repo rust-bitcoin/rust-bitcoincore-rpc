@@ -1256,7 +1256,7 @@ pub enum PubKeyOrAddress<'a> {
 #[derive(Serialize, Deserialize, Clone, PartialEq, Eq, Debug)]
 #[serde(untagged)]
 /// Start a scan of the UTXO set for an [output descriptor](https://github.com/bitcoin/bitcoin/blob/master/doc/descriptors.md).
-pub enum ScanTxoutRequest {
+pub enum ScanTxOutRequest {
     /// Scan for a single descriptor
     Single(String),
     /// Scan for a descriptor with xpubs
@@ -1269,7 +1269,7 @@ pub enum ScanTxoutRequest {
 }
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, Eq, Debug)]
-pub struct ScanTxoutResult {
+pub struct ScanTxOutResult {
     pub success: Option<bool>,
     #[serde(rename = "txouts")]
     pub tx_outs: Option<u64>,
