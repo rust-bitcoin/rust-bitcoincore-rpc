@@ -25,7 +25,6 @@ use bitcoin::consensus::encode::{deserialize, serialize};
 use bitcoin::hashes::hex::{FromHex, ToHex};
 use bitcoin::hashes::Hash;
 use bitcoin::secp256k1;
-use bitcoin::util::hash::BitcoinHash;
 use bitcoin::{
     Address, Amount, Network, OutPoint, PrivateKey, Script, SigHashType, SignedAmount, Transaction,
     TxIn, TxOut, Txid,
@@ -193,7 +192,7 @@ fn test_get_new_address(cl: &Client) {
 fn test_dump_private_key(cl: &Client) {
     let addr = cl.get_new_address(None, Some(json::AddressType::Bech32)).unwrap();
     let sk = cl.dump_private_key(&addr).unwrap();
-    assert_eq!(addr, Address::p2wpkh(&sk.public_key(&SECP), *NET));
+    assert_eq!(addr, Address::p2wpkh(&sk.public_key(&SECP), *NET).unwrap());
 }
 
 fn test_generate(cl: &Client) {
@@ -258,7 +257,7 @@ fn test_get_block_header_get_block_header_info(cl: &Client) {
     let tip = cl.get_best_block_hash().unwrap();
     let header = cl.get_block_header(&tip).unwrap();
     let info = cl.get_block_header_info(&tip).unwrap();
-    assert_eq!(header.bitcoin_hash(), info.hash);
+    assert_eq!(header.block_hash(), info.hash);
     assert_eq!(header.version, info.version);
     assert_eq!(header.merkle_root, info.merkle_root);
     assert_eq!(info.confirmations, 1);
@@ -439,7 +438,7 @@ fn test_sign_raw_transaction_with_send_raw_transaction(cl: &Client) {
         key: secp256k1::SecretKey::new(&mut secp256k1::rand::thread_rng()),
         compressed: true,
     };
-    let addr = Address::p2wpkh(&sk.public_key(&SECP), Network::Regtest);
+    let addr = Address::p2wpkh(&sk.public_key(&SECP), Network::Regtest).unwrap();
 
     let options = json::ListUnspentQueryOptions {
         minimum_amount: Some(btc(2)),
