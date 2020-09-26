@@ -44,7 +44,7 @@ lazy_static! {
 macro_rules! assert_deprecated {
     ($call:expr) => {
         match $call.unwrap_err() {
-            Error::JsonRpc(JsonRpcError::Rpc(e)) if e.code == -32 => {}
+            Error::JsonRpc(JsonRpcError::Rpc(ref e)) if e.code == -32 => {}
             e => panic!("expected deprecated error for {}, got: {}", stringify!($call), e),
         }
     };
@@ -54,7 +54,7 @@ macro_rules! assert_deprecated {
 macro_rules! assert_not_found {
     ($call:expr) => {
         match $call.unwrap_err() {
-            Error::JsonRpc(JsonRpcError::Rpc(e)) if e.code == -32601 => {}
+            Error::JsonRpc(JsonRpcError::Rpc(ref e)) if e.code == -32601 => {}
             e => panic!("expected method not found error for {}, got: {}", stringify!($call), e),
         }
     };
