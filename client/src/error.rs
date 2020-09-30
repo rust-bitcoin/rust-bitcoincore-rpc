@@ -94,7 +94,7 @@ impl error::Error for Error {
         "bitcoincore-rpc error"
     }
 
-    fn cause(&self) -> Option<&error::Error> {
+    fn cause(&self) -> Option<&dyn error::Error> {
         match *self {
             Error::JsonRpc(ref e) => Some(e),
             Error::Hex(ref e) => Some(e),
