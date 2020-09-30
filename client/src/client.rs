@@ -25,7 +25,6 @@ use bitcoin::{
     Address, Amount, Block, BlockHeader, OutPoint, PrivateKey, PublicKey, Script, Transaction,
 };
 use log::Level::{Debug, Trace, Warn};
-use serde::{Deserialize, Serialize};
 
 use error::*;
 use json;
@@ -363,11 +362,15 @@ pub trait RpcApi: Sized {
             use Error::UnexpectedStructure as err;
 
             // First, remove both incompatible softfork fields.
-            let map = raw.as_object_mut().ok_or(err)?;
-            let bip9_softforks = map.remove("bip9_softforks").ok_or(err)?;
-            let old_softforks = map.remove("softforks").ok_or(err)?;
-            // Put back an empty "softforks" field.
-            map.insert("softforks".into(), serde_json::Map::new().into());
+            // We need to scope the mutable ref here for v1.29 borrowck.
+            let (bip9_softforks, old_softforks) = {
+                let map = raw.as_object_mut().ok_or(err)?;
+                let bip9_softforks = map.remove("bip9_softforks").ok_or(err)?;
+                let old_softforks = map.remove("softforks").ok_or(err)?;
+                // Put back an empty "softforks" field.
+                map.insert("softforks".into(), serde_json::Map::new().into());
+                (bip9_softforks, old_softforks)
+            };
             let mut ret: json::GetBlockchainInfoResult = serde_json::from_value(raw)?;
 
             // Then convert both softfork types and add them.
@@ -399,7 +402,7 @@ pub trait RpcApi: Sized {
                 }
                 let sf: OldBip9SoftFork = serde_json::from_value(sf.clone())?;
                 ret.softforks.insert(
-                    id.into(),
+                    id.clone(),
                     json::Softfork {
                         type_: json::SoftforkType::Bip9,
                         bip9: Some(json::Bip9SoftforkInfo {
