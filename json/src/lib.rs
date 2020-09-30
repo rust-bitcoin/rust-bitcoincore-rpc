@@ -175,7 +175,7 @@ pub struct GetBlockResult {
     pub strippedsize: Option<usize>,
     pub weight: usize,
     pub height: usize,
-    pub version: u32,
+    pub version: i32,
     #[serde(default, with = "::serde_hex::opt")]
     pub version_hex: Option<Vec<u8>>,
     pub merkleroot: bitcoin::TxMerkleNode,
@@ -198,7 +198,7 @@ pub struct GetBlockHeaderResult {
     pub hash: bitcoin::BlockHash,
     pub confirmations: u32,
     pub height: usize,
-    pub version: u32,
+    pub version: i32,
     #[serde(default, with = "::serde_hex::opt")]
     pub version_hex: Option<Vec<u8>>,
     #[serde(rename = "merkleroot")]
