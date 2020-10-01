@@ -301,16 +301,33 @@ fn test_get_address_info(cl: &Client) {
     assert!(!info.hex.unwrap().is_empty());
 }
 
+#[allow(deprecated)]
 fn test_set_label(cl: &Client) {
     let addr = cl.get_new_address(Some("label"), None).unwrap();
     let info = cl.get_address_info(&addr).unwrap();
-    assert_eq!(&info.label, "label");
-    assert_eq!(info.labels[0].name, "label");
+    if version() >= 0_20_00_00 {
+        assert!(info.label.is_none());
+        assert_eq!(info.labels[0], json::GetAddressInfoResultLabel::Simple("label".into()));
+    } else {
+        assert_eq!(info.label.as_ref().unwrap(), "label");
+        assert_eq!(info.labels[0], json::GetAddressInfoResultLabel::WithPurpose {
+            name: "label".into(),
+            purpose: json::GetAddressInfoResultLabelPurpose::Receive,
+        });
+    }
 
     cl.set_label(&addr, "other").unwrap();
     let info = cl.get_address_info(&addr).unwrap();
-    assert_eq!(&info.label, "other");
-    assert_eq!(info.labels[0].name, "other");
+    if version() >= 0_20_00_00 {
+        assert!(info.label.is_none());
+        assert_eq!(info.labels[0], json::GetAddressInfoResultLabel::Simple("other".into()));
+    } else {
+        assert_eq!(info.label.as_ref().unwrap(), "other");
+        assert_eq!(info.labels[0], json::GetAddressInfoResultLabel::WithPurpose {
+            name: "other".into(),
+            purpose: json::GetAddressInfoResultLabelPurpose::Receive,
+        });
+    }
 }
 
 fn test_send_to_address(cl: &Client) {
