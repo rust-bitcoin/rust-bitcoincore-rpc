@@ -1,7 +1,6 @@
 language: rust
 rust:
   - stable
-  - beta
   - nightly
   - 1.29.0
 env:
