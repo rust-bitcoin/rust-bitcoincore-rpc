@@ -14,6 +14,7 @@ extern crate bitcoin;
 extern crate bitcoincore_rpc;
 #[macro_use]
 extern crate lazy_static;
+extern crate log;
 
 use std::collections::HashMap;
 
@@ -39,6 +40,24 @@ lazy_static! {
     /// The default fee amount to use when needed.
     static ref FEE: Amount = Amount::from_btc(0.001).unwrap();
 }
+
+struct StdLogger;
+
+impl log::Log for StdLogger {
+    fn enabled(&self, metadata: &log::Metadata) -> bool {
+        metadata.target().contains("jsonrpc") || metadata.target().contains("bitcoincore_rpc")
+    }
+
+    fn log(&self, record: &log::Record) {
+        if self.enabled(record.metadata()) {
+            println!("[{}][{}]: {}", record.level(), record.metadata().target(), record.args());
+        }
+    }
+
+    fn flush(&self) {}
+}
+
+static LOGGER: StdLogger = StdLogger;
 
 /// Assert that the call returns a "deprecated" error.
 macro_rules! assert_deprecated {
@@ -90,6 +109,8 @@ fn get_auth() -> bitcoincore_rpc::Auth {
 }
 
 fn main() {
+    log::set_logger(&LOGGER).map(|()| log::set_max_level(log::LevelFilter::max())).unwrap();
+
     let rpc_url = get_rpc_url();
     let auth = get_auth();
 
