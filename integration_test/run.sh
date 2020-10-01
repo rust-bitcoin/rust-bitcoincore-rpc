@@ -23,7 +23,12 @@ if bitcoind -version | grep -q "0\.19\|0\.20"; then
     BLOCKFILTERARG="-blockfilterindex=1"
 fi
 
-bitcoind -regtest $BLOCKFILTERARG \
+FALLBACKFEEARG=""
+if bitcoind -version | grep -q "0\.20"; then
+    FALLBACKFEEARG="-fallbackfee=0.00001000"
+fi
+
+bitcoind -regtest $BLOCKFILTERARG $FALLBACKFEEARG \
     -datadir=${TESTDIR}/2 \
     -connect=127.0.0.1:12348 \
     -rpcport=12349 \
@@ -34,7 +39,10 @@ PID2=$!
 # Let it connect to the other node.
 sleep 5
 
-RPC_URL=http://localhost:12349 RPC_COOKIE=${TESTDIR}/2/regtest/.cookie cargo run
+RPC_URL=http://localhost:12349 \
+    RPC_COOKIE=${TESTDIR}/2/regtest/.cookie \
+    cargo run
+
 RESULT=$?
 
 kill -9 $PID1 $PID2
