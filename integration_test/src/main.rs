@@ -30,6 +30,7 @@ use bitcoin::{
     Address, Amount, Network, OutPoint, PrivateKey, Script, SigHashType, SignedAmount, Transaction,
     TxIn, TxOut, Txid,
 };
+use bitcoincore_rpc::bitcoincore_rpc_json::ScanTxOutRequest;
 
 lazy_static! {
     static ref SECP: secp256k1::Secp256k1<secp256k1::All> = secp256k1::Secp256k1::new();
@@ -138,6 +139,7 @@ fn main() {
     test_combine_psbt(&cl);
     test_finalize_psbt(&cl);
     test_list_received_by_address(&cl);
+    test_scantxoutset(&cl);
     test_import_public_key(&cl);
     test_import_priv_key(&cl);
     test_import_address(&cl);
@@ -915,6 +917,20 @@ fn test_get_network_hash_ps(cl: &Client) {
 
 fn test_uptime(cl: &Client) {
     cl.uptime().unwrap();
+}
+
+fn test_scantxoutset(cl: &Client) {
+    let addr = cl.get_new_address(None, None).unwrap();
+
+    cl.generate_to_address(2, &addr).unwrap();
+    cl.generate_to_address(7, &cl.get_new_address(None, None).unwrap()).unwrap();
+
+    let utxos = cl
+        .scan_tx_out_set_blocking(&[ScanTxOutRequest::Single(format!("addr({})", addr))])
+        .unwrap();
+
+    assert_eq!(utxos.unspents.len(), 2);
+    assert_eq!(utxos.success, Some(true));
 }
 
 fn test_stop(cl: Client) {

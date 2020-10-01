@@ -1253,6 +1253,47 @@ pub enum PubKeyOrAddress<'a> {
     PubKey(&'a PublicKey),
 }
 
+#[derive(Serialize, Deserialize, Clone, PartialEq, Eq, Debug)]
+#[serde(untagged)]
+/// Start a scan of the UTXO set for an [output descriptor](https://github.com/bitcoin/bitcoin/blob/master/doc/descriptors.md).
+pub enum ScanTxOutRequest {
+    /// Scan for a single descriptor
+    Single(String),
+    /// Scan for a descriptor with xpubs
+    Extended {
+        /// Descriptor
+        desc: String,
+        /// Range of the xpub derivations to scan
+        range: (u64, u64),
+    },
+}
+
+#[derive(Serialize, Deserialize, Clone, PartialEq, Eq, Debug)]
+pub struct ScanTxOutResult {
+    pub success: Option<bool>,
+    #[serde(rename = "txouts")]
+    pub tx_outs: Option<u64>,
+    pub height: Option<u64>,
+    #[serde(rename = "bestblock")]
+    pub best_block_hash: Option<bitcoin::BlockHash>,
+    pub unspents: Vec<Utxo>,
+    #[serde(with = "bitcoin::util::amount::serde::as_btc")]
+    pub total_amount: bitcoin::Amount,
+}
+
+#[derive(Serialize, Deserialize, Clone, PartialEq, Eq, Debug)]
+#[serde(rename_all = "camelCase")]
+pub struct Utxo {
+    pub txid: bitcoin::Txid,
+    pub vout: u32,
+    pub script_pub_key: bitcoin::Script,
+    #[serde(rename = "desc")]
+    pub descriptor: String,
+    #[serde(with = "bitcoin::util::amount::serde::as_btc")]
+    pub amount: bitcoin::Amount,
+    pub height: u64,
+}
+
 impl<'a> serde::Serialize for PubKeyOrAddress<'a> {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where

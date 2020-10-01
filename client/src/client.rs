@@ -29,6 +29,7 @@ use log::Level::{Debug, Trace, Warn};
 use error::*;
 use json;
 use queryable;
+use serde_json::Value;
 
 /// Crate-specific Result type, shorthand for `std::result::Result` with our
 /// crate-specific Error type;
@@ -1015,6 +1016,13 @@ pub trait RpcApi: Sized {
     /// Returns the total uptime of the server in seconds
     fn uptime(&self) -> Result<u64> {
         self.call("uptime", &[])
+    }
+
+    fn scan_tx_out_set_blocking(
+        &self,
+        descriptors: &[json::ScanTxOutRequest],
+    ) -> Result<json::ScanTxOutResult> {
+        self.call("scantxoutset", &["start".into(), into_json(descriptors)?])
     }
 }
 
