@@ -2,8 +2,10 @@
 name = "integration_test"
 version = "0.1.0"
 authors = ["Steven Roose <steven@stevenroose.org>"]
+edition = "2018"
 
 [dependencies]
 bitcoincore-rpc = { path = "../client" }
 lazy_static = "1.4.0"
 bitcoin = { version = "0.23", features = [ "use-serde", "rand" ] }
+tokio = { version = "0.2.22", features = ["full"] }

@@ -8,46 +8,51 @@
 // If not, see <http://creativecommons.org/publicdomain/zero/1.0/>.
 //
 
-use bitcoin;
+use crate::bitcoin;
 use serde_json;
 
-use client::Result;
-use client::RpcApi;
+use crate::client::Result;
+use crate::client::RpcApi;
+use async_trait::async_trait;
 
 /// A type that can be queried from Bitcoin Core.
+#[async_trait]
 pub trait Queryable<C: RpcApi>: Sized {
     /// Type of the ID used to query the item.
     type Id;
     /// Query the item using `rpc` and convert to `Self`.
-    fn query(rpc: &C, id: &Self::Id) -> Result<Self>;
+    async fn query(rpc: &C, id: &Self::Id) -> Result<Self>;
 }
 
-impl<C: RpcApi> Queryable<C> for bitcoin::blockdata::block::Block {
+#[async_trait]
+impl<C: RpcApi + Sync> Queryable<C> for bitcoin::blockdata::block::Block {
     type Id = bitcoin::BlockHash;
 
-    fn query(rpc: &C, id: &Self::Id) -> Result<Self> {
+    async fn query(rpc: &C, id: &Self::Id) -> Result<Self> {
         let rpc_name = "getblock";
-        let hex: String = rpc.call(rpc_name, &[serde_json::to_value(id)?, 0.into()])?;
+        let hex: String = rpc.call(rpc_name, &[serde_json::to_value(id)?, 0.into()]).await?;
         let bytes: Vec<u8> = bitcoin::hashes::hex::FromHex::from_hex(&hex)?;
         Ok(bitcoin::consensus::encode::deserialize(&bytes)?)
     }
 }
 
-impl<C: RpcApi> Queryable<C> for bitcoin::blockdata::transaction::Transaction {
+#[async_trait]
+impl<C: RpcApi + Sync> Queryable<C> for bitcoin::blockdata::transaction::Transaction {
     type Id = bitcoin::Txid;
 
-    fn query(rpc: &C, id: &Self::Id) -> Result<Self> {
+    async fn query(rpc: &C, id: &Self::Id) -> Result<Self> {
         let rpc_name = "getrawtransaction";
-        let hex: String = rpc.call(rpc_name, &[serde_json::to_value(id)?])?;
+        let hex: String = rpc.call(rpc_name, &[serde_json::to_value(id)?]).await?;
         let bytes: Vec<u8> = bitcoin::hashes::hex::FromHex::from_hex(&hex)?;
         Ok(bitcoin::consensus::encode::deserialize(&bytes)?)
     }
 }
 
-impl<C: RpcApi> Queryable<C> for Option<::json::GetTxOutResult> {
+#[async_trait]
+impl<C: RpcApi + Sync> Queryable<C> for Option<crate::json::GetTxOutResult> {
     type Id = bitcoin::OutPoint;
 
-    fn query(rpc: &C, id: &Self::Id) -> Result<Self> {
-        rpc.get_tx_out(&id.txid, id.vout, Some(true))
+    async fn query(rpc: &C, id: &Self::Id) -> Result<Self> {
+        rpc.get_tx_out(&id.txid, id.vout, Some(true)).await
     }
 }

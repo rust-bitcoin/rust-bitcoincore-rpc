@@ -10,16 +10,17 @@
 
 use std::{error, fmt, io};
 
-use bitcoin;
-use bitcoin::hashes::hex;
-use bitcoin::secp256k1;
-use jsonrpc;
+use crate::bitcoin;
+use crate::bitcoin::hashes::hex;
+use crate::bitcoin::secp256k1;
+use serde::{Deserialize, Serialize};
 use serde_json;
 
 /// The error type for errors produced in this library.
 #[derive(Debug)]
 pub enum Error {
-    JsonRpc(jsonrpc::error::Error),
+    Http(reqwest::Error),
+    JsonRpc(JsonRpcError),
     Hex(hex::Error),
     Json(serde_json::error::Error),
     BitcoinSerialization(bitcoin::consensus::encode::Error),
@@ -29,11 +30,13 @@ pub enum Error {
     InvalidCookieFile,
     /// The JSON result had an unexpected structure.
     UnexpectedStructure,
+    VersionMismatch,
+    NonceMismatch,
 }
 
-impl From<jsonrpc::error::Error> for Error {
-    fn from(e: jsonrpc::error::Error) -> Error {
-        Error::JsonRpc(e)
+impl From<reqwest::Error> for Error {
+    fn from(e: reqwest::Error) -> Error {
+        Error::Http(e)
     }
 }
 
@@ -76,7 +79,8 @@ impl From<bitcoin::util::amount::ParseAmountError> for Error {
 impl fmt::Display for Error {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match *self {
-            Error::JsonRpc(ref e) => write!(f, "JSON-RPC error: {}", e),
+            Error::Http(ref e) => write!(f, "Reqwest error: {}", e),
+            Error::JsonRpc(ref e) => write!(f, "JSON-RPC error: {:?}", e),
             Error::Hex(ref e) => write!(f, "hex decode error: {}", e),
             Error::Json(ref e) => write!(f, "JSON error: {}", e),
             Error::BitcoinSerialization(ref e) => write!(f, "Bitcoin serialization error: {}", e),
@@ -85,6 +89,8 @@ impl fmt::Display for Error {
             Error::InvalidAmount(ref e) => write!(f, "invalid amount: {}", e),
             Error::InvalidCookieFile => write!(f, "invalid cookie file"),
             Error::UnexpectedStructure => write!(f, "the JSON result had an unexpected structure"),
+            Error::NonceMismatch => write!(f, "Nonce of response did not match nonce of request"),
+            Error::VersionMismatch => write!(f, "`jsonrpc` field set to non-\"2.0\""),
         }
     }
 }
@@ -96,7 +102,7 @@ impl error::Error for Error {
 
     fn cause(&self) -> Option<&error::Error> {
         match *self {
-            Error::JsonRpc(ref e) => Some(e),
+            Error::JsonRpc(ref e) => None,
             Error::Hex(ref e) => Some(e),
             Error::Json(ref e) => Some(e),
             Error::BitcoinSerialization(ref e) => Some(e),
@@ -105,4 +111,15 @@ impl error::Error for Error {
             _ => None,
         }
     }
+}
+
+#[derive(Clone, Debug, PartialEq, Deserialize, Serialize)]
+/// A JSONRPC error object
+pub struct JsonRpcError {
+    /// The integer identifier of the error
+    pub code: i32,
+    /// A string describing the error
+    pub message: String,
+    /// Additional data specific to the error
+    pub data: Option<serde_json::Value>,
 }

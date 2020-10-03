@@ -8,10 +8,10 @@
 // If not, see <http://creativecommons.org/publicdomain/zero/1.0/>.
 //
 
-extern crate bitcoincore_rpc;
-extern crate jsonrpc;
-extern crate serde;
-extern crate serde_json;
+use async_trait::async_trait;
+use bitcoincore_rpc;
+use serde;
+use serde_json;
 
 use bitcoincore_rpc::{Client, Error, Result, RpcApi};
 
@@ -22,25 +22,24 @@ pub struct RetryClient {
 const INTERVAL: u64 = 1000;
 const RETRY_ATTEMPTS: u8 = 10;
 
+#[async_trait]
 impl RpcApi for RetryClient {
-    fn call<T: for<'a> serde::de::Deserialize<'a>>(
+    async fn call<T: for<'a> serde::de::Deserialize<'a>>(
         &self,
         cmd: &str,
         args: &[serde_json::Value],
     ) -> Result<T> {
         for _ in 0..RETRY_ATTEMPTS {
-            match self.client.call(cmd, args) {
+            match self.client.call(cmd, args).await {
                 Ok(ret) => return Ok(ret),
-                Err(Error::JsonRpc(jsonrpc::error::Error::Rpc(ref rpcerr)))
-                    if rpcerr.code == -28 =>
-                {
+                Err(Error::JsonRpc(ref rpcerr)) if rpcerr.code == -28 => {
                     ::std::thread::sleep(::std::time::Duration::from_millis(INTERVAL));
                     continue;
                 }
                 Err(e) => return Err(e),
             }
         }
-        self.client.call(cmd, args)
+        self.client.call(cmd, args).await
     }
 }
 

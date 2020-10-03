@@ -23,7 +23,7 @@ extern crate log;
 extern crate serde;
 extern crate serde_json;
 
-pub extern crate jsonrpc;
+pub extern crate reqwest;
 
 pub extern crate bitcoincore_rpc_json;
 pub use bitcoincore_rpc_json as json;
@@ -31,8 +31,9 @@ pub use json::bitcoin;
 
 mod client;
 mod error;
+mod jsonrpc;
 mod queryable;
 
 pub use client::*;
-pub use error::Error;
+pub use error::{Error, JsonRpcError};
 pub use queryable::*;
