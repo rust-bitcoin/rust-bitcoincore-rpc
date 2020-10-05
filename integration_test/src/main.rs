@@ -14,6 +14,7 @@ extern crate bitcoin;
 extern crate bitcoincore_rpc;
 #[macro_use]
 extern crate lazy_static;
+extern crate log;
 
 use std::collections::HashMap;
 
@@ -40,6 +41,24 @@ lazy_static! {
     /// The default fee amount to use when needed.
     static ref FEE: Amount = Amount::from_btc(0.001).unwrap();
 }
+
+struct StdLogger;
+
+impl log::Log for StdLogger {
+    fn enabled(&self, metadata: &log::Metadata) -> bool {
+        metadata.target().contains("jsonrpc") || metadata.target().contains("bitcoincore_rpc")
+    }
+
+    fn log(&self, record: &log::Record) {
+        if self.enabled(record.metadata()) {
+            println!("[{}][{}]: {}", record.level(), record.metadata().target(), record.args());
+        }
+    }
+
+    fn flush(&self) {}
+}
+
+static LOGGER: StdLogger = StdLogger;
 
 /// Assert that the call returns a "deprecated" error.
 macro_rules! assert_deprecated {
@@ -91,6 +110,8 @@ fn get_auth() -> bitcoincore_rpc::Auth {
 }
 
 fn main() {
+    log::set_logger(&LOGGER).map(|()| log::set_max_level(log::LevelFilter::max())).unwrap();
+
     let rpc_url = get_rpc_url();
     let auth = get_auth();
 
@@ -282,16 +303,33 @@ fn test_get_address_info(cl: &Client) {
     assert!(!info.hex.unwrap().is_empty());
 }
 
+#[allow(deprecated)]
 fn test_set_label(cl: &Client) {
     let addr = cl.get_new_address(Some("label"), None).unwrap();
     let info = cl.get_address_info(&addr).unwrap();
-    assert_eq!(&info.label, "label");
-    assert_eq!(info.labels[0].name, "label");
+    if version() >= 0_20_00_00 {
+        assert!(info.label.is_none());
+        assert_eq!(info.labels[0], json::GetAddressInfoResultLabel::Simple("label".into()));
+    } else {
+        assert_eq!(info.label.as_ref().unwrap(), "label");
+        assert_eq!(info.labels[0], json::GetAddressInfoResultLabel::WithPurpose {
+            name: "label".into(),
+            purpose: json::GetAddressInfoResultLabelPurpose::Receive,
+        });
+    }
 
     cl.set_label(&addr, "other").unwrap();
     let info = cl.get_address_info(&addr).unwrap();
-    assert_eq!(&info.label, "other");
-    assert_eq!(info.labels[0].name, "other");
+    if version() >= 0_20_00_00 {
+        assert!(info.label.is_none());
+        assert_eq!(info.labels[0], json::GetAddressInfoResultLabel::Simple("other".into()));
+    } else {
+        assert_eq!(info.label.as_ref().unwrap(), "other");
+        assert_eq!(info.labels[0], json::GetAddressInfoResultLabel::WithPurpose {
+            name: "other".into(),
+            purpose: json::GetAddressInfoResultLabelPurpose::Receive,
+        });
+    }
 }
 
 fn test_send_to_address(cl: &Client) {

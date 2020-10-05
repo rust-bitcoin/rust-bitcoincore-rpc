@@ -1,7 +1,6 @@
 language: rust
 rust:
   - stable
-  - beta
   - nightly
   - 1.29.0
 env:
@@ -9,6 +8,8 @@ env:
   - BITCOINVERSION=0.18.1
   - BITCOINVERSION=0.19.0.1
   - BITCOINVERSION=0.19.1
+  - BITCOINVERSION=0.20.0
+  - BITCOINVERSION=0.20.1
 
 script:
   - ./contrib/test.sh
