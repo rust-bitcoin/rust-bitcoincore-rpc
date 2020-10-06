@@ -24,7 +24,6 @@ bitcoincore-rpc-json = { version = "0.11.0", path = "../json"}
 log = "0.4.5"
 reqwest = { version = "0.10", features = ["json"] }
 async-trait = "0.1.40"
-tokio = { version = "0.2.22", features = ["full"] }
 base64-compat = "1.0.0"
 
 # Used for deserialization of JSON.

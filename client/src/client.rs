@@ -30,7 +30,7 @@ use bitcoin::{
 };
 use log::Level::{Debug, Trace, Warn};
 use serde::{Deserialize, Serialize};
-use tokio::sync::Mutex;
+use std::sync::Mutex;
 
 use crate::error::*;
 use crate::json;
