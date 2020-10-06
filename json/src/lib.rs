@@ -646,9 +646,13 @@ pub enum GetAddressInfoResultLabelPurpose {
 }
 
 #[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
-pub struct GetAddressInfoResultLabel {
-    pub name: String,
-    pub purpose: GetAddressInfoResultLabelPurpose,
+#[serde(untagged)]
+pub enum GetAddressInfoResultLabel {
+    Simple(String),
+    WithPurpose {
+        name: String,
+        purpose: GetAddressInfoResultLabelPurpose,
+    }
 }
 
 #[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
@@ -679,13 +683,15 @@ pub struct GetAddressInfoResult {
     pub embedded: Option<GetAddressInfoResultEmbedded>,
     #[serde(rename = "is_compressed")]
     pub is_compressed: Option<bool>,
-    pub label: String,
     pub timestamp: Option<u64>,
     #[serde(rename = "hdkeypath")]
     pub hd_key_path: Option<bip32::DerivationPath>,
     #[serde(rename = "hdseedid")]
     pub hd_seed_id: Option<bitcoin::XpubIdentifier>,
     pub labels: Vec<GetAddressInfoResultLabel>,
+    /// Deprecated in v0.20.0. See `labels` field instead.
+    #[deprecated(note = "since Core v0.20.0")]
+    pub label: Option<String>,
 }
 
 /// Models the result of "getblockchaininfo"
@@ -1251,6 +1257,47 @@ pub enum AddressType {
 pub enum PubKeyOrAddress<'a> {
     Address(&'a Address),
     PubKey(&'a PublicKey),
+}
+
+#[derive(Serialize, Deserialize, Clone, PartialEq, Eq, Debug)]
+#[serde(untagged)]
+/// Start a scan of the UTXO set for an [output descriptor](https://github.com/bitcoin/bitcoin/blob/master/doc/descriptors.md).
+pub enum ScanTxOutRequest {
+    /// Scan for a single descriptor
+    Single(String),
+    /// Scan for a descriptor with xpubs
+    Extended {
+        /// Descriptor
+        desc: String,
+        /// Range of the xpub derivations to scan
+        range: (u64, u64),
+    },
+}
+
+#[derive(Serialize, Deserialize, Clone, PartialEq, Eq, Debug)]
+pub struct ScanTxOutResult {
+    pub success: Option<bool>,
+    #[serde(rename = "txouts")]
+    pub tx_outs: Option<u64>,
+    pub height: Option<u64>,
+    #[serde(rename = "bestblock")]
+    pub best_block_hash: Option<bitcoin::BlockHash>,
+    pub unspents: Vec<Utxo>,
+    #[serde(with = "bitcoin::util::amount::serde::as_btc")]
+    pub total_amount: bitcoin::Amount,
+}
+
+#[derive(Serialize, Deserialize, Clone, PartialEq, Eq, Debug)]
+#[serde(rename_all = "camelCase")]
+pub struct Utxo {
+    pub txid: bitcoin::Txid,
+    pub vout: u32,
+    pub script_pub_key: bitcoin::Script,
+    #[serde(rename = "desc")]
+    pub descriptor: String,
+    #[serde(with = "bitcoin::util::amount::serde::as_btc")]
+    pub amount: bitcoin::Amount,
+    pub height: u64,
 }
 
 impl<'a> serde::Serialize for PubKeyOrAddress<'a> {

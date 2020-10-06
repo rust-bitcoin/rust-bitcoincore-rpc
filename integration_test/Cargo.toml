@@ -5,5 +5,6 @@ authors = ["Steven Roose <steven@stevenroose.org>"]
 
 [dependencies]
 bitcoincore-rpc = { path = "../client" }
-lazy_static = "1.4.0"
 bitcoin = { version = "0.25", features = [ "use-serde", "rand" ] }
+lazy_static = "1.4.0"
+log = "0.4"
