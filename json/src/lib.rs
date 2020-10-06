@@ -161,6 +161,7 @@ pub enum ScanningDetails {
         duration: usize,
         progress: f32,
     },
+    /// The bool in this field will always be false.
     NotScanning(bool),
 }
 
