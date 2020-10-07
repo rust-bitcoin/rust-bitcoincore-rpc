@@ -311,10 +311,13 @@ fn test_set_label(cl: &Client) {
         assert_eq!(info.labels[0], json::GetAddressInfoResultLabel::Simple("label".into()));
     } else {
         assert_eq!(info.label.as_ref().unwrap(), "label");
-        assert_eq!(info.labels[0], json::GetAddressInfoResultLabel::WithPurpose {
-            name: "label".into(),
-            purpose: json::GetAddressInfoResultLabelPurpose::Receive,
-        });
+        assert_eq!(
+            info.labels[0],
+            json::GetAddressInfoResultLabel::WithPurpose {
+                name: "label".into(),
+                purpose: json::GetAddressInfoResultLabelPurpose::Receive,
+            }
+        );
     }
 
     cl.set_label(&addr, "other").unwrap();
@@ -324,10 +327,13 @@ fn test_set_label(cl: &Client) {
         assert_eq!(info.labels[0], json::GetAddressInfoResultLabel::Simple("other".into()));
     } else {
         assert_eq!(info.label.as_ref().unwrap(), "other");
-        assert_eq!(info.labels[0], json::GetAddressInfoResultLabel::WithPurpose {
-            name: "other".into(),
-            purpose: json::GetAddressInfoResultLabelPurpose::Receive,
-        });
+        assert_eq!(
+            info.labels[0],
+            json::GetAddressInfoResultLabel::WithPurpose {
+                name: "other".into(),
+                purpose: json::GetAddressInfoResultLabelPurpose::Receive,
+            }
+        );
     }
 }
 

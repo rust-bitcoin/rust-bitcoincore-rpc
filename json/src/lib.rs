@@ -653,7 +653,7 @@ pub enum GetAddressInfoResultLabel {
     WithPurpose {
         name: String,
         purpose: GetAddressInfoResultLabelPurpose,
-    }
+    },
 }
 
 #[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
