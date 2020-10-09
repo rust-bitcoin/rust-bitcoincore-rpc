@@ -1,3 +1,25 @@
+# 0.12.0
+- bump `bitcoin` dependency to version `0.25`, increasing our MSRV to `1.29.0`
+- test against `bitcoind` `0.20.0` and `0.20.1`
+- add `get_balances`
+- add `get_mempool_entry`
+- add `list_since_block`
+- add `get_mempool_entry`
+- add `list_since_block`
+- add `uptime`
+- add `get_network_hash_ps`
+- add `get_tx_out_set_info`
+- add `get_net_totals`
+- partially implement `scantxoutset`
+- extend `create_wallet` and related APIs
+- extend `GetWalletInfoResult`
+- extend `WalletTxInfo`
+- extend testsuite
+- fix `GetPeerInfoResult`
+- fix `GetNetworkInfoResult`
+- fix `GetTransactionResultDetailCategory`
+- fix `GetMempoolEntryResult` for bitcoind prior to `0.19.0`
+- fix `GetBlockResult` and `GetBlockHeaderResult`
 
 # 0.11.0
 
