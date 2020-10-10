@@ -9,9 +9,7 @@ in the interface of this crate.
 
 ## MSRV
 
-The MSRV for this crate used to be 1.24.0, but that has recently been broken
-by an external dependency. We have yet to decide on a new MSRV.
-
+please see the parent README for the current MSRV.
 
 # License
 

@@ -36,6 +36,14 @@ fn main() {
 
 See `client/examples/` for more usage examples. 
 
+# Supported Bitcoin Core Versions
+The following versions are officially supported and automatically tested:
+* 0.18.0
+* 0.18.1
+* 0.19.0.1
+* 0.19.1
+* 0.20.0
+* 0.20.1
 
 # Minimum Supported Rust Version (MSRV)
 This library should always compile with any combination of features on **Rust 1.29**.
