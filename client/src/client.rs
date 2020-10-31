@@ -29,7 +29,6 @@ use log::Level::{Debug, Trace, Warn};
 use error::*;
 use json;
 use queryable;
-use serde_json::Value;
 
 /// Crate-specific Result type, shorthand for `std::result::Result` with our
 /// crate-specific Error type;
