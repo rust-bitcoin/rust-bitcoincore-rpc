@@ -879,6 +879,46 @@ impl serde::Serialize for ImportMultiRescanSince {
     }
 }
 
+impl<'de> serde::Deserialize<'de> for ImportMultiRescanSince {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        use serde::de;
+        use std::fmt;
+        struct Visitor;
+        impl<'de> de::Visitor<'de> for Visitor {
+            type Value = ImportMultiRescanSince;
+
+            fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+                write!(formatter, "unix timestamp or 'now'")
+            }
+
+            fn visit_u64<E>(self, value: u64) -> Result<Self::Value, E>
+            where
+                E: de::Error,
+            {
+                Ok(ImportMultiRescanSince::Timestamp(value))
+            }
+
+            fn visit_str<E>(self, value: &str) -> Result<Self::Value, E>
+            where
+                E: de::Error,
+            {
+                if value == "now" {
+                    Ok(ImportMultiRescanSince::Now)
+                } else {
+                    Err(de::Error::custom(format!(
+                        "invalid str '{}', expecting 'now' or unix timestamp",
+                        value
+                    )))
+                }
+            }
+        }
+        deserializer.deserialize_any(Visitor)
+    }
+}
+
 impl Default for ImportMultiRescanSince {
     fn default() -> Self {
         ImportMultiRescanSince::Timestamp(0)
