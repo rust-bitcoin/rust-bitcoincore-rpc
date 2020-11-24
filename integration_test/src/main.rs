@@ -721,9 +721,7 @@ fn test_wallet_process_psbt(cl: &Client) {
         .wallet_create_funded_psbt(&[input.clone()], &output, Some(500_000), None, Some(true))
         .unwrap();
 
-    let res = cl
-        .wallet_process_psbt(&psbt.psbt, Some(true), Some(SigHashType::All.into()), Some(true))
-        .unwrap();
+    let res = cl.wallet_process_psbt(&psbt.psbt, Some(true), None, Some(true)).unwrap();
     assert!(res.complete);
 }
 

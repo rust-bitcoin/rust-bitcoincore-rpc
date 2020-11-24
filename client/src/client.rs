@@ -972,10 +972,12 @@ pub trait RpcApi: Sized {
             opt_into_json(sighash_type)?,
             opt_into_json(bip32derivs)?,
         ];
-        self.call(
-            "walletprocesspsbt",
-            handle_defaults(&mut args, &[true.into(), null(), true.into()]),
-        )
+        let defaults = [
+            true.into(),
+            into_json(json::SigHashType::from(bitcoin::SigHashType::All))?,
+            true.into(),
+        ];
+        self.call("walletprocesspsbt", handle_defaults(&mut args, &defaults))
     }
 
     fn get_descriptor_info(&self, desc: &str) -> Result<json::GetDescriptorInfoResult> {
