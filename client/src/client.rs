@@ -665,6 +665,11 @@ pub trait RpcApi: Sized {
         self.call("lockunspent", &[true.into(), outputs.into()])
     }
 
+    /// Unlock all unspent UTXOs.
+    fn unlock_unspent_all(&self) -> Result<bool> {
+        self.call("lockunspent", &[true.into()])
+    }
+
     fn list_received_by_address(
         &self,
         address_filter: Option<&Address>,
