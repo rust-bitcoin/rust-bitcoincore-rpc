@@ -5,3 +5,7 @@ members = [
     "client",
     "integration_test",
 ]
+
+[patch."crates-io"]
+jsonrpc = { path = "../jsonrpc" }
+#jsonrpc = { git = "https://github.com/stevenroose/rust-jsonrpc", branch = "transport" }

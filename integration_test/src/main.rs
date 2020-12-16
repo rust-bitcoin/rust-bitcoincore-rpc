@@ -114,7 +114,7 @@ fn main() {
     let rpc_url = get_rpc_url();
     let auth = get_auth();
 
-    let cl = Client::new(rpc_url, auth).unwrap();
+    let cl = Client::new(&rpc_url, auth).unwrap();
 
     test_get_network_info(&cl);
     unsafe { VERSION = cl.version().unwrap() };
@@ -918,7 +918,7 @@ fn test_create_wallet(cl: &Client) {
         assert_eq!(result.warning, expected_warning);
 
         let wallet_client_url = format!("{}{}{}", get_rpc_url(), "/wallet/", wallet_param.name);
-        let wallet_client = Client::new(wallet_client_url, get_auth()).unwrap();
+        let wallet_client = Client::new(&wallet_client_url, get_auth()).unwrap();
         let wallet_info = wallet_client.get_wallet_info().unwrap();
 
         assert_eq!(wallet_info.wallet_name, wallet_param.name);
