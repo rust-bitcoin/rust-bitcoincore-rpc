@@ -171,7 +171,7 @@ impl Eq for ScanningDetails {}
 #[serde(rename_all = "camelCase")]
 pub struct GetBlockResult {
     pub hash: bitcoin::BlockHash,
-    pub confirmations: u32,
+    pub confirmations: i32,
     pub size: usize,
     pub strippedsize: Option<usize>,
     pub weight: usize,
@@ -197,7 +197,7 @@ pub struct GetBlockResult {
 #[serde(rename_all = "camelCase")]
 pub struct GetBlockHeaderResult {
     pub hash: bitcoin::BlockHash,
-    pub confirmations: u32,
+    pub confirmations: i32,
     pub height: usize,
     pub version: i32,
     #[serde(default, with = "::serde_hex::opt")]
