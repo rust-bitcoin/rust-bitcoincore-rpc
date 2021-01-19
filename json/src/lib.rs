@@ -99,6 +99,12 @@ pub struct GetNetworkInfoResult {
     #[serde(rename = "timeoffset")]
     pub time_offset: isize,
     pub connections: usize,
+    /// The number of inbound connections
+    /// Added in Bitcoin Core v0.21
+    pub connections_in: Option<usize>,
+    /// The number of outbound connections
+    /// Added in Bitcoin Core v0.21
+    pub connections_out: Option<usize>,
     #[serde(rename = "networkactive")]
     pub network_active: bool,
     pub networks: Vec<GetNetworkInfoResultNetwork>,
@@ -544,6 +550,20 @@ pub struct TestMempoolAcceptResult {
     pub allowed: bool,
     #[serde(rename = "reject-reason")]
     pub reject_reason: Option<String>,
+    /// Virtual transaction size as defined in BIP 141 (only present when 'allowed' is true)
+    /// Added in Bitcoin Core v0.21
+    pub vsize: Option<u64>,
+    /// Transaction fees (only present if 'allowed' is true)
+    /// Added in Bitcoin Core v0.21
+    pub fees: Option<TestMempoolAcceptResultFees>,
+}
+
+#[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
+pub struct TestMempoolAcceptResultFees {
+    /// Transaction fee in BTC
+    #[serde(with = "bitcoin::util::amount::serde::as_btc")]
+    pub base: Amount,
+    // unlike GetMempoolEntryResultFees, this only has the `base` fee
 }
 
 #[derive(Copy, Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
@@ -781,6 +801,9 @@ pub struct GetMempoolEntryResult {
     /// Whether this transaction could be replaced due to BIP125 (replace-by-fee)
     #[serde(rename = "bip125-replaceable")]
     pub bip125_replaceable: bool,
+    /// Whether this transaction is currently unbroadcast (initial broadcast not yet acknowledged by any peers)
+    /// Added in Bitcoin Core v0.21
+    pub unbroadcast: Option<bool>,
 }
 
 #[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
@@ -920,6 +943,9 @@ pub struct GetPeerInfoResult {
     /// Local address as reported by the peer
     // TODO: use a type for addrlocal
     pub addrlocal: Option<String>,
+    /// Network (ipv4, ipv6, or onion) the peer connected throug
+    /// Added in Bitcoin Core v0.21
+    pub network: Option<GetPeerInfoResultNetwork>,
     /// The services offered
     // TODO: use a type for services
     pub services: String,
@@ -929,6 +955,12 @@ pub struct GetPeerInfoResult {
     pub lastsend: u64,
     /// The time in seconds since epoch (Jan 1 1970 GMT) of the last receive
     pub lastrecv: u64,
+    /// The time in seconds since epoch (Jan 1 1970 GMT) of the last valid transaction received from this peer
+    /// Added in Bitcoin Core v0.21
+    pub last_transaction: Option<u64>,
+    /// The time in seconds since epoch (Jan 1 1970 GMT) of the last block received from this peer
+    /// Added in Bitcoin Core v0.21
+    pub last_block: Option<u64>,
     /// The total bytes sent
     pub bytessent: u64,
     /// The total bytes received
@@ -951,11 +983,13 @@ pub struct GetPeerInfoResult {
     pub inbound: bool,
     /// Whether connection was due to `addnode`/`-connect` or if it was an
     /// automatic/inbound connection
-    pub addnode: bool,
+    /// Deprecated in Bitcoin Core v0.21
+    pub addnode: Option<bool>,
     /// The starting height (block) of the peer
     pub startingheight: i64,
     /// The ban score
-    pub banscore: i64,
+    /// Deprecated in Bitcoin Core v0.21
+    pub banscore: Option<i64>,
     /// The last header we have in common with this peer
     pub synced_headers: i64,
     /// The last block we have in common with this peer
@@ -963,13 +997,38 @@ pub struct GetPeerInfoResult {
     /// The heights of blocks we're currently asking from this peer
     pub inflight: Vec<u64>,
     /// Whether the peer is whitelisted
-    pub whitelisted: bool,
+    /// Deprecated in Bitcoin Core v0.21
+    pub whitelisted: Option<bool>,
     #[serde(rename = "minfeefilter", default, with = "bitcoin::util::amount::serde::as_btc::opt")]
     pub min_fee_filter: Option<Amount>,
     /// The total bytes sent aggregated by message type
     pub bytessent_per_msg: HashMap<String, u64>,
     /// The total bytes received aggregated by message type
     pub bytesrecv_per_msg: HashMap<String, u64>,
+    /// The type of the connection
+    /// Added in Bitcoin Core v0.21
+    pub connection_type: Option<GetPeerInfoResultConnectionType>,
+}
+
+#[derive(Copy, Serialize, Deserialize, Clone, PartialEq, Eq, Debug)]
+#[serde(rename_all = "lowercase")]
+pub enum GetPeerInfoResultNetwork {
+    Ipv4,
+    Ipv6,
+    Onion,
+    // this is undocumented upstream
+    Unroutable,
+}
+
+#[derive(Copy, Serialize, Deserialize, Clone, PartialEq, Eq, Debug)]
+#[serde(rename_all = "kebab-case")]
+pub enum GetPeerInfoResultConnectionType {
+    OutboundFullRelay,
+    BlockRelayOnly,
+    Inbound,
+    Manual,
+    AddrFetch,
+    Feeler,
 }
 
 /// Models the result of "estimatesmartfee"
@@ -1022,6 +1081,10 @@ pub struct WalletCreateFundedPsbtResult {
 /// Models the request for "walletcreatefundedpsbt"
 #[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize, Default)]
 pub struct WalletCreateFundedPsbtOptions {
+    /// For a transaction with existing inputs, automatically include more if they are not enough (default true).
+    /// Added in Bitcoin Core v0.21
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub add_inputs: Option<bool>,
     #[serde(rename = "changeAddress", skip_serializing_if = "Option::is_none")]
     pub change_address: Option<Address>,
     #[serde(rename = "changePosition", skip_serializing_if = "Option::is_none")]
@@ -1112,6 +1175,10 @@ pub struct CreateRawTransactionInput {
 #[derive(Serialize, Clone, PartialEq, Eq, Debug, Default)]
 #[serde(rename_all = "camelCase")]
 pub struct FundRawTransactionOptions {
+    /// For a transaction with existing inputs, automatically include more if they are not enough (default true).
+    /// Added in Bitcoin Core v0.21
+    #[serde(rename = "add_inputs", skip_serializing_if = "Option::is_none")]
+    pub add_inputs: Option<bool>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub change_address: Option<Address>,
     #[serde(skip_serializing_if = "Option::is_none")]
