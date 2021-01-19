@@ -462,6 +462,10 @@ pub trait RpcApi: Sized {
         self.call("getblockhash", &[height.into()])
     }
 
+    fn get_block_stats(&self, height: u64) -> Result<json::GetBlockStatsResult> {
+        self.call("getblockstats", &[height.into()])
+    }
+
     fn get_raw_transaction(
         &self,
         txid: &bitcoin::Txid,

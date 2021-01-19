@@ -226,6 +226,66 @@ pub struct GetBlockHeaderResult {
 }
 
 #[derive(Clone, PartialEq, Debug, Deserialize, Serialize)]
+pub struct GetBlockStatsResult {
+    #[serde(rename = "avgfee")]
+    pub avg_fee: u32,
+    #[serde(rename = "avgfeerate")]
+    pub avg_fee_rate: u32,
+    #[serde(rename = "avgtxsize")]
+    pub avg_tx_size: u32,
+    #[serde(rename = "blockhash")]
+    pub block_hash: bitcoin::BlockHash,
+    #[serde(rename = "feerate_percentiles")]
+    pub fee_rate_percentiles: FeeRatePercentiles,
+    pub height: u64,
+    pub ins: usize,
+    #[serde(rename = "maxfee")]
+    pub max_fee: u64,
+    #[serde(rename = "maxfeerate")]
+    pub max_fee_rate: u32,
+    #[serde(rename = "maxtxsize")]
+    pub max_tx_size: u32,
+    #[serde(rename = "medianfee")]
+    pub median_fee: u32,
+    #[serde(rename = "mediantime")]
+    pub median_time: u32,
+    #[serde(rename = "mediantxsize")]
+    pub median_tx_size: u32,
+    #[serde(rename = "minfee")]
+    pub min_fee: u32,
+    #[serde(rename = "minfeerate")]
+    pub min_fee_rate: u32,
+    #[serde(rename = "mintxsize")]
+    pub min_tx_size: u32,
+    pub outs: usize,
+    pub subsidy: u32,
+    #[serde(rename = "swtotal_size")]
+    pub sw_total_size: usize,
+    #[serde(rename = "swtotal_weight")]
+    pub sw_total_weight: usize,
+    #[serde(rename = "swtxs")]
+    pub sw_txs: usize,
+    pub time: u32,
+    pub total_out: usize,
+    pub total_size: usize,
+    pub total_weight: usize,
+    #[serde(rename = "totalfee")]
+    pub total_fee: u64,
+    pub txs: usize,
+    pub utxo_increase: i32,
+    pub utxo_size_inc: i32,
+}
+
+#[derive(Clone, PartialEq, Debug, Deserialize, Serialize)]
+pub struct FeeRatePercentiles {
+    pub fr_10th: u32,
+    pub fr_25th: u32,
+    pub fr_50th: u32,
+    pub fr_75th: u32,
+    pub fr_90th: u32,
+}
+
+#[derive(Clone, PartialEq, Debug, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct GetMiningInfoResult {
     pub blocks: u32,
