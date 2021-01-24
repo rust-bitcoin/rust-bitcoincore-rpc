@@ -467,6 +467,9 @@ fn test_lock_unspent_unlock_unspent(cl: &Client) {
 
     assert!(cl.lock_unspent(&[OutPoint::new(txid, 0)]).unwrap());
     assert!(cl.unlock_unspent(&[OutPoint::new(txid, 0)]).unwrap());
+
+    assert!(cl.lock_unspent(&[OutPoint::new(txid, 0)]).unwrap());
+    assert!(cl.unlock_unspent_all().unwrap());
 }
 
 fn test_get_block_filter(cl: &Client) {
