@@ -19,6 +19,8 @@ jobs:
       env: BITCOINVERSION=0.20.0
     - rust: stable
       env: BITCOINVERSION=0.20.1
+    - rust: stable
+      env: BITCOINVERSION=0.21.0
 
 script:
   - ./contrib/test.sh

@@ -79,6 +79,17 @@ macro_rules! assert_not_found {
     };
 }
 
+/// Assert that the call returns the specified error message.
+macro_rules! assert_error_message {
+    ($call:expr, $code:expr, $msg:expr) => {
+        match $call.unwrap_err() {
+            Error::JsonRpc(JsonRpcError::Rpc(ref e))
+                if e.code == $code && e.message.contains($msg) => {}
+            e => panic!("expected '{}' error for {}, got: {}", $msg, stringify!($call), e),
+        }
+    };
+}
+
 static mut VERSION: usize = 0;
 /// Get the version of the node that is running.
 fn version() -> usize {
@@ -111,7 +122,7 @@ fn get_auth() -> bitcoincore_rpc::Auth {
 fn main() {
     log::set_logger(&LOGGER).map(|()| log::set_max_level(log::LevelFilter::max())).unwrap();
 
-    let rpc_url = get_rpc_url();
+    let rpc_url = format!("{}/wallet/testwallet", get_rpc_url());
     let auth = get_auth();
 
     let cl = Client::new(rpc_url, auth).unwrap();
@@ -119,6 +130,8 @@ fn main() {
     test_get_network_info(&cl);
     unsafe { VERSION = cl.version().unwrap() };
     println!("Version: {}", version());
+
+    cl.create_wallet("testwallet", None, None, None, None).unwrap();
 
     test_get_mining_info(&cl);
     test_get_blockchain_info(&cl);
@@ -227,8 +240,12 @@ fn test_generate(cl: &Client) {
         assert_eq!(blocks.len(), 6);
     } else if version() < 190000 {
         assert_deprecated!(cl.generate(5, None));
-    } else {
+    } else if version() < 210000 {
         assert_not_found!(cl.generate(5, None));
+    } else {
+        // Bitcoin Core v0.21 appears to return this with a generic -1 error code,
+        // rather than the expected -32601 code (RPC_METHOD_NOT_FOUND).
+        assert_error_message!(cl.generate(5, None), -1, "replaced by the -generate cli option");
     }
 }
 
@@ -590,6 +607,7 @@ fn test_fund_raw_transaction(cl: &Client) {
     output.insert(RANDOM_ADDRESS.to_string(), btc(1));
 
     let options = json::FundRawTransactionOptions {
+        add_inputs: None,
         change_address: Some(addr),
         change_position: Some(0),
         change_type: None,
@@ -606,6 +624,7 @@ fn test_fund_raw_transaction(cl: &Client) {
     let _ = funded.transaction().unwrap();
 
     let options = json::FundRawTransactionOptions {
+        add_inputs: None,
         change_address: None,
         change_position: Some(0),
         change_type: Some(json::AddressType::Legacy),
@@ -667,6 +686,7 @@ fn test_wallet_create_funded_psbt(cl: &Client) {
     output.insert(RANDOM_ADDRESS.to_string(), btc(1));
 
     let options = json::WalletCreateFundedPsbtOptions {
+        add_inputs: None,
         change_address: None,
         change_position: Some(1),
         change_type: Some(json::AddressType::Legacy),
@@ -689,6 +709,7 @@ fn test_wallet_create_funded_psbt(cl: &Client) {
         .unwrap();
 
     let options = json::WalletCreateFundedPsbtOptions {
+        add_inputs: None,
         change_address: Some(addr),
         change_position: Some(1),
         change_type: None,
@@ -965,8 +986,9 @@ fn test_create_wallet(cl: &Client) {
 
     wallet_list.sort();
 
-    // Default wallet
-    assert_eq!(wallet_list.remove(0), "");
+    // Main wallet created for tests
+    assert!(wallet_list.iter().any(|w| w == "testwallet"));
+    wallet_list.retain(|w| w != "testwallet" && w != "");
 
     // Created wallets
     assert!(wallet_list.iter().zip(wallet_names).all(|(a, b)| a == b));
