@@ -964,6 +964,27 @@ pub trait RpcApi: Sized {
         )
     }
 
+    fn wallet_process_psbt(
+        &self,
+        psbt: &str,
+        sign: Option<bool>,
+        sighash_type: Option<json::SigHashType>,
+        bip32derivs: Option<bool>,
+    ) -> Result<json::WalletProcessPsbtResult> {
+        let mut args = [
+            into_json(psbt)?,
+            opt_into_json(sign)?,
+            opt_into_json(sighash_type)?,
+            opt_into_json(bip32derivs)?,
+        ];
+        let defaults = [
+            true.into(),
+            into_json(json::SigHashType::from(bitcoin::SigHashType::All))?,
+            true.into(),
+        ];
+        self.call("walletprocesspsbt", handle_defaults(&mut args, &defaults))
+    }
+
     fn get_descriptor_info(&self, desc: &str) -> Result<json::GetDescriptorInfoResult> {
         self.call("getdescriptorinfo", &[desc.to_string().into()])
     }

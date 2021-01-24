@@ -1019,6 +1019,13 @@ pub struct WalletCreateFundedPsbtResult {
     pub change_position: i32,
 }
 
+/// Models the result of "walletprocesspsbt"
+#[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
+pub struct WalletProcessPsbtResult {
+    pub psbt: String,
+    pub complete: bool,
+}
+
 /// Models the request for "walletcreatefundedpsbt"
 #[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize, Default)]
 pub struct WalletCreateFundedPsbtOptions {

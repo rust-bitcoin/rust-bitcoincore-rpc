@@ -156,6 +156,7 @@ fn main() {
     test_fund_raw_transaction(&cl);
     test_test_mempool_accept(&cl);
     test_wallet_create_funded_psbt(&cl);
+    test_wallet_process_psbt(&cl);
     test_combine_psbt(&cl);
     test_finalize_psbt(&cl);
     test_list_received_by_address(&cl);
@@ -703,6 +704,28 @@ fn test_wallet_create_funded_psbt(cl: &Client) {
         .wallet_create_funded_psbt(&[input], &output, Some(500_000), Some(options), Some(true))
         .unwrap();
     assert!(!psbt.psbt.is_empty());
+}
+
+fn test_wallet_process_psbt(cl: &Client) {
+    let options = json::ListUnspentQueryOptions {
+        minimum_amount: Some(btc(2)),
+        ..Default::default()
+    };
+    let unspent = cl.list_unspent(Some(6), None, None, None, Some(options)).unwrap();
+    let unspent = unspent.into_iter().nth(0).unwrap();
+    let input = json::CreateRawTransactionInput {
+        txid: unspent.txid,
+        vout: unspent.vout,
+        sequence: None,
+    };
+    let mut output = HashMap::new();
+    output.insert(RANDOM_ADDRESS.to_string(), btc(1));
+    let psbt = cl
+        .wallet_create_funded_psbt(&[input.clone()], &output, Some(500_000), None, Some(true))
+        .unwrap();
+
+    let res = cl.wallet_process_psbt(&psbt.psbt, Some(true), None, Some(true)).unwrap();
+    assert!(res.complete);
 }
 
 fn test_combine_psbt(cl: &Client) {
