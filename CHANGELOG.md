@@ -1,4 +1,14 @@
+# 0.13.0
+
+- add `wallet_process_psbt`
+- add `unlock_unspent_all`
+- compatibility with Bitcoin Core v0.21
+- bump rust-bitcoin dependency to 0.26
+- implement Deserialize for ImportMultiRescanSince
+- some fixes for some negative confirmation values
+
 # 0.12.0
+
 - bump `bitcoin` dependency to version `0.25`, increasing our MSRV to `1.29.0`
 - test against `bitcoind` `0.20.0` and `0.20.1`
 - add `get_balances`
