@@ -33,6 +33,7 @@ bitcoind -regtest $BLOCKFILTERARG $FALLBACKFEEARG \
     -connect=127.0.0.1:12348 \
     -rpcport=12349 \
     -server=1 \
+    -txindex=1 \
     -printtoconsole=0 &
 PID2=$!
 
