@@ -148,6 +148,7 @@ fn main() {
     test_get_block(&cl);
     test_get_block_header_get_block_header_info(&cl);
     test_get_block_stats(&cl);
+    test_get_block_stats_fields(&cl);
     test_get_address_info(&cl);
     test_set_label(&cl);
     test_send_to_address(&cl);
@@ -325,6 +326,19 @@ fn test_get_block_stats(cl: &Client) {
     assert_eq!(header.block_hash(), stats.block_hash);
     assert_eq!(header.time, stats.time as u32);
     assert_eq!(tip, stats.height);
+}
+
+fn test_get_block_stats_fields(cl: &Client) {
+    use json::BlockStatsFields;
+    let tip = cl.get_block_count().unwrap();
+    let tip_hash = cl.get_best_block_hash().unwrap();
+    let header = cl.get_block_header(&tip_hash).unwrap();
+    let fields = [BlockStatsFields::BlockHash, BlockStatsFields::Height, BlockStatsFields::TotalFee];
+    let stats = cl.get_block_stats_fields(tip, &fields).unwrap();
+    assert_eq!(header.block_hash(), stats.block_hash.unwrap());
+    assert_eq!(tip, stats.height.unwrap());
+    assert!(stats.total_fee.is_some());
+    assert!(stats.avg_fee.is_none());
 }
 
 fn test_get_address_info(cl: &Client) {

@@ -277,12 +277,131 @@ pub struct GetBlockStatsResult {
 }
 
 #[derive(Clone, PartialEq, Debug, Deserialize, Serialize)]
+pub struct GetBlockStatsResultPartial {
+    #[serde(rename = "avgfee")]
+    pub avg_fee: Option<u32>,
+    #[serde(rename = "avgfeerate")]
+    pub avg_fee_rate: Option<u32>,
+    #[serde(rename = "avgtxsize")]
+    pub avg_tx_size: Option<u32>,
+    #[serde(rename = "blockhash")]
+    pub block_hash: Option<bitcoin::BlockHash>,
+    #[serde(rename = "feerate_percentiles")]
+    pub fee_rate_percentiles: Option<FeeRatePercentiles>,
+    pub height: Option<u64>,
+    pub ins: Option<usize>,
+    #[serde(rename = "maxfee")]
+    pub max_fee: Option<u64>,
+    #[serde(rename = "maxfeerate")]
+    pub max_fee_rate: Option<u32>,
+    #[serde(rename = "maxtxsize")]
+    pub max_tx_size: Option<u32>,
+    #[serde(rename = "medianfee")]
+    pub median_fee: Option<u32>,
+    #[serde(rename = "mediantime")]
+    pub median_time: Option<u32>,
+    #[serde(rename = "mediantxsize")]
+    pub median_tx_size: Option<u32>,
+    #[serde(rename = "minfee")]
+    pub min_fee: Option<u32>,
+    #[serde(rename = "minfeerate")]
+    pub min_fee_rate: Option<u32>,
+    #[serde(rename = "mintxsize")]
+    pub min_tx_size: Option<u32>,
+    pub outs: Option<usize>,
+    pub subsidy: Option<u32>,
+    #[serde(rename = "swtotal_size")]
+    pub sw_total_size: Option<usize>,
+    #[serde(rename = "swtotal_weight")]
+    pub sw_total_weight: Option<usize>,
+    #[serde(rename = "swtxs")]
+    pub sw_txs: Option<usize>,
+    pub time: Option<u32>,
+    pub total_out: Option<usize>,
+    pub total_size: Option<usize>,
+    pub total_weight: Option<usize>,
+    #[serde(rename = "totalfee")]
+    pub total_fee: Option<u64>,
+    pub txs: Option<usize>,
+    pub utxo_increase: Option<i32>,
+    pub utxo_size_inc: Option<i32>,
+}
+
+#[derive(Clone, PartialEq, Debug, Deserialize, Serialize)]
 pub struct FeeRatePercentiles {
     pub fr_10th: u32,
     pub fr_25th: u32,
     pub fr_50th: u32,
     pub fr_75th: u32,
     pub fr_90th: u32,
+}
+
+pub enum BlockStatsFields {
+    AverageFee,
+    AverageFeeRate,
+    AverageTxSize,
+    BlockHash,
+    FeeRatePercentiles,
+    Height,
+    Ins,
+    MaxFee,
+    MaxFeeRate,
+    MaxTxSize,
+    MedianFee,
+    MedianTime,
+    MedianTxSize,
+    MinFee,
+    MinFeeRate,
+    MinTxSize,
+    Outs,
+    Subsidy,
+    SegWitTotalSize,
+    SegWitTotalWeight,
+    SegWitTxs,
+    Time,
+    TotalOut,
+    TotalSize,
+    TotalWeight,
+    TotalFee,
+    Txs,
+    UtxoIncrease,
+    UtxoSizeIncrease,
+}
+
+impl BlockStatsFields {
+    pub fn get_rpc_keyword(&self) -> &str {
+        match *self {
+            BlockStatsFields::AverageFee => "avgfee",
+            BlockStatsFields::AverageFeeRate => "avgfeerate",
+            BlockStatsFields::AverageTxSize => "avgtxsize",
+            BlockStatsFields::BlockHash => "blockhash",
+            BlockStatsFields::FeeRatePercentiles => "feerate_percentiles",
+            BlockStatsFields::Height => "height",
+            BlockStatsFields::Ins => "ins",
+            BlockStatsFields::MaxFee => "maxfee",
+            BlockStatsFields::MaxFeeRate => "maxfeerate",
+            BlockStatsFields::MaxTxSize => "maxtxsize",
+            BlockStatsFields::MedianFee => "medianfee",
+            BlockStatsFields::MedianTime => "mediantime",
+            BlockStatsFields::MedianTxSize => "mediantxsize",
+            BlockStatsFields::MinFee => "minfee",
+            BlockStatsFields::MinFeeRate => "minfeerate",
+            BlockStatsFields::MinTxSize => "minfeerate",
+            BlockStatsFields::Outs => "outs",
+            BlockStatsFields::Subsidy => "subsidy",
+            BlockStatsFields::SegWitTotalSize => "swtotal_size",
+            BlockStatsFields::SegWitTotalWeight => "swtotal_weight",
+            BlockStatsFields::SegWitTxs => "swtxs",
+            BlockStatsFields::Time => "time",
+            BlockStatsFields::TotalOut => "total_out",
+            BlockStatsFields::TotalSize => "total_size",
+            BlockStatsFields::TotalWeight => "total_weight",
+            BlockStatsFields::TotalFee => "totalfee",
+            BlockStatsFields::Txs => "txs",
+            BlockStatsFields::UtxoIncrease => "utxo_increase",
+            BlockStatsFields::UtxoSizeIncrease => "utxo_size_inc",
+        }
+    }
 }
 
 #[derive(Clone, PartialEq, Debug, Deserialize, Serialize)]
