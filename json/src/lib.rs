@@ -410,6 +410,9 @@ pub struct WalletTxInfo {
     pub timereceived: u64,
     #[serde(rename = "bip125-replaceable")]
     pub bip125_replaceable: Bip125Replaceable,
+    /// Conflicting transaction ids
+    #[serde(rename = "walletconflicts")]
+    pub wallet_conflicts: Vec<bitcoin::Txid>,
 }
 
 #[derive(Clone, PartialEq, Eq, Debug, Deserialize)]
