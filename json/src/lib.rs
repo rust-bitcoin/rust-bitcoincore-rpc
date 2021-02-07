@@ -227,10 +227,10 @@ pub struct GetBlockHeaderResult {
 
 #[derive(Clone, PartialEq, Debug, Deserialize, Serialize)]
 pub struct GetBlockStatsResult {
-    #[serde(rename = "avgfee")]
-    pub avg_fee: u32,
-    #[serde(rename = "avgfeerate")]
-    pub avg_fee_rate: u32,
+    #[serde(rename = "avgfee", with = "bitcoin::util::amount::serde::as_sat")]
+    pub avg_fee: Amount,
+    #[serde(rename = "avgfeerate", with = "bitcoin::util::amount::serde::as_sat")]
+    pub avg_fee_rate: Amount,
     #[serde(rename = "avgtxsize")]
     pub avg_tx_size: u32,
     #[serde(rename = "blockhash")]
@@ -239,38 +239,40 @@ pub struct GetBlockStatsResult {
     pub fee_rate_percentiles: FeeRatePercentiles,
     pub height: u64,
     pub ins: usize,
-    #[serde(rename = "maxfee")]
-    pub max_fee: u64,
-    #[serde(rename = "maxfeerate")]
-    pub max_fee_rate: u32,
+    #[serde(rename = "maxfee", with = "bitcoin::util::amount::serde::as_sat")]
+    pub max_fee: Amount,
+    #[serde(rename = "maxfeerate", with = "bitcoin::util::amount::serde::as_sat")]
+    pub max_fee_rate: Amount,
     #[serde(rename = "maxtxsize")]
     pub max_tx_size: u32,
-    #[serde(rename = "medianfee")]
-    pub median_fee: u32,
+    #[serde(rename = "medianfee", with = "bitcoin::util::amount::serde::as_sat")]
+    pub median_fee: Amount,
     #[serde(rename = "mediantime")]
-    pub median_time: u32,
+    pub median_time: u64,
     #[serde(rename = "mediantxsize")]
     pub median_tx_size: u32,
-    #[serde(rename = "minfee")]
-    pub min_fee: u32,
-    #[serde(rename = "minfeerate")]
-    pub min_fee_rate: u32,
+    #[serde(rename = "minfee", with = "bitcoin::util::amount::serde::as_sat")]
+    pub min_fee: Amount,
+    #[serde(rename = "minfeerate", with = "bitcoin::util::amount::serde::as_sat")]
+    pub min_fee_rate: Amount,
     #[serde(rename = "mintxsize")]
     pub min_tx_size: u32,
     pub outs: usize,
-    pub subsidy: u32,
+    #[serde(with = "bitcoin::util::amount::serde::as_sat")]
+    pub subsidy: Amount,
     #[serde(rename = "swtotal_size")]
     pub sw_total_size: usize,
     #[serde(rename = "swtotal_weight")]
     pub sw_total_weight: usize,
     #[serde(rename = "swtxs")]
     pub sw_txs: usize,
-    pub time: u32,
-    pub total_out: usize,
+    pub time: u64,
+    #[serde (with = "bitcoin::util::amount::serde::as_sat")]
+    pub total_out: Amount,
     pub total_size: usize,
     pub total_weight: usize,
-    #[serde(rename = "totalfee")]
-    pub total_fee: u64,
+    #[serde(rename = "totalfee", with = "bitcoin::util::amount::serde::as_sat")]
+    pub total_fee: Amount,
     pub txs: usize,
     pub utxo_increase: i32,
     pub utxo_size_inc: i32,
@@ -278,62 +280,166 @@ pub struct GetBlockStatsResult {
 
 #[derive(Clone, PartialEq, Debug, Deserialize, Serialize)]
 pub struct GetBlockStatsResultPartial {
-    #[serde(rename = "avgfee")]
-    pub avg_fee: Option<u32>,
-    #[serde(rename = "avgfeerate")]
-    pub avg_fee_rate: Option<u32>,
-    #[serde(rename = "avgtxsize")]
+    #[serde(
+        default,
+        rename = "avgfee",
+        with = "bitcoin::util::amount::serde::as_sat::opt",
+        skip_serializing_if = "Option::is_none"
+    )]
+    pub avg_fee: Option<Amount>,
+    #[serde(
+        default,
+        rename = "avgfeerate",
+        with = "bitcoin::util::amount::serde::as_sat::opt",
+        skip_serializing_if = "Option::is_none"
+    )]
+    pub avg_fee_rate: Option<Amount>,
+    #[serde(
+        default,
+        rename = "avgtxsize",
+        skip_serializing_if = "Option::is_none"
+    )]
     pub avg_tx_size: Option<u32>,
-    #[serde(rename = "blockhash")]
+    #[serde(
+        default,
+        rename = "blockhash",
+        skip_serializing_if = "Option::is_none"
+    )]
     pub block_hash: Option<bitcoin::BlockHash>,
-    #[serde(rename = "feerate_percentiles")]
+    #[serde(
+        default,
+        rename = "feerate_percentiles",
+        skip_serializing_if = "Option::is_none"
+    )]
     pub fee_rate_percentiles: Option<FeeRatePercentiles>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub height: Option<u64>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub ins: Option<usize>,
-    #[serde(rename = "maxfee")]
-    pub max_fee: Option<u64>,
-    #[serde(rename = "maxfeerate")]
-    pub max_fee_rate: Option<u32>,
-    #[serde(rename = "maxtxsize")]
+    #[serde(
+        default,
+        rename = "maxfee",
+        with = "bitcoin::util::amount::serde::as_sat::opt",
+        skip_serializing_if = "Option::is_none"
+    )]
+    pub max_fee: Option<Amount>,
+    #[serde(
+        default,
+        rename = "maxfeerate",
+        with = "bitcoin::util::amount::serde::as_sat::opt",
+        skip_serializing_if = "Option::is_none"
+    )]
+    pub max_fee_rate: Option<Amount>,
+    #[serde(
+        default,
+        rename = "maxtxsize",
+        skip_serializing_if = "Option::is_none"
+    )]
     pub max_tx_size: Option<u32>,
-    #[serde(rename = "medianfee")]
-    pub median_fee: Option<u32>,
-    #[serde(rename = "mediantime")]
-    pub median_time: Option<u32>,
-    #[serde(rename = "mediantxsize")]
+    #[serde(
+        default,
+        rename = "medianfee",
+        with = "bitcoin::util::amount::serde::as_sat::opt",
+        skip_serializing_if = "Option::is_none"
+    )]
+    pub median_fee: Option<Amount>,
+    #[serde(
+        default,
+        rename = "mediantime",
+        skip_serializing_if = "Option::is_none"
+    )]
+    pub median_time: Option<u64>,
+    #[serde(
+        default,
+        rename = "mediantxsize",
+        skip_serializing_if = "Option::is_none"
+    )]
     pub median_tx_size: Option<u32>,
-    #[serde(rename = "minfee")]
-    pub min_fee: Option<u32>,
-    #[serde(rename = "minfeerate")]
-    pub min_fee_rate: Option<u32>,
-    #[serde(rename = "mintxsize")]
+    #[serde(
+        default,
+        rename = "minfee",
+        with = "bitcoin::util::amount::serde::as_sat::opt",
+        skip_serializing_if = "Option::is_none"
+    )]
+    pub min_fee: Option<Amount>,
+    #[serde(
+        default,
+        rename = "minfeerate",
+        with = "bitcoin::util::amount::serde::as_sat::opt",
+        skip_serializing_if = "Option::is_none"
+    )]
+    pub min_fee_rate: Option<Amount>,
+    #[serde(
+        default,
+        rename = "mintxsize",
+        skip_serializing_if = "Option::is_none"
+    )]
     pub min_tx_size: Option<u32>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub outs: Option<usize>,
-    pub subsidy: Option<u32>,
-    #[serde(rename = "swtotal_size")]
+    #[serde(
+        default,
+        with = "bitcoin::util::amount::serde::as_sat::opt",
+        skip_serializing_if = "Option::is_none"
+    )]
+    pub subsidy: Option<Amount>,
+    #[serde(
+        default,
+        rename = "swtotal_size",
+        skip_serializing_if = "Option::is_none"
+    )]
     pub sw_total_size: Option<usize>,
-    #[serde(rename = "swtotal_weight")]
+    #[serde(
+        default,
+        rename = "swtotal_weight",
+        skip_serializing_if = "Option::is_none"
+    )]
     pub sw_total_weight: Option<usize>,
-    #[serde(rename = "swtxs")]
+    #[serde(
+        default,
+        rename = "swtxs",
+        skip_serializing_if = "Option::is_none"
+    )]
     pub sw_txs: Option<usize>,
-    pub time: Option<u32>,
-    pub total_out: Option<usize>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub time: Option<u64>,
+    #[serde(
+        default,
+        with = "bitcoin::util::amount::serde::as_sat::opt",
+        skip_serializing_if = "Option::is_none"
+    )]
+    pub total_out: Option<Amount>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub total_size: Option<usize>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub total_weight: Option<usize>,
-    #[serde(rename = "totalfee")]
-    pub total_fee: Option<u64>,
+    #[serde(
+        default,
+        rename = "totalfee",
+        with = "bitcoin::util::amount::serde::as_sat::opt",
+        skip_serializing_if = "Option::is_none"
+    )]
+    pub total_fee: Option<Amount>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub txs: Option<usize>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub utxo_increase: Option<i32>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub utxo_size_inc: Option<i32>,
 }
 
 #[derive(Clone, PartialEq, Debug, Deserialize, Serialize)]
 pub struct FeeRatePercentiles {
-    pub fr_10th: u32,
-    pub fr_25th: u32,
-    pub fr_50th: u32,
-    pub fr_75th: u32,
-    pub fr_90th: u32,
+    #[serde(with = "bitcoin::util::amount::serde::as_sat")]
+    pub fr_10th: Amount,
+    #[serde(with = "bitcoin::util::amount::serde::as_sat")]
+    pub fr_25th: Amount,
+    #[serde(with = "bitcoin::util::amount::serde::as_sat")]
+    pub fr_50th: Amount,
+    #[serde(with = "bitcoin::util::amount::serde::as_sat")]
+    pub fr_75th: Amount,
+    #[serde(with = "bitcoin::util::amount::serde::as_sat")]
+    pub fr_90th: Amount,
 }
 
 pub enum BlockStatsFields {
