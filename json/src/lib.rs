@@ -1182,6 +1182,41 @@ pub struct FinalizePsbtResult {
     pub complete: bool,
 }
 
+/// Models the result of "getchaintips"
+pub type GetChainTipsResult = Vec<GetChainTipsResultTip>;
+
+/// Models a single chain tip for the result of "getchaintips"
+#[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
+pub struct GetChainTipsResultTip {
+    /// Block height of the chain tip
+    pub height: u64,
+    /// Header hash of the chain tip
+    pub hash: bitcoin::BlockHash,
+    /// Length of the branch (number of blocks since the last common block)
+    #[serde(rename = "branchlen")]
+    pub branch_length: usize,
+    /// Status of the tip as seen by Bitcoin Core
+    pub status: GetChainTipsResultStatus,
+}
+
+#[derive(Copy, Serialize, Deserialize, Clone, PartialEq, Eq, Debug)]
+#[serde(rename_all = "lowercase")]
+pub enum GetChainTipsResultStatus {
+    /// The branch contains at least one invalid block
+    Invalid,
+    /// Not all blocks for this branch are available, but the headers are valid
+    #[serde(rename = "headers-only")]
+    HeadersOnly,
+    /// All blocks are available for this branch, but they were never fully validated
+    #[serde(rename = "valid-headers")]
+    ValidHeaders,
+    /// This branch is not part of the active chain, but is fully validated
+    #[serde(rename = "valid-fork")]
+    ValidFork,
+    /// This is the tip of the active main chain, which is certainly valid
+    Active,
+}
+
 impl FinalizePsbtResult {
     pub fn transaction(&self) -> Option<Result<Transaction, encode::Error>> {
         self.hex.as_ref().map(|h| encode::deserialize(h))
