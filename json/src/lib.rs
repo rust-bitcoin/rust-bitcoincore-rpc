@@ -948,6 +948,18 @@ impl Default for ImportMultiRescanSince {
     }
 }
 
+impl From<u64> for ImportMultiRescanSince {
+    fn from(timestamp: u64) -> Self {
+        ImportMultiRescanSince::Timestamp(timestamp)
+    }
+}
+
+impl From<Option<u64>> for ImportMultiRescanSince {
+    fn from(timestamp: Option<u64>) -> Self {
+        timestamp.map_or(ImportMultiRescanSince::Now, ImportMultiRescanSince::Timestamp)
+    }
+}
+
 #[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
 pub struct ImportMultiResultError {
     pub code: i64,
