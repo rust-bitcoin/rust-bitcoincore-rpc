@@ -12,6 +12,7 @@ use std::collections::HashMap;
 use std::fs::File;
 use std::iter::FromIterator;
 use std::path::PathBuf;
+use std::sync::RwLock;
 use std::{fmt, result};
 
 use bitcoin;
@@ -236,12 +237,7 @@ pub trait RpcApi: Sized {
     }
 
     fn version(&self) -> Result<usize> {
-        #[derive(Deserialize)]
-        struct Response {
-            pub version: usize,
-        }
-        let res: Response = self.call("getnetworkinfo", &[])?;
-        Ok(res.version)
+        get_version(self)
     }
 
     fn add_multisig_address(
@@ -1054,6 +1050,7 @@ pub trait RpcApi: Sized {
 /// Client implements a JSON-RPC client for the Bitcoin Core daemon or compatible APIs.
 pub struct Client {
     client: jsonrpc::client::Client,
+    version: RwLock<Option<usize>>,
 }
 
 impl fmt::Debug for Client {
@@ -1074,6 +1071,7 @@ impl Client {
         let (user, pass) = auth.get_user_pass()?;
         Ok(Client {
             client: jsonrpc::client::Client::new(url, user, pass),
+            version: Default::default(),
         })
     }
 
@@ -1081,6 +1079,7 @@ impl Client {
     pub fn from_jsonrpc(client: jsonrpc::client::Client) -> Client {
         Client {
             client: client,
+            version: Default::default(),
         }
     }
 
@@ -1106,6 +1105,25 @@ impl RpcApi for Client {
         log_response(cmd, &resp);
         Ok(resp?.into_result()?)
     }
+
+    fn version(&self) -> Result<usize> {
+        if let Some(version) = *self.version.read().unwrap() {
+            return Ok(version);
+        }
+
+        let version = get_version(self)?;
+        *self.version.write().unwrap() = Some(version);
+        Ok(version)
+    }
+}
+
+fn get_version(client: &impl RpcApi) -> Result<usize> {
+    #[derive(Deserialize)]
+    struct Response {
+        version: usize,
+    }
+    let res: Response = client.call("getnetworkinfo", &[])?;
+    Ok(res.version)
 }
 
 fn log_response(cmd: &str, resp: &Result<jsonrpc::Response>) {
