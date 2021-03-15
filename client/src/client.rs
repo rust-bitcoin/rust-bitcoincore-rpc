@@ -849,6 +849,12 @@ pub trait RpcApi: Sized {
         self.call("getmempoolentry", &[into_json(txid)?])
     }
 
+    /// Get information about all known tips in the block tree, including the
+    /// main chain as well as stale branches.
+    fn get_chain_tips(&self) -> Result<json::GetChainTipsResult> {
+        self.call("getchaintips", &[])
+    }
+
     fn send_to_address(
         &self,
         address: &Address,

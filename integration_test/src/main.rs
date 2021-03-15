@@ -184,6 +184,7 @@ fn main() {
     test_rescan_blockchain(&cl);
     test_create_wallet(&cl);
     test_get_tx_out_set_info(&cl);
+    test_get_chain_tips(&cl);
     test_get_net_totals(&cl);
     test_get_network_hash_ps(&cl);
     test_uptime(&cl);
@@ -996,6 +997,11 @@ fn test_create_wallet(cl: &Client) {
 
 fn test_get_tx_out_set_info(cl: &Client) {
     cl.get_tx_out_set_info().unwrap();
+}
+
+fn test_get_chain_tips(cl: &Client) {
+    let tips = cl.get_chain_tips().unwrap();
+    assert_eq!(tips.len(), 1);
 }
 
 fn test_get_net_totals(cl: &Client) {
