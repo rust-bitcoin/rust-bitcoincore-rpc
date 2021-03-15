@@ -267,7 +267,7 @@ pub struct GetBlockStatsResult {
     #[serde(rename = "swtxs")]
     pub sw_txs: usize,
     pub time: u64,
-    #[serde (with = "bitcoin::util::amount::serde::as_sat")]
+    #[serde(with = "bitcoin::util::amount::serde::as_sat")]
     pub total_out: Amount,
     pub total_size: usize,
     pub total_weight: usize,
@@ -294,23 +294,11 @@ pub struct GetBlockStatsResultPartial {
         skip_serializing_if = "Option::is_none"
     )]
     pub avg_fee_rate: Option<Amount>,
-    #[serde(
-        default,
-        rename = "avgtxsize",
-        skip_serializing_if = "Option::is_none"
-    )]
+    #[serde(default, rename = "avgtxsize", skip_serializing_if = "Option::is_none")]
     pub avg_tx_size: Option<u32>,
-    #[serde(
-        default,
-        rename = "blockhash",
-        skip_serializing_if = "Option::is_none"
-    )]
+    #[serde(default, rename = "blockhash", skip_serializing_if = "Option::is_none")]
     pub block_hash: Option<bitcoin::BlockHash>,
-    #[serde(
-        default,
-        rename = "feerate_percentiles",
-        skip_serializing_if = "Option::is_none"
-    )]
+    #[serde(default, rename = "feerate_percentiles", skip_serializing_if = "Option::is_none")]
     pub fee_rate_percentiles: Option<FeeRatePercentiles>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub height: Option<u64>,
@@ -330,11 +318,7 @@ pub struct GetBlockStatsResultPartial {
         skip_serializing_if = "Option::is_none"
     )]
     pub max_fee_rate: Option<Amount>,
-    #[serde(
-        default,
-        rename = "maxtxsize",
-        skip_serializing_if = "Option::is_none"
-    )]
+    #[serde(default, rename = "maxtxsize", skip_serializing_if = "Option::is_none")]
     pub max_tx_size: Option<u32>,
     #[serde(
         default,
@@ -343,17 +327,9 @@ pub struct GetBlockStatsResultPartial {
         skip_serializing_if = "Option::is_none"
     )]
     pub median_fee: Option<Amount>,
-    #[serde(
-        default,
-        rename = "mediantime",
-        skip_serializing_if = "Option::is_none"
-    )]
+    #[serde(default, rename = "mediantime", skip_serializing_if = "Option::is_none")]
     pub median_time: Option<u64>,
-    #[serde(
-        default,
-        rename = "mediantxsize",
-        skip_serializing_if = "Option::is_none"
-    )]
+    #[serde(default, rename = "mediantxsize", skip_serializing_if = "Option::is_none")]
     pub median_tx_size: Option<u32>,
     #[serde(
         default,
@@ -369,11 +345,7 @@ pub struct GetBlockStatsResultPartial {
         skip_serializing_if = "Option::is_none"
     )]
     pub min_fee_rate: Option<Amount>,
-    #[serde(
-        default,
-        rename = "mintxsize",
-        skip_serializing_if = "Option::is_none"
-    )]
+    #[serde(default, rename = "mintxsize", skip_serializing_if = "Option::is_none")]
     pub min_tx_size: Option<u32>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub outs: Option<usize>,
@@ -383,23 +355,11 @@ pub struct GetBlockStatsResultPartial {
         skip_serializing_if = "Option::is_none"
     )]
     pub subsidy: Option<Amount>,
-    #[serde(
-        default,
-        rename = "swtotal_size",
-        skip_serializing_if = "Option::is_none"
-    )]
+    #[serde(default, rename = "swtotal_size", skip_serializing_if = "Option::is_none")]
     pub sw_total_size: Option<usize>,
-    #[serde(
-        default,
-        rename = "swtotal_weight",
-        skip_serializing_if = "Option::is_none"
-    )]
+    #[serde(default, rename = "swtotal_weight", skip_serializing_if = "Option::is_none")]
     pub sw_total_weight: Option<usize>,
-    #[serde(
-        default,
-        rename = "swtxs",
-        skip_serializing_if = "Option::is_none"
-    )]
+    #[serde(default, rename = "swtxs", skip_serializing_if = "Option::is_none")]
     pub sw_txs: Option<usize>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub time: Option<u64>,

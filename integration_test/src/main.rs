@@ -33,6 +33,7 @@ use bitcoin::{
 use bitcoincore_rpc::bitcoincore_rpc_json::{
     GetBlockTemplateModes, GetBlockTemplateRules, ScanTxOutRequest,
 };
+use json::BlockStatsFields as BsFields;
 
 lazy_static! {
     static ref SECP: secp256k1::Secp256k1<secp256k1::All> = secp256k1::Secp256k1::new();
@@ -329,11 +330,10 @@ fn test_get_block_stats(cl: &Client) {
 }
 
 fn test_get_block_stats_fields(cl: &Client) {
-    use json::BlockStatsFields;
     let tip = cl.get_block_count().unwrap();
     let tip_hash = cl.get_best_block_hash().unwrap();
     let header = cl.get_block_header(&tip_hash).unwrap();
-    let fields = [BlockStatsFields::BlockHash, BlockStatsFields::Height, BlockStatsFields::TotalFee];
+    let fields = [BsFields::BlockHash, BsFields::Height, BsFields::TotalFee];
     let stats = cl.get_block_stats_fields(tip, &fields).unwrap();
     assert_eq!(header.block_hash(), stats.block_hash.unwrap());
     assert_eq!(tip, stats.height.unwrap());
