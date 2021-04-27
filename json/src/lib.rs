@@ -835,7 +835,7 @@ impl<'a> serde::Serialize for ImportMultiRequestScriptPubkey<'a> {
                 #[derive(Serialize)]
                 struct Tmp<'a> {
                     pub address: &'a Address,
-                };
+                }
                 serde::Serialize::serialize(
                     &Tmp {
                         address: addr,
