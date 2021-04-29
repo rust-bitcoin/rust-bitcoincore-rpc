@@ -276,6 +276,8 @@ pub trait RpcApi: Sized {
         blank: Option<bool>,
         passphrase: Option<&str>,
         avoid_reuse: Option<bool>,
+        descriptors: Option<bool>,
+        load_on_startup: Option<bool>,
     ) -> Result<json::LoadWalletResult> {
         let mut args = [
             wallet.into(),
@@ -283,10 +285,15 @@ pub trait RpcApi: Sized {
             opt_into_json(blank)?,
             opt_into_json(passphrase)?,
             opt_into_json(avoid_reuse)?,
+            opt_into_json(descriptors)?,
+            opt_into_json(load_on_startup)?,
         ];
         self.call(
             "createwallet",
-            handle_defaults(&mut args, &[false.into(), false.into(), into_json("")?, false.into()]),
+            handle_defaults(
+                &mut args,
+                &[false.into(), false.into(), into_json("")?, false.into(), false.into(), null()],
+            ),
         )
     }
 

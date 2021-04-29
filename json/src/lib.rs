@@ -145,7 +145,7 @@ pub struct GetWalletInfoResult {
     #[serde(rename = "txcount")]
     pub tx_count: usize,
     #[serde(rename = "keypoololdest")]
-    pub keypool_oldest: usize,
+    pub keypool_oldest: Option<usize>,
     #[serde(rename = "keypoolsize")]
     pub keypool_size: usize,
     #[serde(rename = "keypoolsize_hd_internal")]
@@ -158,6 +158,7 @@ pub struct GetWalletInfoResult {
     pub private_keys_enabled: bool,
     pub avoid_reuse: Option<bool>,
     pub scanning: Option<ScanningDetails>,
+    pub descriptors: Option<bool>,
 }
 
 #[derive(Clone, PartialEq, Debug, Deserialize, Serialize)]
