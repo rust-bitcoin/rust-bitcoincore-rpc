@@ -29,6 +29,8 @@ pub enum Error {
     InvalidCookieFile,
     /// The JSON result had an unexpected structure.
     UnexpectedStructure,
+    /// Failed to create client with given info.
+    InvalidClientInfo(jsonrpc::simple_http::Error),
 }
 
 impl From<jsonrpc::error::Error> for Error {
@@ -85,6 +87,7 @@ impl fmt::Display for Error {
             Error::InvalidAmount(ref e) => write!(f, "invalid amount: {}", e),
             Error::InvalidCookieFile => write!(f, "invalid cookie file"),
             Error::UnexpectedStructure => write!(f, "the JSON result had an unexpected structure"),
+            Error::InvalidClientInfo(ref e) => write!(f, "failed to create client: {}", e),
         }
     }
 }
@@ -102,6 +105,7 @@ impl error::Error for Error {
             Error::BitcoinSerialization(ref e) => Some(e),
             Error::Secp256k1(ref e) => Some(e),
             Error::Io(ref e) => Some(e),
+            Error::InvalidClientInfo(ref e) => Some(e),
             _ => None,
         }
     }
