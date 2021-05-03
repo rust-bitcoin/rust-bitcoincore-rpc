@@ -23,6 +23,7 @@ if [ "$TRAVIS_RUST_VERSION" = "1.29.0" ]; then
     cargo update --verbose --package "serde" --precise "1.0.98"
     cargo update --verbose --package "serde_derive" --precise "1.0.98"
     cargo update --verbose --package "byteorder" --precise "1.3.4"
+    cargo update --verbose --package "unicode-bidi" --precise "0.3.4"
 fi
 
 if [ -n "$RUSTFMTCHECK" ]; then
