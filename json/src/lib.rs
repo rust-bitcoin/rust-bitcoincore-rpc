@@ -1195,7 +1195,7 @@ pub struct GetBlockTemplateResult {
     pub capabilities: Vec<GetBlockTemplateResultCapabilities>,
     /// Set of pending, supported versionbit (BIP 9) softfork deployments
     #[serde(rename = "vbavailable")]
-    pub version_bits_available: HashMap<u32, String>,
+    pub version_bits_available: HashMap<String, u32>,
     /// Bit mask of versionbits the server requires set in submissions
     #[serde(rename = "vbrequired")]
     pub version_bits_required: u32,
