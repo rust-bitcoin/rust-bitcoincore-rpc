@@ -867,6 +867,13 @@ pub trait RpcApi: Sized {
         self.call("getrawmempool", &[])
     }
 
+    /// Get details for the transactions in a memory pool
+    fn get_raw_mempool_verbose(
+        &self,
+    ) -> Result<HashMap<bitcoin::Txid, json::GetMempoolEntryResult>> {
+        self.call("getrawmempool", &[into_json(true)?])
+    }
+
     /// Get mempool data for given transaction
     fn get_mempool_entry(&self, txid: &bitcoin::Txid) -> Result<json::GetMempoolEntryResult> {
         self.call("getmempoolentry", &[into_json(txid)?])

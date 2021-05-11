@@ -156,6 +156,7 @@ fn main() {
     test_get_connection_count(&cl);
     test_get_raw_transaction(&cl);
     test_get_raw_mempool(&cl);
+    test_get_raw_mempool_verbose(&cl);
     test_get_transaction(&cl);
     test_list_transactions(&cl);
     test_list_since_block(&cl);
@@ -426,6 +427,14 @@ fn test_get_raw_transaction(cl: &Client) {
 
 fn test_get_raw_mempool(cl: &Client) {
     let _ = cl.get_raw_mempool().unwrap();
+}
+
+fn test_get_raw_mempool_verbose(cl: &Client) {
+    cl.send_to_address(&RANDOM_ADDRESS, btc(1), None, None, None, None, None, None).unwrap();
+    let _ = cl.get_raw_mempool_verbose().unwrap();
+
+    // cleanup mempool transaction
+    cl.generate_to_address(2, &RANDOM_ADDRESS).unwrap();
 }
 
 fn test_get_transaction(cl: &Client) {
