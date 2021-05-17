@@ -294,6 +294,10 @@ pub trait RpcApi: Sized {
         self.call("listwallets", &[])
     }
 
+    fn list_wallet_dir(&self) -> Result<json::ListWalletDirResult> {
+        self.call("listwalletdir", &[])
+    }
+
     fn get_wallet_info(&self) -> Result<json::GetWalletInfoResult> {
         self.call("getwalletinfo", &[])
     }

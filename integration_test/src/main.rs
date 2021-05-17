@@ -16,7 +16,7 @@ extern crate bitcoincore_rpc;
 extern crate lazy_static;
 extern crate log;
 
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 
 use bitcoincore_rpc::json;
 use bitcoincore_rpc::jsonrpc::error::Error as JsonRpcError;
@@ -948,7 +948,7 @@ fn test_create_wallet(cl: &Client) {
         });
     }
 
-    for wallet_param in wallet_params {
+    for wallet_param in wallet_params.iter() {
         let result = cl
             .create_wallet(
                 wallet_param.name,
@@ -995,7 +995,12 @@ fn test_create_wallet(cl: &Client) {
     wallet_list.retain(|w| w != "testwallet" && w != "");
 
     // Created wallets
-    assert!(wallet_list.iter().zip(wallet_names).all(|(a, b)| a == b));
+    assert!(wallet_list.iter().zip(&wallet_names).all(|(a, b)| a == *b));
+
+    let wallet_dir_list: HashSet<_> =
+        cl.list_wallet_dir().unwrap().wallets.into_iter().map(|n| n.name).collect();
+
+    assert!(wallet_params.iter().all(|p| wallet_dir_list.contains(p.name)));
 }
 
 fn test_get_tx_out_set_info(cl: &Client) {

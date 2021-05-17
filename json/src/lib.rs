@@ -161,6 +161,16 @@ pub struct GetWalletInfoResult {
 }
 
 #[derive(Clone, PartialEq, Debug, Deserialize, Serialize)]
+pub struct ListWalletDirResult {
+    pub wallets: Vec<WalletName>,
+}
+
+#[derive(Clone, PartialEq, Debug, Deserialize, Serialize)]
+pub struct WalletName {
+    pub name: String,
+}
+
+#[derive(Clone, PartialEq, Debug, Deserialize, Serialize)]
 #[serde(untagged)]
 pub enum ScanningDetails {
     Scanning {
@@ -835,7 +845,7 @@ impl<'a> serde::Serialize for ImportMultiRequestScriptPubkey<'a> {
                 #[derive(Serialize)]
                 struct Tmp<'a> {
                     pub address: &'a Address,
-                };
+                }
                 serde::Serialize::serialize(
                     &Tmp {
                         address: addr,
