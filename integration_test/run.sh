@@ -5,9 +5,6 @@ TESTDIR=/tmp/rust_bitcoincore_rpc_test
 rm -rf ${TESTDIR}
 mkdir -p ${TESTDIR}/1 ${TESTDIR}/2
 
-# To kill any remaining open bitcoind.
-killall -9 bitcoind
-
 bitcoind -regtest \
     -datadir=${TESTDIR}/1 \
     -port=12348 \
