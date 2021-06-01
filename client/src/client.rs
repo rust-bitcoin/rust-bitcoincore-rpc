@@ -194,6 +194,71 @@ pub enum Auth {
     CookieFile(PathBuf),
 }
 
+/// [AuthNew] is used to serialize [Auth] in a more comprensible way, once a breaking release is
+/// made it could replace [Auth], removing `From` and custom serialization implementation
+#[derive(Clone, Debug, Hash, Eq, PartialEq, Ord, PartialOrd, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+#[serde(untagged)]
+enum AuthNew {
+    None,
+    UserPass {
+        username: String,
+        password: String,
+    },
+    Cookie {
+        file: PathBuf
+    },
+}
+
+impl From<Auth> for AuthNew {
+    fn from(auth: Auth) -> Self {
+        match auth {
+            Auth::None => AuthNew::None,
+            Auth::UserPass(username, password) => AuthNew::UserPass {
+                username,
+                password,
+            },
+            Auth::CookieFile(file) => AuthNew::Cookie{ file },
+        }
+    }
+}
+
+impl From<AuthNew> for Auth {
+    fn from(auth_new: AuthNew) -> Self {
+        match auth_new {
+            AuthNew::None => Auth::None,
+            AuthNew::UserPass {
+                username,
+                password,
+            } => Auth::UserPass(username, password),
+            AuthNew::Cookie { file } => Auth::CookieFile(file),
+        }
+    }
+}
+
+impl serde::Serialize for Auth {
+    fn serialize<S>(
+        &self,
+        serializer: S,
+    ) -> std::result::Result<<S as serde::Serializer>::Ok, <S as serde::Serializer>::Error>
+    where
+        S: serde::Serializer,
+    {
+        AuthNew::from(self.clone()).serialize(serializer)
+    }
+}
+
+impl<'de> serde::Deserialize<'de> for Auth {
+    fn deserialize<D>(
+        deserializer: D,
+    ) -> std::result::Result<Self, <D as serde::Deserializer<'de>>::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        Ok(AuthNew::deserialize(deserializer)?.into())
+    }
+}
+
 impl Auth {
     /// Convert into the arguments that jsonrpc::Client needs.
     fn get_user_pass(self) -> Result<(Option<String>, Option<String>)> {
@@ -1232,5 +1297,14 @@ mod tests {
     #[test]
     fn test_handle_defaults() {
         test_handle_defaults_inner().unwrap();
+    }
+
+    #[test]
+    fn test_serde_auth() {
+        let auth = Auth::UserPass("mario".to_string(), "1234".to_string());
+        let ser = serde_json::to_string(&auth).unwrap();
+        assert_eq!("{\"username\":\"mario\",\"password\":\"1234\"}", ser);
+        let des: Auth = serde_json::from_str(&ser).unwrap();
+        assert_eq!(auth, des);
     }
 }
