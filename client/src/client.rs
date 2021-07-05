@@ -1087,11 +1087,7 @@ pub struct Client {
 
 impl fmt::Debug for Client {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(
-            f,
-            "bitcoincore_rpc::Client(jsonrpc::Client(last_nonce={}))",
-            self.client.last_nonce()
-        )
+        write!(f, "bitcoincore_rpc::Client({:?})", self.client)
     }
 }
 
@@ -1099,17 +1095,19 @@ impl Client {
     /// Creates a client to a bitcoind JSON-RPC server.
     ///
     /// Can only return [Err] when using cookie authentication.
-    pub fn new(url: String, auth: Auth) -> Result<Self> {
+    pub fn new(url: &str, auth: Auth) -> Result<Self> {
         let (user, pass) = auth.get_user_pass()?;
-        Ok(Client {
-            client: jsonrpc::client::Client::new(url, user, pass),
-        })
+        jsonrpc::client::Client::simple_http(url, user, pass)
+            .map(|client| Client {
+                client,
+            })
+            .map_err(|e| super::error::Error::JsonRpc(e.into()))
     }
 
-    /// Create a new Client.
+    /// Create a new Client using the given [jsonrpc::Client].
     pub fn from_jsonrpc(client: jsonrpc::client::Client) -> Client {
         Client {
-            client: client,
+            client,
         }
     }
 
@@ -1126,14 +1124,22 @@ impl RpcApi for Client {
         cmd: &str,
         args: &[serde_json::Value],
     ) -> Result<T> {
-        let req = self.client.build_request(&cmd, &args);
+        let raw_args: Vec<_> = args
+            .iter()
+            .map(|a| {
+                let json_string = serde_json::to_string(a)?;
+                serde_json::value::RawValue::from_string(json_string) // we can't use to_raw_value here due to compat with Rust 1.29
+            })
+            .map(|a| a.map_err(|e| Error::Json(e)))
+            .collect::<Result<Vec<_>>>()?;
+        let req = self.client.build_request(&cmd, &raw_args);
         if log_enabled!(Debug) {
             debug!(target: "bitcoincore_rpc", "JSON-RPC request: {} {}", cmd, serde_json::Value::from(args));
         }
 
-        let resp = self.client.send_request(&req).map_err(Error::from);
+        let resp = self.client.send_request(req).map_err(Error::from);
         log_response(cmd, &resp);
-        Ok(resp?.into_result()?)
+        Ok(resp?.result()?)
     }
 }
 
@@ -1151,7 +1157,12 @@ fn log_response(cmd: &str, resp: &Result<jsonrpc::Response>) {
                         debug!(target: "bitcoincore_rpc", "JSON-RPC error for {}: {:?}", cmd, e);
                     }
                 } else if log_enabled!(Trace) {
-                    let result = resp.result.as_ref().unwrap_or(&serde_json::Value::Null);
+                    // we can't use to_raw_value here due to compat with Rust 1.29
+                    let def = serde_json::value::RawValue::from_string(
+                        serde_json::Value::Null.to_string(),
+                    )
+                    .unwrap();
+                    let result = resp.result.as_ref().unwrap_or(&def);
                     trace!(target: "bitcoincore_rpc", "JSON-RPC response for {}: {}", cmd, result);
                 }
             }
