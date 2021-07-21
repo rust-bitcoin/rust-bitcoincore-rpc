@@ -31,6 +31,7 @@ use bitcoin::util::{bip158, bip32};
 use bitcoin::{Address, Amount, PrivateKey, PublicKey, Script, SignedAmount, Transaction};
 use serde::de::Error as SerdeError;
 use serde::{Deserialize, Serialize};
+use std::fmt;
 
 //TODO(stevenroose) consider using a Time type
 
@@ -402,6 +403,7 @@ pub struct FeeRatePercentiles {
     pub fr_90th: Amount,
 }
 
+#[derive(Clone)]
 pub enum BlockStatsFields {
     AverageFee,
     AverageFeeRate,
@@ -435,7 +437,7 @@ pub enum BlockStatsFields {
 }
 
 impl BlockStatsFields {
-    pub fn get_rpc_keyword(&self) -> &str {
+    fn get_rpc_keyword(&self) -> &str {
         match *self {
             BlockStatsFields::AverageFee => "avgfee",
             BlockStatsFields::AverageFeeRate => "avgfeerate",
@@ -467,6 +469,18 @@ impl BlockStatsFields {
             BlockStatsFields::UtxoIncrease => "utxo_increase",
             BlockStatsFields::UtxoSizeIncrease => "utxo_size_inc",
         }
+    }
+}
+
+impl fmt::Display for BlockStatsFields {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{}", self.get_rpc_keyword())
+    }
+}
+
+impl From<BlockStatsFields> for serde_json::Value {
+    fn from(bsf: BlockStatsFields) -> Self {
+        Self::from(bsf.to_string())
     }
 }
 
@@ -1157,7 +1171,6 @@ impl<'de> serde::Deserialize<'de> for ImportMultiRescanSince {
         D: serde::Deserializer<'de>,
     {
         use serde::de;
-        use std::fmt;
         struct Visitor;
         impl<'de> de::Visitor<'de> for Visitor {
             type Value = ImportMultiRescanSince;

@@ -471,8 +471,6 @@ pub trait RpcApi: Sized {
         height: u64,
         fields: &[json::BlockStatsFields],
     ) -> Result<json::GetBlockStatsResultPartial> {
-        let fields: Vec<&str> = fields.iter().map(|field| field.get_rpc_keyword()).collect();
-
         self.call("getblockstats", &[height.into(), fields.into()])
     }
 
