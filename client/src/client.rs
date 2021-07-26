@@ -846,6 +846,16 @@ pub trait RpcApi: Sized {
         self.call("generatetoaddress", &[block_num.into(), address.to_string().into()])
     }
 
+    /// Mine a block with a set of ordered transactions immediately to a specified
+    /// address or descriptor (before the RPC call returns)
+    fn generate_block(
+        &self,
+        output: &Address,
+        transactions: &[bitcoin::Txid],
+    ) -> Result<json::GenerateBlockResult> {
+        self.call("generateblock", &[into_json(output)?, into_json(transactions)?])
+    }
+
     /// Mine up to block_num blocks immediately (before the RPC call returns)
     /// to an address in the wallet.
     fn generate(&self, block_num: u64, maxtries: Option<u64>) -> Result<Vec<bitcoin::BlockHash>> {
