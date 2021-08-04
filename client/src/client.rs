@@ -1078,6 +1078,11 @@ pub trait RpcApi: Sized {
     ) -> Result<json::ScanTxOutResult> {
         self.call("scantxoutset", &["start".into(), into_json(descriptors)?])
     }
+
+    /// Set or generate a new HD wallet seed
+    fn set_hd_seed(&self, new_keypool: Option<bool>, seed: Option<&str>) -> Result<()> {
+        self.call("sethdseed", &[opt_into_json(new_keypool)?, opt_into_json(seed)?])
+    }
 }
 
 /// Client implements a JSON-RPC client for the Bitcoin Core daemon or compatible APIs.
