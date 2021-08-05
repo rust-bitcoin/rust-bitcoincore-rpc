@@ -13,7 +13,7 @@
 //! This is a client library for the Bitcoin Core JSON-RPC API.
 //!
 
-#![crate_name = "bitcoincore_rpc_json"]
+#![crate_name = "core_rpc_json"]
 #![crate_type = "rlib"]
 
 pub extern crate bitcoin;
@@ -835,7 +835,7 @@ impl<'a> serde::Serialize for ImportMultiRequestScriptPubkey<'a> {
                 #[derive(Serialize)]
                 struct Tmp<'a> {
                     pub address: &'a Address,
-                };
+                }
                 serde::Serialize::serialize(
                     &Tmp {
                         address: addr,

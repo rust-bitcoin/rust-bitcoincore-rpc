@@ -1,3 +1,5 @@
+** This is a fork of https://github.com/rust-bitcoin/rust-bitcoincore-rpc with bitcoin 0.27 **
+
 [![Status](https://travis-ci.org/rust-bitcoin/rust-bitcoincore-rpc.png?branch=master)](https://travis-ci.org/rust-bitcoin/rust-bitcoincore-rpc)
 
 # Rust RPC client for Bitcoin Core JSON-RPC 

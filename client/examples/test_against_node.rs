@@ -10,7 +10,7 @@
 
 //! A very simple example used as a self-test of this library against a Bitcoin
 //! Core node.
-extern crate bitcoincore_rpc;
+extern crate core_rpc as bitcoincore_rpc;
 
 use bitcoincore_rpc::{bitcoin, Auth, Client, Error, RpcApi};
 

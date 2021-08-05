@@ -11,10 +11,12 @@
 #![deny(unused)]
 
 extern crate bitcoin;
-extern crate bitcoincore_rpc;
+extern crate core_rpc as bitcoincore_rpc;
 #[macro_use]
 extern crate lazy_static;
 extern crate log;
+
+use bitcoincore_rpc::core_rpc_json as bitcoincore_rpc_json;
 
 use std::collections::HashMap;
 
@@ -30,7 +32,7 @@ use bitcoin::{
     Address, Amount, Network, OutPoint, PrivateKey, Script, SigHashType, SignedAmount, Transaction,
     TxIn, TxOut, Txid,
 };
-use bitcoincore_rpc::bitcoincore_rpc_json::{
+use bitcoincore_rpc_json::{
     GetBlockTemplateModes, GetBlockTemplateRules, ScanTxOutRequest,
 };
 

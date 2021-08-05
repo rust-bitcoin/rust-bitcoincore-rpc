@@ -8,7 +8,7 @@
 // If not, see <http://creativecommons.org/publicdomain/zero/1.0/>.
 //
 
-extern crate bitcoincore_rpc;
+extern crate core_rpc as bitcoincore_rpc;
 extern crate jsonrpc;
 extern crate serde;
 extern crate serde_json;
