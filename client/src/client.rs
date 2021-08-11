@@ -276,6 +276,7 @@ pub trait RpcApi: Sized {
         blank: Option<bool>,
         passphrase: Option<&str>,
         avoid_reuse: Option<bool>,
+        descriptors: Option<bool>,
     ) -> Result<json::LoadWalletResult> {
         let mut args = [
             wallet.into(),
@@ -283,11 +284,42 @@ pub trait RpcApi: Sized {
             opt_into_json(blank)?,
             opt_into_json(passphrase)?,
             opt_into_json(avoid_reuse)?,
+            opt_into_json(descriptors)?,
         ];
         self.call(
             "createwallet",
-            handle_defaults(&mut args, &[false.into(), false.into(), into_json("")?, false.into()]),
+            handle_defaults(
+                &mut args,
+                &[false.into(), false.into(), into_json("")?, false.into(), false.into()],
+            ),
         )
+    }
+
+    fn import_descriptors(
+        &self,
+        descriptor: &str,
+        change_descriptor: &str,
+    ) -> Result<Vec<json::ImportDescriptorResult>> {
+        let ex_descriptor = json::ImportDescriptorRequest {
+            active: true,
+            descriptor: descriptor.to_string(),
+            range: [0, 100],
+            next_index: 0,
+            timestamp: "now".to_string(),
+            internal: false,
+        };
+
+        let in_descriptor = json::ImportDescriptorRequest {
+            active: true,
+            descriptor: change_descriptor.to_string(),
+            range: [0, 100],
+            next_index: 0,
+            timestamp: "now".to_string(),
+            internal: true,
+        };
+
+        let arg = into_json([ex_descriptor, in_descriptor])?;
+        self.call("importdescriptors", &[arg])
     }
 
     fn list_wallets(&self) -> Result<Vec<String>> {
@@ -1136,7 +1168,6 @@ impl RpcApi for Client {
         if log_enabled!(Debug) {
             debug!(target: "bitcoincore_rpc", "JSON-RPC request: {} {}", cmd, serde_json::Value::from(args));
         }
-
         let resp = self.client.send_request(req).map_err(Error::from);
         log_response(cmd, &resp);
         Ok(resp?.result()?)

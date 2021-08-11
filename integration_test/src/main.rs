@@ -19,6 +19,7 @@ extern crate log;
 use bitcoincore_rpc::core_rpc_json as bitcoincore_rpc_json;
 
 use std::collections::HashMap;
+use std::str::FromStr;
 
 use bitcoincore_rpc::json;
 use bitcoincore_rpc::jsonrpc::error::Error as JsonRpcError;
@@ -32,9 +33,7 @@ use bitcoin::{
     Address, Amount, Network, OutPoint, PrivateKey, Script, SigHashType, SignedAmount, Transaction,
     TxIn, TxOut, Txid,
 };
-use bitcoincore_rpc_json::{
-    GetBlockTemplateModes, GetBlockTemplateRules, ScanTxOutRequest,
-};
+use bitcoincore_rpc_json::{GetBlockTemplateModes, GetBlockTemplateRules, ScanTxOutRequest};
 
 lazy_static! {
     static ref SECP: secp256k1::Secp256k1<secp256k1::All> = secp256k1::Secp256k1::new();
@@ -127,15 +126,13 @@ fn main() {
     log::set_logger(&LOGGER).map(|()| log::set_max_level(log::LevelFilter::max())).unwrap();
 
     let rpc_url = format!("{}/wallet/testwallet", get_rpc_url());
-    let auth = get_auth();
-
-    let cl = Client::new(&rpc_url, auth).unwrap();
+    let cl = Client::new(&rpc_url, get_auth()).unwrap();
 
     test_get_network_info(&cl);
     unsafe { VERSION = cl.version().unwrap() };
     println!("Version: {}", version());
 
-    cl.create_wallet("testwallet", None, None, None, None).unwrap();
+    cl.create_wallet("testwallet", None, None, None, None, None).unwrap();
 
     test_get_mining_info(&cl);
     test_get_blockchain_info(&cl);
@@ -205,6 +202,11 @@ fn main() {
     //TODO load_wallet(&self, wallet: &str) -> Result<json::LoadWalletResult> {
     //TODO unload_wallet(&self, wallet: Option<&str>) -> Result<()> {
     //TODO backup_wallet(&self, destination: Option<&str>) -> Result<()> {
+
+    let rpc_url = format!("{}/wallet/testdescriptorwallet", get_rpc_url());
+    let desc_cl = Client::new(&rpc_url, get_auth()).unwrap();
+
+    test_descriptor_wallet(&desc_cl);
     test_stop(cl);
 }
 
@@ -907,6 +909,7 @@ fn test_create_wallet(cl: &Client) {
         blank: Option<bool>,
         passphrase: Option<&'a str>,
         avoid_reuse: Option<bool>,
+        descriptors: Option<bool>,
     }
 
     let mut wallet_params = vec![
@@ -916,6 +919,7 @@ fn test_create_wallet(cl: &Client) {
             blank: None,
             passphrase: None,
             avoid_reuse: None,
+            descriptors: None,
         },
         WalletParams {
             name: wallet_names[1],
@@ -923,6 +927,7 @@ fn test_create_wallet(cl: &Client) {
             blank: None,
             passphrase: None,
             avoid_reuse: None,
+            descriptors: None,
         },
         WalletParams {
             name: wallet_names[2],
@@ -930,6 +935,7 @@ fn test_create_wallet(cl: &Client) {
             blank: Some(true),
             passphrase: None,
             avoid_reuse: None,
+            descriptors: None,
         },
     ];
 
@@ -940,6 +946,7 @@ fn test_create_wallet(cl: &Client) {
             blank: None,
             passphrase: Some("pass"),
             avoid_reuse: None,
+            descriptors: None,
         });
         wallet_params.push(WalletParams {
             name: wallet_names[4],
@@ -947,6 +954,7 @@ fn test_create_wallet(cl: &Client) {
             blank: None,
             passphrase: None,
             avoid_reuse: Some(true),
+            descriptors: None,
         });
     }
 
@@ -958,6 +966,7 @@ fn test_create_wallet(cl: &Client) {
                 wallet_param.blank,
                 wallet_param.passphrase,
                 wallet_param.avoid_reuse,
+                wallet_param.descriptors,
             )
             .unwrap();
 
@@ -1051,4 +1060,24 @@ fn test_getblocktemplate(cl: &Client) {
 
 fn test_stop(cl: Client) {
     println!("Stopping: '{}'", cl.stop().unwrap());
+}
+
+fn test_descriptor_wallet(cl: &Client) {
+    cl.create_wallet(
+        "testdescriptorwallet",
+        Some(false),
+        Some(true),
+        Some(""),
+        Some(false),
+        Some(true),
+    )
+    .unwrap();
+
+    cl.import_descriptors(
+        "wpkh(tprv8ZgxMBicQKsPeRBCAfUGsZhyHy9dwWyPqhSJmaMnMJQWWtt8L2SkTeHaiF82CUCGtiTiHAs3cMkjdKckGKiCWeYtvMPF1jDTWYTryRMicpx/86h/1h/0h/0/*)#ymr4jlz6", 
+        "wpkh(tprv8ZgxMBicQKsPeRBCAfUGsZhyHy9dwWyPqhSJmaMnMJQWWtt8L2SkTeHaiF82CUCGtiTiHAs3cMkjdKckGKiCWeYtvMPF1jDTWYTryRMicpx/86h/1h/0h/1/*)#40x502jz",
+    ).unwrap();
+
+    let add = cl.get_new_address(None, Some(json::AddressType::Bech32)).unwrap();
+    assert_eq!(add, Address::from_str("bcrt1q7crcza94drr00skmu5x0n00rhmwnthde2frhwk").unwrap());
 }
