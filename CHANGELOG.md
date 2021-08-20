@@ -1,3 +1,13 @@
+# 0.14.0
+
+- add `wallet_conflicts` field in `WalletTxInfo`
+- add `get_chain_tips`
+- add `get_block_template`
+- implement `From<u64>` and `From<Option<u64>>` for `ImportMultiRescanSince`
+- bump rust-bitcoin dependency to 0.27
+- bump json-rpc dependency to 0.12.0
+- remove dependency on `hex`
+
 # 0.13.0
 
 - add `wallet_process_psbt`
