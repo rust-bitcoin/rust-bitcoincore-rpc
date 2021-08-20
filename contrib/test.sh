@@ -2,14 +2,13 @@
 set -xe
 
 # Just echo all the relevant env vars to help debug Travis.
-echo "TRAVIS_RUST_VERSION: \"$TRAVIS_RUST_VERSION\""
 echo "RUSTFMTCHECK: \"$RUSTFMTCHECK\""
 echo "BITCOINVERSION: \"$BITCOINVERSION\""
 echo "PATH: \"$PATH\""
 
 
 # Pin dependencies for Rust v1.29
-if [ "$TRAVIS_RUST_VERSION" = "1.29.0" ]; then
+if [ -n $"$PIN_VERSIONS" ]; then
     cargo generate-lockfile --verbose
 
     cargo update --verbose --package "log" --precise "0.4.13"
@@ -34,9 +33,10 @@ if [ -n "$BITCOINVERSION" ]; then
     cd integration_test
     ./run.sh
     exit 0
+else
+  # Regular build/unit test.
+  cargo build --verbose
+  cargo test --verbose
+  cargo build --verbose --examples
 fi
 
-# Regular build/unit test.
-cargo build --verbose
-cargo test --verbose
-cargo build --verbose --examples
