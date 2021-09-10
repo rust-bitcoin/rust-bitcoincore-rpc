@@ -15,7 +15,7 @@ use std::path::PathBuf;
 use std::{fmt, result};
 
 use bitcoin;
-use jsonrpc;
+use rpc;
 use serde;
 use serde_json;
 
@@ -1082,12 +1082,12 @@ pub trait RpcApi: Sized {
 
 /// Client implements a JSON-RPC client for the Bitcoin Core daemon or compatible APIs.
 pub struct Client {
-    client: jsonrpc::client::Client,
+    client: rpc::rpc::RpcClient,
 }
 
 impl fmt::Debug for Client {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "bitcoincore_rpc::Client({:?})", self.client)
+        write!(f, "RpcClient({:?})", self.client)
     }
 }
 
@@ -1097,25 +1097,28 @@ impl Client {
     /// Can only return [Err] when using cookie authentication.
     pub fn new(url: &str, auth: Auth) -> Result<Self> {
         let (user, pass) = auth.get_user_pass()?;
-        jsonrpc::client::Client::simple_http(url, user, pass)
+        rpc::rpc::RpcClient::from_url(user, pass, url)
             .map(|client| Client {
                 client,
             })
-            .map_err(|e| super::error::Error::JsonRpc(e.into()))
+            .map_err(|e| super::error::Error::Io(e.into()))
     }
 
     /// Create a new Client using the given [jsonrpc::Client].
-    pub fn from_jsonrpc(client: jsonrpc::client::Client) -> Client {
+    pub fn from_jsonrpc(client: rpc::rpc::RpcClient) -> Client {
         Client {
             client,
         }
     }
 
     /// Get the underlying JSONRPC client.
-    pub fn get_jsonrpc_client(&self) -> &jsonrpc::client::Client {
+    pub fn get_jsonrpc_client(&self) -> &rpc::rpc::RpcClient {
         &self.client
     }
 }
+
+// FIXME: Temporary
+use futures::executor::block_on;
 
 impl RpcApi for Client {
     /// Call an `cmd` rpc with given `args` list
@@ -1124,46 +1127,35 @@ impl RpcApi for Client {
         cmd: &str,
         args: &[serde_json::Value],
     ) -> Result<T> {
-        let raw_args: Vec<_> = args
-            .iter()
-            .map(|a| {
-                let json_string = serde_json::to_string(a)?;
-                serde_json::value::RawValue::from_string(json_string) // we can't use to_raw_value here due to compat with Rust 1.29
-            })
-            .map(|a| a.map_err(|e| Error::Json(e)))
-            .collect::<Result<Vec<_>>>()?;
-        let req = self.client.build_request(&cmd, &raw_args);
         if log_enabled!(Debug) {
             debug!(target: "bitcoincore_rpc", "JSON-RPC request: {} {}", cmd, serde_json::Value::from(args));
         }
 
-        let resp = self.client.send_request(req).map_err(Error::from);
+        let resp = block_on(self.client.call_method(cmd, args)).map_err(Error::from);
         log_response(cmd, &resp);
-        Ok(resp?.result()?)
+        Ok(resp?)
     }
 }
 
-fn log_response(cmd: &str, resp: &Result<jsonrpc::Response>) {
+fn log_response<T>(cmd: &str, resp: &Result<T>) {
     if log_enabled!(Warn) || log_enabled!(Debug) || log_enabled!(Trace) {
         match resp {
             Err(ref e) => {
                 if log_enabled!(Debug) {
-                    debug!(target: "bitcoincore_rpc", "JSON-RPC failed parsing reply of {}: {:?}", cmd, e);
+                    match e {
+                        Error::JsonRpc(ref e) => {
+                            debug!(target: "bitcoincore_rpc", "JSON-RPC error for {}: {:?}", cmd, e)
+                        }
+                        _ => {
+                            debug!(target: "bitcoincore_rpc", "JSON-RPC failed parsing reply of {}: {:?}", cmd, e)
+                        }
+                    }
                 }
             }
             Ok(ref resp) => {
-                if let Some(ref e) = resp.error {
-                    if log_enabled!(Debug) {
-                        debug!(target: "bitcoincore_rpc", "JSON-RPC error for {}: {:?}", cmd, e);
-                    }
-                } else if log_enabled!(Trace) {
-                    // we can't use to_raw_value here due to compat with Rust 1.29
-                    let def = serde_json::value::RawValue::from_string(
-                        serde_json::Value::Null.to_string(),
-                    )
-                    .unwrap();
-                    let result = resp.result.as_ref().unwrap_or(&def);
-                    trace!(target: "bitcoincore_rpc", "JSON-RPC response for {}: {}", cmd, result);
+                if log_enabled!(Trace) {
+                    // FIXME: Log this. Not sure how to make T implement Display.
+                    //trace!(target: "bitcoincore_rpc", "JSON-RPC response for {}: {}", cmd, resp);
                 }
             }
         }

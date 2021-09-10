@@ -13,13 +13,13 @@ use std::{error, fmt, io};
 use bitcoin;
 use bitcoin::hashes::hex;
 use bitcoin::secp256k1;
-use jsonrpc;
+use rpc;
 use serde_json;
 
 /// The error type for errors produced in this library.
 #[derive(Debug)]
 pub enum Error {
-    JsonRpc(jsonrpc::error::Error),
+    JsonRpc(rpc::http::Error),
     Hex(hex::Error),
     Json(serde_json::error::Error),
     BitcoinSerialization(bitcoin::consensus::encode::Error),
@@ -31,8 +31,8 @@ pub enum Error {
     UnexpectedStructure,
 }
 
-impl From<jsonrpc::error::Error> for Error {
-    fn from(e: jsonrpc::error::Error) -> Error {
+impl From<rpc::http::Error> for Error {
+    fn from(e: rpc::http::Error) -> Error {
         Error::JsonRpc(e)
     }
 }

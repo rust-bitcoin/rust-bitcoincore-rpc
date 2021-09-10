@@ -19,7 +19,7 @@ extern crate log;
 use std::collections::HashMap;
 
 use bitcoincore_rpc::json;
-use bitcoincore_rpc::jsonrpc::error::Error as JsonRpcError;
+use bitcoincore_rpc::rpc::http::Error as JsonRpcError;
 use bitcoincore_rpc::{Auth, Client, Error, RpcApi};
 
 use bitcoin::consensus::encode::{deserialize, serialize};
