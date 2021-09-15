@@ -1066,11 +1066,13 @@ pub struct GetPeerInfoResult {
 }
 
 #[derive(Copy, Serialize, Deserialize, Clone, PartialEq, Eq, Debug)]
-#[serde(rename_all = "lowercase")]
+#[serde(rename_all = "snake_case")]
 pub enum GetPeerInfoResultNetwork {
     Ipv4,
     Ipv6,
     Onion,
+    I2p,
+    NotPubliclyRoutable,
     // this is undocumented upstream
     Unroutable,
 }
@@ -1607,6 +1609,7 @@ pub enum AddressType {
     Legacy,
     P2shSegwit,
     Bech32,
+    Bech32m,
 }
 
 /// Used to represent arguments that can either be an address or a public key.
@@ -1685,4 +1688,38 @@ where
         res.push(FromHex::from_hex(&h).map_err(D::Error::custom)?);
     }
     Ok(Some(res))
+}
+
+/// Import Descriptor Request
+#[derive(Serialize, Clone, PartialEq, Eq, Debug)]
+pub struct ImportDescriptorRequest {
+    pub active: bool,
+    #[serde(rename = "desc")]
+    pub descriptor: String,
+    pub range: [i64; 2],
+    pub next_index: i64,
+    pub timestamp: String,
+    pub internal: bool,
+}
+
+impl ImportDescriptorRequest {
+    /// Create a new Import Descriptor request providing just the descriptor and internal flags
+    pub fn new(descriptor: &str, internal: bool) -> Self {
+        ImportDescriptorRequest {
+            descriptor: descriptor.to_string(),
+            internal,
+            active: true,
+            range: [0, 100],
+            next_index: 0,
+            timestamp: "now".to_string(),
+        }
+    }
+}
+
+/// Imported Descriptor Result
+#[derive(Serialize, Deserialize, Clone, PartialEq, Eq, Debug)]
+pub struct ImportDescriptorResult {
+    pub success: bool,
+    pub warnings: Option<Vec<String>>,
+    pub error: Option<String>,
 }
