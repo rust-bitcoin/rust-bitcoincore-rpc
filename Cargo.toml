@@ -3,5 +3,6 @@
 members = [
     "json",
     "client",
+    "rpc",
     "integration_test",
 ]

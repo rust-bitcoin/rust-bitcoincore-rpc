@@ -9,11 +9,10 @@
 //
 
 extern crate bitcoincore_rpc;
-extern crate jsonrpc;
 extern crate serde;
 extern crate serde_json;
 
-use bitcoincore_rpc::{Client, Error, Result, RpcApi};
+use bitcoincore_rpc::{rpc, Client, Error, Result, RpcApi};
 
 pub struct RetryClient {
     client: Client,
@@ -31,7 +30,7 @@ impl RpcApi for RetryClient {
         for _ in 0..RETRY_ATTEMPTS {
             match self.client.call(cmd, args) {
                 Ok(ret) => return Ok(ret),
-                Err(Error::JsonRpc(jsonrpc::error::Error::Rpc(ref rpcerr)))
+                Err(Error::JsonRpc(rpc::http::Error::Rpc(ref rpcerr)))
                     if rpcerr.code == -28 =>
                 {
                     ::std::thread::sleep(::std::time::Duration::from_millis(INTERVAL));
