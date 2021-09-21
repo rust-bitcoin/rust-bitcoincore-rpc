@@ -1,6 +1,6 @@
 [package]
 name = "bitcoincore-rpc-json"
-version = "0.13.0"
+version = "0.14.0"
 authors = [
     "Steven Roose <steven@stevenroose.org>",
     "Jean Pierre Dudey <jeandudey@hotmail.com>",
@@ -21,4 +21,4 @@ path = "src/lib.rs"
 serde = { version = "1", features = [ "derive" ] }
 serde_json = "1"
 
-bitcoin = { version = "0.26", features = [ "use-serde" ] }
+bitcoin = { version = "0.27", features = [ "use-serde" ] }
