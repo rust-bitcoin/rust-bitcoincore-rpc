@@ -121,9 +121,6 @@ fn handle_defaults<'a, 'b>(
         let defaults_i = defaults.len() - 1 - i;
         if args[args_i] == serde_json::Value::Null {
             if first_non_null_optional_idx.is_some() {
-                if defaults[defaults_i] == serde_json::Value::Null {
-                    panic!("Missing `default` for argument idx {}", args_i);
-                }
                 args[args_i] = defaults[defaults_i].clone();
             }
         } else if first_non_null_optional_idx.is_none() {
@@ -900,6 +897,8 @@ pub trait RpcApi: Sized {
         replaceable: Option<bool>,
         confirmation_target: Option<u32>,
         estimate_mode: Option<json::EstimateMode>,
+        avoid_reuse: Option<bool>,
+        fee_rate: Option<i32>,
     ) -> Result<bitcoin::Txid> {
         let mut args = [
             address.to_string().into(),
@@ -910,12 +909,14 @@ pub trait RpcApi: Sized {
             opt_into_json(replaceable)?,
             opt_into_json(confirmation_target)?,
             opt_into_json(estimate_mode)?,
+            opt_into_json(avoid_reuse)?,
+            opt_into_json(fee_rate)?,
         ];
         self.call(
             "sendtoaddress",
             handle_defaults(
                 &mut args,
-                &["".into(), "".into(), false.into(), false.into(), 6.into(), null()],
+                &["".into(), "".into(), false.into(), false.into(), null(), null(), null(), null()],
             ),
         )
     }
