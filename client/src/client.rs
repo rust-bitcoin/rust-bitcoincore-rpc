@@ -888,6 +888,9 @@ pub trait RpcApi: Sized {
         replaceable: Option<bool>,
         confirmation_target: Option<u32>,
         estimate_mode: Option<json::EstimateMode>,
+        avoid_reuse: Option<bool>,
+        fee_rate: Option<i32>,
+        verbose: Option<bool>,
     ) -> Result<bitcoin::Txid> {
         let mut args = [
             address.to_string().into(),
@@ -898,12 +901,25 @@ pub trait RpcApi: Sized {
             opt_into_json(replaceable)?,
             opt_into_json(confirmation_target)?,
             opt_into_json(estimate_mode)?,
+            opt_into_json(avoid_reuse)?,
+            opt_into_json(fee_rate)?,
+            opt_into_json(verbose)?,
         ];
         self.call(
             "sendtoaddress",
             handle_defaults(
                 &mut args,
-                &["".into(), "".into(), false.into(), false.into(), 6.into(), null()],
+                &[
+                    "".into(),
+                    "".into(),
+                    false.into(),
+                    false.into(),
+                    6.into(),
+                    null(),
+                    true.into(),
+                    null(),
+                    false.into(),
+                ],
             ),
         )
     }
