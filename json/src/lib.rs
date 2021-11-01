@@ -1066,11 +1066,13 @@ pub struct GetPeerInfoResult {
 }
 
 #[derive(Copy, Serialize, Deserialize, Clone, PartialEq, Eq, Debug)]
-#[serde(rename_all = "lowercase")]
+#[serde(rename_all = "snake_case")]
 pub enum GetPeerInfoResultNetwork {
     Ipv4,
     Ipv6,
     Onion,
+    I2p,
+    NotPubliclyRoutable,
     // this is undocumented upstream
     Unroutable,
 }
