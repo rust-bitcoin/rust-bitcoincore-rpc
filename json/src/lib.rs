@@ -629,6 +629,7 @@ pub enum ScriptPubkeyType {
     Witness_v0_KeyHash,
     Witness_v0_ScriptHash,
     Witness_Unknown,
+    Witness_v1_Taproot,
 }
 
 #[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
@@ -835,7 +836,7 @@ impl<'a> serde::Serialize for ImportMultiRequestScriptPubkey<'a> {
                 #[derive(Serialize)]
                 struct Tmp<'a> {
                     pub address: &'a Address,
-                };
+                }
                 serde::Serialize::serialize(
                     &Tmp {
                         address: addr,
