@@ -628,6 +628,7 @@ pub enum ScriptPubkeyType {
     NullData,
     Witness_v0_KeyHash,
     Witness_v0_ScriptHash,
+    Witness_v1_Taproot,
     Witness_Unknown,
 }
 
