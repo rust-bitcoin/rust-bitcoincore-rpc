@@ -582,10 +582,10 @@ pub enum Bip9SoftforkStatus {
 #[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
 pub struct Bip9SoftforkStatistics {
     pub period: u32,
-    pub threshold: u32,
+    pub threshold: Option<u32>,
     pub elapsed: u32,
     pub count: u32,
-    pub possible: bool,
+    pub possible: Option<bool>,
 }
 
 #[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
