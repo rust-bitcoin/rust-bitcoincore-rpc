@@ -20,7 +20,7 @@ use serde;
 use serde_json;
 
 use bitcoin::hashes::hex::{FromHex, ToHex};
-use bitcoin::secp256k1::Signature;
+use bitcoin::secp256k1::ecdsa;
 use bitcoin::{
     Address, Amount, Block, BlockHeader, OutPoint, PrivateKey, PublicKey, Script, Transaction,
 };
@@ -815,7 +815,7 @@ pub trait RpcApi: Sized {
     fn verify_message(
         &self,
         address: &Address,
-        signature: &Signature,
+        signature: &ecdsa::Signature,
         message: &str,
     ) -> Result<bool> {
         let args = [address.to_string().into(), signature.to_string().into(), into_json(message)?];
@@ -1008,7 +1008,7 @@ pub trait RpcApi: Sized {
         ];
         let defaults = [
             true.into(),
-            into_json(json::SigHashType::from(bitcoin::SigHashType::All))?,
+            into_json(json::SigHashType::from(bitcoin::EcdsaSighashType::All))?,
             true.into(),
         ];
         self.call("walletprocesspsbt", handle_defaults(&mut args, &defaults))
