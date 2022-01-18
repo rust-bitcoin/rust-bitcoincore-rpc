@@ -1095,7 +1095,7 @@ impl<'a> serde::Serialize for ImportMultiRequestScriptPubkey<'a> {
                 #[derive(Serialize)]
                 struct Tmp<'a> {
                     pub address: &'a Address,
-                };
+                }
                 serde::Serialize::serialize(
                     &Tmp {
                         address: addr,
@@ -1733,12 +1733,12 @@ pub enum EstimateMode {
     Conservative,
 }
 
-/// A wrapper around bitcoin::SigHashType that will be serialized
+/// A wrapper around bitcoin::EcdsaSighashType that will be serialized
 /// according to what the RPC expects.
-pub struct SigHashType(bitcoin::SigHashType);
+pub struct SigHashType(bitcoin::EcdsaSighashType);
 
-impl From<bitcoin::SigHashType> for SigHashType {
-    fn from(sht: bitcoin::SigHashType) -> SigHashType {
+impl From<bitcoin::EcdsaSighashType> for SigHashType {
+    fn from(sht: bitcoin::EcdsaSighashType) -> SigHashType {
         SigHashType(sht)
     }
 }
@@ -1749,12 +1749,12 @@ impl serde::Serialize for SigHashType {
         S: serde::Serializer,
     {
         serializer.serialize_str(match self.0 {
-            bitcoin::SigHashType::All => "ALL",
-            bitcoin::SigHashType::None => "NONE",
-            bitcoin::SigHashType::Single => "SINGLE",
-            bitcoin::SigHashType::AllPlusAnyoneCanPay => "ALL|ANYONECANPAY",
-            bitcoin::SigHashType::NonePlusAnyoneCanPay => "NONE|ANYONECANPAY",
-            bitcoin::SigHashType::SinglePlusAnyoneCanPay => "SINGLE|ANYONECANPAY",
+            bitcoin::EcdsaSighashType::All => "ALL",
+            bitcoin::EcdsaSighashType::None => "NONE",
+            bitcoin::EcdsaSighashType::Single => "SINGLE",
+            bitcoin::EcdsaSighashType::AllPlusAnyoneCanPay => "ALL|ANYONECANPAY",
+            bitcoin::EcdsaSighashType::NonePlusAnyoneCanPay => "NONE|ANYONECANPAY",
+            bitcoin::EcdsaSighashType::SinglePlusAnyoneCanPay => "SINGLE|ANYONECANPAY",
         })
     }
 }
