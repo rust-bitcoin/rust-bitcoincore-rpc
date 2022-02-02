@@ -999,7 +999,7 @@ pub struct GetPeerInfoResult {
     /// Local address as reported by the peer
     // TODO: use a type for addrlocal
     pub addrlocal: Option<String>,
-    /// Network (ipv4, ipv6, or onion) the peer connected throug
+    /// Network (ipv4, ipv6, or onion) the peer connected through
     /// Added in Bitcoin Core v0.21
     pub network: Option<GetPeerInfoResultNetwork>,
     /// The services offered
@@ -1067,13 +1067,17 @@ pub struct GetPeerInfoResult {
 }
 
 #[derive(Copy, Serialize, Deserialize, Clone, PartialEq, Eq, Debug)]
-#[serde(rename_all = "lowercase")]
+#[serde(rename_all = "snake_case")]
 pub enum GetPeerInfoResultNetwork {
     Ipv4,
     Ipv6,
     Onion,
-    // this is undocumented upstream
+    #[deprecated]
     Unroutable,
+    NotPubliclyRoutable,
+    I2p,
+    Cjdns,
+    Internal,
 }
 
 #[derive(Copy, Serialize, Deserialize, Clone, PartialEq, Eq, Debug)]
