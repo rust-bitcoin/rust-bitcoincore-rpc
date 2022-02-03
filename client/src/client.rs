@@ -196,7 +196,7 @@ pub enum Auth {
 
 impl Auth {
     /// Convert into the arguments that jsonrpc::Client needs.
-    fn get_user_pass(self) -> Result<(Option<String>, Option<String>)> {
+    pub fn get_user_pass(self) -> Result<(Option<String>, Option<String>)> {
         use std::io::Read;
         match self {
             Auth::None => Ok((None, None)),
