@@ -908,6 +908,77 @@ pub trait RpcApi: Sized {
         )
     }
 
+    /// Attempts to add a node to the addnode list.
+    /// Nodes added using addnode (or -connect) are protected from DoS disconnection and are not required to be full nodes/support SegWit as other outbound peers are (though such peers will not be synced from).
+    fn add_node(&self, addr: &str) -> Result<()> {
+        self.call("addnode", &[into_json(&addr)?, into_json("add")?])
+    }
+
+    /// Attempts to remove a node from the addnode list.
+    fn remove_node(&self, addr: &str) -> Result<()> {
+        self.call("addnode", &[into_json(&addr)?, into_json("remove")?])
+    }
+
+    /// Attempts to connect to a node without permanently adding it to the addnode list.
+    fn onetry_node(&self, addr: &str) -> Result<()> {
+        self.call("addnode", &[into_json(&addr)?, into_json("onetry")?])
+    }
+
+    /// Immediately disconnects from the specified peer node.
+    fn disconnect_node(&self, addr: &str) -> Result<()> {
+        self.call("disconnectnode", &[into_json(&addr)?])
+    }
+
+    fn disconnect_node_by_id(&self, node_id: u32) -> Result<()> {
+        self.call("disconnectnode", &[into_json("")?, into_json(node_id)?])
+    }
+
+    /// Returns information about the given added node, or all added nodes (note that onetry addnodes are not listed here)
+    fn get_added_node_info(&self, node: Option<&str>) -> Result<Vec<json::GetAddedNodeInfoResult>> {
+        if let Some(addr) = node {
+            self.call("getaddednodeinfo", &[into_json(&addr)?])
+        } else {
+            self.call("getaddednodeinfo", &[])
+        }
+    }
+
+    /// Return known addresses which can potentially be used to find new nodes in the network
+    fn get_node_addresses(
+        &self,
+        count: Option<usize>,
+    ) -> Result<Vec<json::GetNodeAddressesResult>> {
+        let cnt = count.unwrap_or(1);
+        self.call("getnodeaddresses", &[into_json(&cnt)?])
+    }
+
+    /// List all banned IPs/Subnets.
+    fn list_banned(&self) -> Result<Vec<json::ListBannedResult>> {
+        self.call("listbanned", &[])
+    }
+
+    /// Clear all banned IPs.
+    fn clear_banned(&self) -> Result<()> {
+        self.call("clearbanned", &[])
+    }
+
+    /// Attempts to add an IP/Subnet to the banned list.
+    fn add_ban(&self, subnet: &str, bantime: u64, absolute: bool) -> Result<()> {
+        self.call(
+            "setban",
+            &[into_json(&subnet)?, into_json("add")?, into_json(&bantime)?, into_json(&absolute)?],
+        )
+    }
+
+    /// Attempts to remove an IP/Subnet from the banned list.
+    fn remove_ban(&self, subnet: &str) -> Result<()> {
+        self.call("setban", &[into_json(&subnet)?, into_json("remove")?])
+    }
+
+    /// Disable/enable all p2p network activity.
+    fn set_network_active(&self, state: bool) -> Result<bool> {
+        self.call("setnetworkactive", &[into_json(&state)?])
+    }
+
     /// Returns data about each connected network node as an array of
     /// [`PeerInfo`][]
     ///

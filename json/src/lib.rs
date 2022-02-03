@@ -1091,6 +1091,51 @@ pub enum GetPeerInfoResultConnectionType {
     Feeler,
 }
 
+#[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
+pub struct GetAddedNodeInfoResult {
+    /// The node IP address or name (as provided to addnode)
+    #[serde(rename = "addednode")]
+    pub added_node: String,
+    ///  If connected
+    pub connected: bool,
+    /// Only when connected = true
+    pub addresses: Vec<GetAddedNodeInfoResultAddress>,
+}
+
+#[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
+pub struct GetAddedNodeInfoResultAddress {
+    /// The bitcoin server IP and port we're connected to
+    pub address: String,
+    /// connection, inbound or outbound
+    pub connected: GetAddedNodeInfoResultAddressType,
+}
+
+#[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
+#[serde(rename_all = "lowercase")]
+pub enum GetAddedNodeInfoResultAddressType {
+    Inbound,
+    Outbound,
+}
+
+#[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
+pub struct GetNodeAddressesResult {
+    /// Timestamp in seconds since epoch (Jan 1 1970 GMT) keeping track of when the node was last seen
+    pub time: u64,
+    /// The services offered
+    pub services: usize,
+    /// The address of the node
+    pub address: String,
+    /// The port of the node
+    pub port: u16,
+}
+
+#[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
+pub struct ListBannedResult {
+    pub address: String,
+    pub banned_until: u64,
+    pub ban_created: u64,
+}
+
 /// Models the result of "estimatesmartfee"
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct EstimateSmartFeeResult {
