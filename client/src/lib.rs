@@ -18,34 +18,32 @@
 
 #[macro_use]
 extern crate log;
-#[allow(unused)]
-#[macro_use] // `macro_use` is needed for v1.24.0 compilation.
-extern crate serde;
 
 pub extern crate jsonrpc;
 
 pub extern crate bitcoincore_rpc_json;
-pub use crate::json::bitcoin;
 pub use bitcoincore_rpc_json as json;
-use json::bitcoin::consensus::{Decodable, ReadExt};
-use json::bitcoin::hashes::hex::HexIterator;
+
+pub use crate::json::bitcoin;
 
 mod client;
+pub use client::*;
+
+mod params;
+pub use params::*;
+
+mod sync_client;
+pub use sync_client::SyncClient;
+
+mod async_client;
+pub use async_client::AsyncClient;
+
 mod error;
-mod queryable;
+pub use error::Error;
 
-pub use crate::client::*;
-pub use crate::error::Error;
-pub use crate::queryable::*;
+pub mod requests;
+pub mod serialize;
 
-fn deserialize_hex<T: Decodable>(hex: &str) -> Result<T> {
-    let mut reader = HexIterator::new(&hex)?;
-    let object = Decodable::consensus_decode(&mut reader)?;
-    if reader.read_u8().is_ok() {
-        Err(Error::BitcoinSerialization(bitcoin::consensus::encode::Error::ParseFailed(
-            "data not consumed entirely when explicitly deserializing",
-        )))
-    } else {
-        Ok(object)
-    }
-}
+/// Crate-specific Result type, shorthand for `std::result::Result` with our
+/// crate-specific Error type;
+pub type Result<T> = std::result::Result<T, Error>;
