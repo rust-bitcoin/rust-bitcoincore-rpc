@@ -9,3 +9,4 @@ bitcoincore-rpc = { path = "../client" }
 bitcoin = { version = "0.30.0", features = ["serde", "rand"]}
 lazy_static = "1.4.0"
 log = "0.4"
+backtrace = "0.3.50"

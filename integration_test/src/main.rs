@@ -9,28 +9,32 @@
 //!
 
 #![deny(unused)]
+#![allow(deprecated)]
 
 #[macro_use]
 extern crate lazy_static;
 
-use std::collections::HashMap;
+use std::cell::RefCell;
+use std::{mem, panic};
 use std::str::FromStr;
 
-use bitcoin::absolute::LockTime;
-use bitcoin::address::NetworkChecked;
+use backtrace::Backtrace;
 use bitcoincore_rpc::json;
+use bitcoincore_rpc::jsonrpc;
 use bitcoincore_rpc::jsonrpc::error::Error as JsonRpcError;
-use bitcoincore_rpc::{Auth, Client, Error, RpcApi};
+use bitcoincore_rpc::{Auth, Error, SyncClient};
 
-use crate::json::BlockStatsFields as BsFields;
+use crate::json::{BlockStatsFields as BsFields};
 use bitcoin::consensus::encode::{deserialize, serialize_hex};
 use bitcoin::hashes::hex::FromHex;
 use bitcoin::hashes::Hash;
-use bitcoin::{secp256k1, ScriptBuf, sighash};
+use bitcoin::sighash::EcdsaSighashType;
+use bitcoin::{secp256k1, ScriptBuf};
 use bitcoin::{
-    Address, Amount, Network, OutPoint, PrivateKey,
+    Address, Amount, FeeRate, Network, OutPoint, PrivateKey,
     Sequence, SignedAmount, Transaction, TxIn, TxOut, Txid, Witness,
 };
+use bitcoin::blockdata::locktime::absolute::LockTime;
 use bitcoincore_rpc::bitcoincore_rpc_json::{
     GetBlockTemplateModes, GetBlockTemplateRules, ScanTxOutRequest,
 };
@@ -39,7 +43,9 @@ lazy_static! {
     static ref SECP: secp256k1::Secp256k1<secp256k1::All> = secp256k1::Secp256k1::new();
     static ref NET: Network = Network::Regtest;
     /// A random address not owned by the node.
-    static ref RANDOM_ADDRESS: Address<NetworkChecked> = Address::from_str("mgR9fN5UzZ64mSUUtk6NwxxS6kwVfoEtPG").unwrap().assume_checked();
+    static ref RANDOM_ADDRESS: Address = Address::from_str("mgR9fN5UzZ64mSUUtk6NwxxS6kwVfoEtPG").unwrap().assume_checked();
+    /// The default fee rate to use when needed.
+    static ref FEERATE: FeeRate = FeeRate::from_per_vb(Amount::from_sat(1)).unwrap();
     /// The default fee amount to use when needed.
     static ref FEE: Amount = Amount::from_btc(0.001).unwrap();
 }
@@ -93,12 +99,6 @@ macro_rules! assert_error_message {
     };
 }
 
-static mut VERSION: usize = 0;
-/// Get the version of the node that is running.
-fn version() -> usize {
-    unsafe { VERSION }
-}
-
 /// Quickly create a BTC amount.
 fn btc<F: Into<f64>>(btc: F) -> Amount {
     Amount::from_btc(btc.into()).unwrap()
@@ -106,6 +106,10 @@ fn btc<F: Into<f64>>(btc: F) -> Amount {
 /// Quickly create a signed BTC amount.
 fn sbtc<F: Into<f64>>(btc: F) -> SignedAmount {
     SignedAmount::from_btc(btc.into()).unwrap()
+}
+/// Quickly create a feerate in sat_per_vb.
+fn sat_per_vb(v: u64) -> FeeRate {
+    FeeRate::from_per_vb(Amount::from_sat(v)).unwrap()
 }
 
 fn get_rpc_url() -> String {
@@ -122,87 +126,143 @@ fn get_auth() -> bitcoincore_rpc::Auth {
     };
 }
 
+type Client = bitcoincore_rpc::Client<jsonrpc::simple_http::SimpleHttpTransport>;
+fn make_client(url: &str) -> Client {
+    Client::with_simple_http(url, get_auth()).unwrap()
+}
+
 fn new_wallet_client(wallet_name: &str) -> Client {
-    let url = format!("{}{}{}", get_rpc_url(), "/wallet/", wallet_name);
-    Client::new(&url, get_auth()).unwrap()
+    make_client(&format!("{}{}{}", get_rpc_url(), "/wallet/", wallet_name))
+}
+
+lazy_static! {
+    static ref CLIENT: Client = {
+        let rpc_url = format!("{}/wallet/testwallet", get_rpc_url());
+        make_client(&rpc_url)
+    };
+}
+
+/// Get the version of the node that is running.
+fn version() -> usize {
+    static mut VERSION: Option<usize> = None;
+
+    match unsafe { VERSION } {
+        Some(v) => v,
+        None => {
+            let v = CLIENT.version().unwrap();
+            unsafe {
+                VERSION = Some(v);
+            }
+            v
+        }
+    }
+}
+
+thread_local! {
+    static LAST_PANIC: RefCell<Option<(String, Backtrace)>> = RefCell::new(None);
+}
+
+/// Here we will collect all the results of the individual tests,
+/// preserving ordering.
+/// Ideally this would be preset with capacity, but static prevents this.
+static mut RESULTS: Vec<(&'static str, bool)> = Vec::new();
+
+macro_rules! run_test {
+    ($method:ident) => {
+        println!("Running {}...", stringify!($method));
+        let result = panic::catch_unwind(|| {
+            $method(&*CLIENT);
+        });
+        if result.is_err() {
+            let (msg, bt) = LAST_PANIC.with(|b| b.borrow_mut().take()).unwrap();
+            println!("{}", msg);
+            println!("{:?}", bt);
+            println!("--");
+        }
+
+        unsafe { RESULTS.push((stringify!($method), result.is_ok())); }
+    }
 }
 
 fn main() {
     log::set_logger(&LOGGER).map(|()| log::set_max_level(log::LevelFilter::max())).unwrap();
 
-    let cl = new_wallet_client("testwallet");
+    // let default_hook = std::panic::take_hook()g
+    std::panic::set_hook(Box::new(|panic_info| {
+        let bt = Backtrace::new();
+        LAST_PANIC.with(move |b| b.borrow_mut().replace((panic_info.to_string(), bt)));
+    }));
 
-    test_get_network_info(&cl);
-    unsafe { VERSION = cl.version().unwrap() };
+    run_test!(test_get_network_info);
     println!("Version: {}", version());
 
-    cl.create_wallet("testwallet", None, None, None, None).unwrap();
+    CLIENT.create_wallet("testwallet", None, None, None, None).unwrap();
 
-    test_get_mining_info(&cl);
-    test_get_blockchain_info(&cl);
-    test_get_new_address(&cl);
-    test_get_raw_change_address(&cl);
-    test_dump_private_key(&cl);
-    test_generate(&cl);
-    test_get_balance_generate_to_address(&cl);
-    test_get_balances_generate_to_address(&cl);
-    test_get_best_block_hash(&cl);
-    test_get_block_count(&cl);
-    test_get_block_hash(&cl);
-    test_get_block(&cl);
-    test_get_block_header_get_block_header_info(&cl);
-    test_get_block_stats(&cl);
-    test_get_block_stats_fields(&cl);
-    test_get_address_info(&cl);
-    test_set_label(&cl);
-    test_send_to_address(&cl);
-    test_get_received_by_address(&cl);
-    test_list_unspent(&cl);
-    test_get_difficulty(&cl);
-    test_get_connection_count(&cl);
-    test_get_raw_transaction(&cl);
-    test_get_raw_mempool(&cl);
-    test_get_raw_mempool_verbose(&cl);
-    test_get_transaction(&cl);
-    test_list_transactions(&cl);
-    test_list_since_block(&cl);
-    test_get_tx_out(&cl);
-    test_get_tx_out_proof(&cl);
-    test_get_mempool_entry(&cl);
-    test_lock_unspent_unlock_unspent(&cl);
-    test_get_block_filter(&cl);
-    test_sign_raw_transaction_with_send_raw_transaction(&cl);
-    test_invalidate_block_reconsider_block(&cl);
-    test_key_pool_refill(&cl);
-    test_create_raw_transaction(&cl);
-    test_decode_raw_transaction(&cl);
-    test_fund_raw_transaction(&cl);
-    test_test_mempool_accept(&cl);
-    test_wallet_create_funded_psbt(&cl);
-    test_wallet_process_psbt(&cl);
-    test_join_psbt(&cl);
-    test_combine_psbt(&cl);
-    test_combine_raw_transaction(&cl);
-    test_create_psbt(&cl);
-    test_finalize_psbt(&cl);
-    test_list_received_by_address(&cl);
-    test_scantxoutset(&cl);
-    test_import_public_key(&cl);
-    test_import_priv_key(&cl);
-    test_import_address(&cl);
-    test_import_address_script(&cl);
-    test_estimate_smart_fee(&cl);
-    test_ping(&cl);
-    test_get_peer_info(&cl);
-    test_rescan_blockchain(&cl);
-    test_create_wallet(&cl);
-    test_get_tx_out_set_info(&cl);
-    test_get_chain_tips(&cl);
-    test_get_net_totals(&cl);
-    test_get_network_hash_ps(&cl);
-    test_uptime(&cl);
-    test_getblocktemplate(&cl);
-    test_unloadwallet(&cl);
+    run_test!(test_get_mining_info);
+    run_test!(test_get_blockchain_info);
+    run_test!(test_get_new_address);
+    run_test!(test_get_raw_change_address);
+    run_test!(test_dump_private_key);
+    run_test!(test_generate);
+    run_test!(test_get_balance_generate_to_address);
+    run_test!(test_get_balances_generate_to_address);
+    run_test!(test_get_best_block_hash);
+    run_test!(test_get_block_count);
+    run_test!(test_get_block_hash);
+    run_test!(test_get_block);
+    run_test!(test_get_block_header_get_block_header_info);
+    run_test!(test_get_block_stats);
+    run_test!(test_get_block_stats_fields);
+    run_test!(test_get_address_info);
+    run_test!(test_set_label);
+    run_test!(test_send_to_address);
+    run_test!(test_get_received_by_address);
+    run_test!(test_list_unspent);
+    run_test!(test_get_difficulty);
+    run_test!(test_get_connection_count);
+    run_test!(test_get_raw_transaction);
+    run_test!(test_get_raw_mempool);
+    run_test!(test_get_raw_mempool_verbose);
+    run_test!(test_get_transaction);
+    run_test!(test_list_transactions);
+    run_test!(test_list_since_block);
+    run_test!(test_get_tx_out);
+    run_test!(test_get_tx_out_proof);
+    run_test!(test_get_mempool_entry);
+    run_test!(test_lock_unspent_unlock_unspent);
+    run_test!(test_get_block_filter);
+    run_test!(test_sign_raw_transaction_with_send_raw_transaction);
+    run_test!(test_invalidate_block_reconsider_block);
+    run_test!(test_key_pool_refill);
+    run_test!(test_create_raw_transaction);
+    run_test!(test_decode_raw_transaction);
+    run_test!(test_fund_raw_transaction);
+    run_test!(test_test_mempool_accept);
+    run_test!(test_wallet_create_funded_psbt);
+    run_test!(test_wallet_process_psbt);
+    run_test!(test_join_psbts);
+    run_test!(test_combine_psbt);
+    run_test!(test_combine_raw_transaction);
+    run_test!(test_create_psbt);
+    run_test!(test_finalize_psbt);
+    run_test!(test_list_received_by_address);
+    run_test!(test_scantxoutset);
+    run_test!(test_import_public_key);
+    run_test!(test_import_priv_key);
+    run_test!(test_import_address);
+    run_test!(test_import_address_script);
+    run_test!(test_estimate_smart_fee);
+    run_test!(test_ping);
+    run_test!(test_get_peer_info);
+    run_test!(test_rescan_blockchain);
+    run_test!(test_create_wallet);
+    run_test!(test_get_tx_out_set_info);
+    run_test!(test_get_chain_tips);
+    run_test!(test_get_net_totals);
+    run_test!(test_get_network_hash_ps);
+    run_test!(test_uptime);
+    run_test!(test_getblocktemplate);
+    run_test!(test_unloadwallet);
     //TODO import_multi(
     //TODO verify_message(
     //TODO wait_for_new_block(&self, timeout: u64) -> Result<json::BlockRef> {
@@ -214,14 +274,37 @@ fn main() {
     //TODO add_multisig_address(
     //TODO load_wallet(&self, wallet: &str) -> Result<json::LoadWalletResult> {
     //TODO backup_wallet(&self, destination: Option<&str>) -> Result<()> {
-    test_add_node(&cl);
-    test_get_added_node_info(&cl);
-    test_get_node_addresses(&cl);
-    test_disconnect_node(&cl);
-    test_add_ban(&cl);
-    test_set_network_active(&cl);
-    test_get_index_info(&cl);
-    test_stop(cl);
+    run_test!(test_add_node);
+    run_test!(test_get_added_node_info);
+    run_test!(test_get_node_addresses);
+    run_test!(test_disconnect_node);
+    run_test!(test_add_ban);
+    run_test!(test_set_network_active);
+    run_test!(test_get_index_info);
+    run_test!(test_stop);
+
+    // Print results
+    println!("");
+    println!("");
+    println!("Summary:");
+    let mut error_count = 0;
+    for (name, success) in mem::replace(unsafe { &mut RESULTS }, Vec::new()).into_iter() {
+        if !success {
+            println!(" - {}: FAILED", name);
+            error_count += 1;
+        } else {
+            println!(" - {}: PASSED", name);
+        }
+    }
+
+    println!("");
+
+    if error_count == 0 {
+        println!("All tests succesful!");
+    } else {
+        println!("{} tests failed", error_count);
+        std::process::exit(1);
+    }
 }
 
 fn test_get_network_info(cl: &Client) {
@@ -285,7 +368,8 @@ fn test_generate(cl: &Client) {
 fn test_get_balance_generate_to_address(cl: &Client) {
     let initial = cl.get_balance(None, None).unwrap();
 
-    let blocks = cl.generate_to_address(500, &cl.get_new_address(None, None).unwrap().assume_checked()).unwrap();
+    let addr = cl.get_new_address(None, None).unwrap().assume_checked();
+    let blocks = cl.generate_to_address(500, &addr, None).unwrap();
     assert_eq!(blocks.len(), 500);
     assert_ne!(cl.get_balance(None, None).unwrap(), initial);
 }
@@ -294,7 +378,8 @@ fn test_get_balances_generate_to_address(cl: &Client) {
     if version() >= 190000 {
         let initial = cl.get_balances().unwrap();
 
-        let blocks = cl.generate_to_address(500, &cl.get_new_address(None, None).unwrap().assume_checked()).unwrap();
+        let addr = cl.get_new_address(None, None).unwrap().assume_checked();
+        let blocks = cl.generate_to_address(500, &addr, None).unwrap();
         assert_eq!(blocks.len(), 500);
         assert_ne!(cl.get_balances().unwrap(), initial);
     }
@@ -413,20 +498,45 @@ fn test_set_label(cl: &Client) {
 fn test_send_to_address(cl: &Client) {
     let addr = cl.get_new_address(None, None).unwrap().assume_checked();
     let est = json::EstimateMode::Conservative;
-    let _ = cl.send_to_address(&addr, btc(1), Some("cc"), None, None, None, None, None).unwrap();
-    let _ = cl.send_to_address(&addr, btc(1), None, Some("tt"), None, None, None, None).unwrap();
-    let _ = cl.send_to_address(&addr, btc(1), None, None, Some(true), None, None, None).unwrap();
-    let _ = cl.send_to_address(&addr, btc(1), None, None, None, Some(true), None, None).unwrap();
-    let _ = cl.send_to_address(&addr, btc(1), None, None, None, None, Some(3), None).unwrap();
-    let _ = cl.send_to_address(&addr, btc(1), None, None, None, None, None, Some(est)).unwrap();
+    let _ = cl.send_to_address(
+        &addr, btc(1), Some("cc"), None, None, None, None, None, None, None,
+    ).unwrap();
+    let _ = cl.send_to_address(
+        &addr, btc(1), None, Some("tt"), None, None, None, None, None, None,
+        ).unwrap();
+    let _ = cl.send_to_address(
+        &addr, btc(1), None, None, Some(true), None, None, None, None, None,
+    ).unwrap();
+    let _ = cl.send_to_address(
+        &addr, btc(1), None, None, None, Some(true), None, None, None, None,
+    ).unwrap();
+    let _ = cl.send_to_address(
+        &addr, btc(1), None, None, None, None, Some(3), None, None, None,
+    ).unwrap();
+    let _ = cl.send_to_address(
+        &addr, btc(1), None, None, None, None, None, Some(est), None, None,
+    ).unwrap();
+    if version() >= 19_00_00 {
+        let _ = cl.send_to_address(
+            &addr, btc(1), None, None, None, None, None, None, Some(false), None,
+        ).unwrap();
+    }
+    if version() >= 21_00_00 {
+        let _ = cl.send_to_address(
+            &addr, btc(1), None, None, None, None, None, None, None, Some(sat_per_vb(1)),
+        ).unwrap();
+    }
 }
 
 fn test_get_received_by_address(cl: &Client) {
     let addr = cl.get_new_address(None, None).unwrap().assume_checked();
-    let _ = cl.send_to_address(&addr, btc(1), None, None, None, None, None, None).unwrap();
+    let _ = cl.send_to_address(
+        &addr, btc(1), None, None, None, None, None, None, None, None,
+    ).unwrap();
     assert_eq!(cl.get_received_by_address(&addr, Some(0)).unwrap(), btc(1));
     assert_eq!(cl.get_received_by_address(&addr, Some(1)).unwrap(), btc(0));
-    let _ = cl.generate_to_address(7, &cl.get_new_address(None, None).unwrap().assume_checked()).unwrap();
+    let addr2 = cl.get_new_address(None, None).unwrap().assume_checked();
+    let _ = cl.generate_to_address(7, &addr2, None).unwrap();
     assert_eq!(cl.get_received_by_address(&addr, Some(6)).unwrap(), btc(1));
     assert_eq!(cl.get_received_by_address(&addr, None).unwrap(), btc(1));
 }
@@ -434,19 +544,23 @@ fn test_get_received_by_address(cl: &Client) {
 fn test_list_unspent(cl: &Client) {
     let addr = cl.get_new_address(None, None).unwrap();
     let addr_checked = addr.clone().assume_checked();
-    let txid = cl.send_to_address(&addr.clone().assume_checked(), btc(1), None, None, None, None, None, None).unwrap();
-    let unspent = cl.list_unspent(Some(0), None, Some(&[ &addr_checked]), None, None).unwrap();
+    let txid = cl.send_to_address(
+        &addr.clone().assume_checked(), btc(1), None, None, None, None, None, None, None, None,
+    ).unwrap();
+    let unspent = cl.list_unspent(Some(0), None, Some(&[addr_checked.clone()]), None, None).unwrap();
     assert_eq!(unspent[0].txid, txid);
     assert_eq!(unspent[0].address.as_ref(), Some(&addr));
     assert_eq!(unspent[0].amount, btc(1));
 
-    let txid = cl.send_to_address(&addr_checked, btc(7), None, None, None, None, None, None).unwrap();
+    let txid = cl.send_to_address(
+        &addr_checked, btc(7), None, None, None, None, None, None, None, None,
+    ).unwrap();
     let options = json::ListUnspentQueryOptions {
         minimum_amount: Some(btc(7)),
         maximum_amount: Some(btc(7)),
         ..Default::default()
     };
-    let unspent = cl.list_unspent(Some(0), None, Some(&[&addr_checked]), None, Some(options)).unwrap();
+    let unspent = cl.list_unspent(Some(0), None, Some(&[addr_checked]), None, Some(&options)).unwrap();
     assert_eq!(unspent.len(), 1);
     assert_eq!(unspent[0].txid, txid);
     assert_eq!(unspent[0].address.as_ref(), Some(&addr));
@@ -463,7 +577,9 @@ fn test_get_connection_count(cl: &Client) {
 
 fn test_get_raw_transaction(cl: &Client) {
     let addr = cl.get_new_address(None, None).unwrap().assume_checked();
-    let txid = cl.send_to_address(&addr, btc(1), None, None, None, None, None, None).unwrap();
+    let txid = cl.send_to_address(
+        &addr, btc(1), None, None, None, None, None, None, None, None,
+    ).unwrap();
     let tx = cl.get_raw_transaction(&txid, None).unwrap();
     let hex = cl.get_raw_transaction_hex(&txid, None).unwrap();
     assert_eq!(tx, deserialize(&Vec::<u8>::from_hex(&hex).unwrap()).unwrap());
@@ -472,7 +588,8 @@ fn test_get_raw_transaction(cl: &Client) {
     let info = cl.get_raw_transaction_info(&txid, None).unwrap();
     assert_eq!(info.txid, txid);
 
-    let blocks = cl.generate_to_address(7, &cl.get_new_address(None, None).unwrap().assume_checked()).unwrap();
+    let addr = cl.get_new_address(None, None).unwrap().assume_checked();
+    let blocks = cl.generate_to_address(7, &addr, None).unwrap();
     let _ = cl.get_raw_transaction_info(&txid, Some(&blocks[0])).unwrap();
 }
 
@@ -481,16 +598,19 @@ fn test_get_raw_mempool(cl: &Client) {
 }
 
 fn test_get_raw_mempool_verbose(cl: &Client) {
-    cl.send_to_address(&RANDOM_ADDRESS, btc(1), None, None, None, None, None, None).unwrap();
-    let _ = cl.get_raw_mempool_verbose().unwrap();
+    cl.send_to_address(
+        &*RANDOM_ADDRESS, btc(1), None, None, None, None, None, None, None, None,
+    ).unwrap();
+    let _ = cl.get_raw_mempool().unwrap();
 
     // cleanup mempool transaction
-    cl.generate_to_address(2, &RANDOM_ADDRESS).unwrap();
+    cl.generate_to_address(2, &*RANDOM_ADDRESS, None).unwrap();
 }
 
 fn test_get_transaction(cl: &Client) {
-    let txid =
-        cl.send_to_address(&RANDOM_ADDRESS, btc(1), None, None, None, None, None, None).unwrap();
+    let txid = cl.send_to_address(
+        &*RANDOM_ADDRESS, btc(1), None, None, None, None, None, None, None, None,
+    ).unwrap();
     let tx = cl.get_transaction(&txid, None).unwrap();
     assert_eq!(tx.amount, sbtc(-1.0));
     assert_eq!(tx.info.txid, txid);
@@ -514,8 +634,9 @@ fn test_list_since_block(cl: &Client) {
 }
 
 fn test_get_tx_out(cl: &Client) {
-    let txid =
-        cl.send_to_address(&RANDOM_ADDRESS, btc(1), None, None, None, None, None, None).unwrap();
+    let txid = cl.send_to_address(
+        &*RANDOM_ADDRESS, btc(1), None, None, None, None, None, None, None, None,
+    ).unwrap();
     let out = cl.get_tx_out(&txid, 0, Some(false)).unwrap();
     assert!(out.is_none());
     let out = cl.get_tx_out(&txid, 0, Some(true)).unwrap();
@@ -524,18 +645,22 @@ fn test_get_tx_out(cl: &Client) {
 }
 
 fn test_get_tx_out_proof(cl: &Client) {
-    let txid1 =
-        cl.send_to_address(&RANDOM_ADDRESS, btc(1), None, None, None, None, None, None).unwrap();
-    let txid2 =
-        cl.send_to_address(&RANDOM_ADDRESS, btc(1), None, None, None, None, None, None).unwrap();
-    let blocks = cl.generate_to_address(7, &cl.get_new_address(None, None).unwrap().assume_checked()).unwrap();
+    let txid1 = cl.send_to_address(
+        &*RANDOM_ADDRESS, btc(1), None, None, None, None, None, None, None, None,
+    ).unwrap();
+    let txid2 = cl.send_to_address(
+        &*RANDOM_ADDRESS, btc(1), None, None, None, None, None, None, None, None,
+    ).unwrap();
+    let addr = cl.get_new_address(None, None).unwrap().assume_checked();
+    let blocks = cl.generate_to_address(7, &addr, None).unwrap();
     let proof = cl.get_tx_out_proof(&[txid1, txid2], Some(&blocks[0])).unwrap();
     assert!(!proof.is_empty());
 }
 
 fn test_get_mempool_entry(cl: &Client) {
-    let txid =
-        cl.send_to_address(&RANDOM_ADDRESS, btc(1), None, None, None, None, None, None).unwrap();
+    let txid = cl.send_to_address(
+        &*RANDOM_ADDRESS, btc(1), None, None, None, None, None, None, None, None,
+    ).unwrap();
     let entry = cl.get_mempool_entry(&txid).unwrap();
     assert!(entry.spent_by.is_empty());
 
@@ -545,7 +670,9 @@ fn test_get_mempool_entry(cl: &Client) {
 
 fn test_lock_unspent_unlock_unspent(cl: &Client) {
     let addr = cl.get_new_address(None, None).unwrap().assume_checked();
-    let txid = cl.send_to_address(&addr, btc(1), None, None, None, None, None, None).unwrap();
+    let txid = cl.send_to_address(
+        &addr, btc(1), None, None, None, None, None, None, None, None,
+    ).unwrap();
 
     assert!(cl.lock_unspent(&[OutPoint::new(txid, 0)]).unwrap());
     assert!(cl.unlock_unspent(&[OutPoint::new(txid, 0)]).unwrap());
@@ -555,7 +682,8 @@ fn test_lock_unspent_unlock_unspent(cl: &Client) {
 }
 
 fn test_get_block_filter(cl: &Client) {
-    let blocks = cl.generate_to_address(7, &cl.get_new_address(None, None).unwrap().assume_checked()).unwrap();
+    let addr = cl.get_new_address(None, None).unwrap().assume_checked();
+    let blocks = cl.generate_to_address(7, &addr, None).unwrap();
     if version() >= 190000 {
         let _ = cl.get_block_filter(&blocks[0]).unwrap();
     } else {
@@ -575,7 +703,7 @@ fn test_sign_raw_transaction_with_send_raw_transaction(cl: &Client) {
         minimum_amount: Some(btc(2)),
         ..Default::default()
     };
-    let unspent = cl.list_unspent(Some(6), None, None, None, Some(options)).unwrap();
+    let unspent = cl.list_unspent(Some(6), None, None::<&[Address]>, None, Some(&options)).unwrap();
     let unspent = unspent.into_iter().nth(0).unwrap();
 
     let tx = Transaction {
@@ -603,7 +731,9 @@ fn test_sign_raw_transaction_with_send_raw_transaction(cl: &Client) {
         redeem_script: None,
         amount: Some(unspent.amount),
     };
-    let res = cl.sign_raw_transaction_with_wallet(&tx, Some(&[input]), None).unwrap();
+    let res = cl.sign_raw_transaction_with_wallet(
+        &tx, Some(&[input]), None::<&EcdsaSighashType>,
+    ).unwrap();
     assert!(res.complete);
     let txid = cl.send_raw_transaction(&res.transaction().unwrap()).unwrap();
 
@@ -626,7 +756,7 @@ fn test_sign_raw_transaction_with_send_raw_transaction(cl: &Client) {
     };
 
     let res = cl
-        .sign_raw_transaction_with_key(&tx, &[sk], None, Some(sighash::EcdsaSighashType::All.into()))
+        .sign_raw_transaction_with_key(&tx, &[sk], None, Some(&EcdsaSighashType::All))
         .unwrap();
     assert!(res.complete);
     let _ = cl.send_raw_transaction(&res.transaction().unwrap()).unwrap();
@@ -648,7 +778,7 @@ fn test_create_raw_transaction(cl: &Client) {
         minimum_amount: Some(btc(2)),
         ..Default::default()
     };
-    let unspent = cl.list_unspent(Some(6), None, None, None, Some(options)).unwrap();
+    let unspent = cl.list_unspent(Some(6), None, None::<&[Address]>, None, Some(&options)).unwrap();
     let unspent = unspent.into_iter().nth(0).unwrap();
 
     let input = json::CreateRawTransactionInput {
@@ -656,12 +786,14 @@ fn test_create_raw_transaction(cl: &Client) {
         vout: unspent.vout,
         sequence: None,
     };
-    let mut output = HashMap::new();
-    output.insert(RANDOM_ADDRESS.to_string(), btc(1));
+    let output = (RANDOM_ADDRESS.clone(), btc(1));
 
-    let tx =
-        cl.create_raw_transaction(&[input.clone()], &output, Some(500_000), Some(true)).unwrap();
-    let hex = cl.create_raw_transaction_hex(&[input], &output, Some(500_000), Some(true)).unwrap();
+    let tx = cl.create_raw_transaction(
+        &[input.clone()], &[output.clone().into()], Some(500_000), Some(true),
+    ).unwrap();
+    let hex = cl.create_raw_transaction_hex(
+        &[input], &[output.into()], Some(500_000), Some(true),
+    ).unwrap();
     assert_eq!(tx, deserialize(&Vec::<u8>::from_hex(&hex).unwrap()).unwrap());
     assert_eq!(hex, serialize_hex(&tx));
 }
@@ -671,7 +803,7 @@ fn test_decode_raw_transaction(cl: &Client) {
         minimum_amount: Some(btc(2)),
         ..Default::default()
     };
-    let unspent = cl.list_unspent(Some(6), None, None, None, Some(options)).unwrap();
+    let unspent = cl.list_unspent(Some(6), None, None::<&[Address]>, None, Some(&options)).unwrap();
     let unspent = unspent.into_iter().nth(0).unwrap();
 
     let input = json::CreateRawTransactionInput {
@@ -679,14 +811,16 @@ fn test_decode_raw_transaction(cl: &Client) {
         vout: unspent.vout,
         sequence: None,
     };
-    let mut output = HashMap::new();
-    output.insert(RANDOM_ADDRESS.to_string(), btc(1));
+    let output = (RANDOM_ADDRESS.clone(), btc(1));
 
-    let tx =
-        cl.create_raw_transaction(&[input.clone()], &output, Some(500_000), Some(true)).unwrap();
-    let hex = cl.create_raw_transaction_hex(&[input], &output, Some(500_000), Some(true)).unwrap();
+    let tx = cl.create_raw_transaction(
+        &[input.clone()], &[output.clone().into()], Some(500_000), Some(true),
+    ).unwrap();
+    let hex = cl.create_raw_transaction_hex(
+        &[input], &[output.clone().into()], Some(500_000), Some(true),
+    ).unwrap();
 
-    let decoded_transaction = cl.decode_raw_transaction(hex, None).unwrap();
+    let decoded_transaction = cl.decode_raw_transaction(&hex, None).unwrap();
 
     assert_eq!(tx.txid(), decoded_transaction.txid);
     assert_eq!(500_000, decoded_transaction.locktime);
@@ -697,8 +831,7 @@ fn test_decode_raw_transaction(cl: &Client) {
 
 fn test_fund_raw_transaction(cl: &Client) {
     let addr = cl.get_new_address(None, None).unwrap().assume_checked();
-    let mut output = HashMap::new();
-    output.insert(RANDOM_ADDRESS.to_string(), btc(1));
+    let output = (RANDOM_ADDRESS.clone(), btc(1));
 
     let options = json::FundRawTransactionOptions {
         add_inputs: None,
@@ -707,14 +840,16 @@ fn test_fund_raw_transaction(cl: &Client) {
         change_type: None,
         include_watching: Some(true),
         lock_unspents: Some(true),
-        fee_rate: Some(*FEE),
+        fee_rate: Some(*FEERATE),
         subtract_fee_from_outputs: Some(vec![0]),
         replaceable: Some(true),
         conf_target: None,
         estimate_mode: None,
     };
-    let tx = cl.create_raw_transaction_hex(&[], &output, Some(500_000), Some(true)).unwrap();
-    let funded = cl.fund_raw_transaction(tx, Some(&options), Some(false)).unwrap();
+    let tx = cl.create_raw_transaction_hex(
+        &[], &[output.clone().into()], Some(500_000), Some(true),
+    ).unwrap();
+    let funded = cl.fund_raw_transaction(&tx, Some(&options), Some(false)).unwrap();
     let _ = funded.transaction().unwrap();
 
     let options = json::FundRawTransactionOptions {
@@ -730,8 +865,10 @@ fn test_fund_raw_transaction(cl: &Client) {
         conf_target: Some(2),
         estimate_mode: Some(json::EstimateMode::Conservative),
     };
-    let tx = cl.create_raw_transaction_hex(&[], &output, Some(500_000), Some(true)).unwrap();
-    let funded = cl.fund_raw_transaction(tx, Some(&options), Some(false)).unwrap();
+    let tx = cl.create_raw_transaction_hex(
+        &[], &[output.into()], Some(500_000), Some(true),
+    ).unwrap();
+    let funded = cl.fund_raw_transaction(&tx, Some(&options), Some(false)).unwrap();
     let _ = funded.transaction().unwrap();
 }
 
@@ -740,7 +877,7 @@ fn test_test_mempool_accept(cl: &Client) {
         minimum_amount: Some(btc(2)),
         ..Default::default()
     };
-    let unspent = cl.list_unspent(Some(6), None, None, None, Some(options)).unwrap();
+    let unspent = cl.list_unspent(Some(6), None, None::<&[Address]>, None, Some(&options)).unwrap();
     let unspent = unspent.into_iter().nth(0).unwrap();
 
     let input = json::CreateRawTransactionInput {
@@ -748,17 +885,18 @@ fn test_test_mempool_accept(cl: &Client) {
         vout: unspent.vout,
         sequence: Some(0xFFFFFFFF),
     };
-    let mut output = HashMap::new();
-    output.insert(RANDOM_ADDRESS.to_string(), unspent.amount - *FEE);
+    let output = (RANDOM_ADDRESS.clone(), unspent.amount - *FEE);
 
-    let tx =
-        cl.create_raw_transaction(&[input.clone()], &output, Some(500_000), Some(false)).unwrap();
-    let res = cl.test_mempool_accept(&[&tx]).unwrap();
+    let tx = cl.create_raw_transaction(
+        &[input.clone()], &[output.into()], Some(500_000), Some(false)
+    ).unwrap();
+    let res = cl.test_mempool_accept(&[tx.clone()], None).unwrap();
     assert!(!res[0].allowed);
     assert!(res[0].reject_reason.is_some());
-    let signed =
-        cl.sign_raw_transaction_with_wallet(&tx, None, None).unwrap().transaction().unwrap();
-    let res = cl.test_mempool_accept(&[&signed]).unwrap();
+    let signed =cl.sign_raw_transaction_with_wallet(
+        &tx, None, None::<&EcdsaSighashType>,
+    ).unwrap().transaction().unwrap();
+    let res = cl.test_mempool_accept(&[signed], None).unwrap();
     assert!(res[0].allowed, "not allowed: {:?}", res[0].reject_reason);
 }
 
@@ -768,16 +906,15 @@ fn test_wallet_create_funded_psbt(cl: &Client) {
         minimum_amount: Some(btc(2)),
         ..Default::default()
     };
-    let unspent = cl.list_unspent(Some(6), None, None, None, Some(options)).unwrap();
-    let unspent = unspent.into_iter().nth(0).unwrap();
+    let unspent = cl.list_unspent(Some(6), None, None::<&[Address]>, None, Some(&options)).unwrap();
+    let first_unspent = unspent.into_iter().nth(0).unwrap();
 
     let input = json::CreateRawTransactionInput {
-        txid: unspent.txid,
-        vout: unspent.vout,
+        txid: first_unspent.txid,
+        vout: first_unspent.vout,
         sequence: None,
     };
-    let mut output = HashMap::new();
-    output.insert(RANDOM_ADDRESS.to_string(), btc(1));
+    let output = (RANDOM_ADDRESS.clone(), first_unspent.amount - *FEE);
 
     let options = json::WalletCreateFundedPsbtOptions {
         add_inputs: None,
@@ -786,21 +923,24 @@ fn test_wallet_create_funded_psbt(cl: &Client) {
         change_type: Some(json::AddressType::Legacy),
         include_watching: Some(true),
         lock_unspent: Some(true),
-        fee_rate: Some(*FEE),
+        fee_rate: if version() >= 21_00_00 {
+            Some(*FEERATE)
+        } else {
+            None
+        },
         subtract_fee_from_outputs: vec![0],
         replaceable: Some(true),
         conf_target: None,
         estimate_mode: None,
     };
-    let _ = cl
-        .wallet_create_funded_psbt(
-            &[input.clone()],
-            &output,
-            Some(500_000),
-            Some(options),
-            Some(true),
-        )
-        .unwrap();
+    let _ = cl.wallet_create_funded_psbt(
+        &[input.clone()],
+        &[output.clone().into()],
+        Some(500_000),
+        Some(&options),
+        Some(true),
+    )
+    .unwrap();
 
     let options = json::WalletCreateFundedPsbtOptions {
         add_inputs: None,
@@ -815,9 +955,9 @@ fn test_wallet_create_funded_psbt(cl: &Client) {
         conf_target: Some(3),
         estimate_mode: Some(json::EstimateMode::Conservative),
     };
-    let psbt = cl
-        .wallet_create_funded_psbt(&[input], &output, Some(500_000), Some(options), Some(true))
-        .unwrap();
+    let psbt = cl.wallet_create_funded_psbt(
+        &[input], &[output.into()], Some(500_000), Some(&options), Some(true),
+    ).unwrap();
     assert!(!psbt.psbt.is_empty());
 }
 
@@ -826,40 +966,56 @@ fn test_wallet_process_psbt(cl: &Client) {
         minimum_amount: Some(btc(2)),
         ..Default::default()
     };
-    let unspent = cl.list_unspent(Some(6), None, None, None, Some(options)).unwrap();
+    let unspent = cl.list_unspent(Some(6), None, None::<&[Address]>, None, Some(&options)).unwrap();
     let unspent = unspent.into_iter().nth(0).unwrap();
     let input = json::CreateRawTransactionInput {
         txid: unspent.txid,
         vout: unspent.vout,
         sequence: None,
     };
-    let mut output = HashMap::new();
-    output.insert(RANDOM_ADDRESS.to_string(), btc(1));
-    let psbt = cl
-        .wallet_create_funded_psbt(&[input.clone()], &output, Some(500_000), None, Some(true))
-        .unwrap();
+    let output = (RANDOM_ADDRESS.clone(), unspent.amount - *FEE);
+    let psbt = cl.wallet_create_funded_psbt(
+        &[input.clone()], &[output.clone().into()], Some(500_000), None, Some(true),
+    ).unwrap();
+    println!("psbt: {:?}", psbt);
 
-    let res = cl.wallet_process_psbt(&psbt.psbt, Some(true), None, Some(true)).unwrap();
+    // Check that the API doesn't allow empty sighashtype when bip32derivs is set.
+    //TODO(stevenroose) this seems like a bug in core, it's supposed to be optional
+    let res = cl.wallet_process_psbt(
+        &psbt.psbt, Some(true), None, Some(true),
+    );
+    assert!(match res.unwrap_err() {
+        Error::InvalidArguments(_) => true,
+        _ => false,
+    });
+
+    let sighashtype = if version() >= 18_00_00 && version() <= 22_00_00 {
+        Some(EcdsaSighashType::All.into())
+    } else {
+        None
+    };
+    let res = cl.wallet_process_psbt(
+        &psbt.psbt, Some(true), sighashtype.as_ref(), Some(true),
+    ).unwrap();
     assert!(res.complete);
 }
 
-fn test_join_psbt(cl: &Client) {
+fn test_join_psbts(cl: &Client) {
     let options = json::ListUnspentQueryOptions {
         minimum_amount: Some(btc(2)),
         ..Default::default()
     };
-    let unspent = cl.list_unspent(Some(6), None, None, None, Some(options)).unwrap();
-    let unspent1 = unspent[0].clone();
+    let unspent = cl.list_unspent(Some(6), None, None::<&[Address]>, None, Some(&options)).unwrap();
+    let first_unspent = unspent[0].clone();
     let input = json::CreateRawTransactionInput {
-        txid: unspent1.txid,
-        vout: unspent1.vout,
+        txid: first_unspent.txid,
+        vout: first_unspent.vout,
         sequence: None,
     };
-    let mut output = HashMap::new();
-    output.insert(RANDOM_ADDRESS.to_string(), btc(1));
-    let psbt1 = cl
-        .wallet_create_funded_psbt(&[input.clone()], &output, Some(500_000), None, Some(true))
-        .unwrap();
+    let output = (RANDOM_ADDRESS.clone(), first_unspent.amount - *FEE);
+    let psbt1 = cl.wallet_create_funded_psbt(
+        &[input.clone()], &[output.clone().into()], Some(500_000), None, Some(true),
+    ).unwrap();
 
     let unspent = unspent.into_iter().nth(1).unwrap();
     let input2 = json::CreateRawTransactionInput {
@@ -867,14 +1023,14 @@ fn test_join_psbt(cl: &Client) {
         vout: unspent.vout,
         sequence: None,
     };
-    let mut output2 = HashMap::new();
-    output2.insert(RANDOM_ADDRESS.to_string(), btc(1));
-    let psbt2 = cl
-        .wallet_create_funded_psbt(&[input2.clone()], &output, Some(500_000), None, Some(true))
-        .unwrap();
+    let output2 = (RANDOM_ADDRESS.clone(), unspent.amount - *FEE);
+    let psbt2 = cl.wallet_create_funded_psbt(
+        &[input2.clone()], &[output2.clone().into()], Some(500_000), None, Some(true),
+    ).unwrap();
 
-    let psbt = cl.join_psbt(&[psbt1.psbt, psbt2.psbt]).unwrap();
+    let psbt = cl.join_psbts_raw(&[psbt1.psbt.clone(), psbt2.psbt.clone()]).unwrap();
     assert!(!psbt.is_empty());
+    let _ = cl.join_psbts(&[psbt1.psbt, psbt2.psbt]).unwrap();
 }
 
 fn test_combine_psbt(cl: &Client) {
@@ -882,21 +1038,21 @@ fn test_combine_psbt(cl: &Client) {
         minimum_amount: Some(btc(2)),
         ..Default::default()
     };
-    let unspent = cl.list_unspent(Some(6), None, None, None, Some(options)).unwrap();
-    let unspent = unspent.into_iter().nth(0).unwrap();
+    let unspent = cl.list_unspent(Some(6), None, None::<&[Address]>, None, Some(&options)).unwrap();
+    let first_unspent = unspent.into_iter().nth(0).unwrap();
     let input = json::CreateRawTransactionInput {
-        txid: unspent.txid,
-        vout: unspent.vout,
+        txid: first_unspent.txid,
+        vout: first_unspent.vout,
         sequence: None,
     };
-    let mut output = HashMap::new();
-    output.insert(RANDOM_ADDRESS.to_string(), btc(1));
-    let psbt1 = cl
-        .wallet_create_funded_psbt(&[input.clone()], &output, Some(500_000), None, Some(true))
-        .unwrap();
+    let output = (RANDOM_ADDRESS.clone(), first_unspent.amount - *FEE);
+    let psbt1 = cl.wallet_create_funded_psbt(
+        &[input.clone()], &[output.clone().into()], Some(500_000), None, Some(true),
+    ).unwrap();
 
-    let psbt = cl.combine_psbt(&[psbt1.psbt.clone(), psbt1.psbt]).unwrap();
+    let psbt = cl.combine_psbt_raw(&[psbt1.psbt.clone(), psbt1.psbt.clone()]).unwrap();
     assert!(!psbt.is_empty());
+    let _ = cl.combine_psbt(&[psbt1.psbt.clone(), psbt1.psbt.clone()]).unwrap();
 }
 
 fn test_combine_raw_transaction(cl: &Client) {
@@ -904,20 +1060,21 @@ fn test_combine_raw_transaction(cl: &Client) {
         minimum_amount: Some(btc(2)),
         ..Default::default()
     };
-    let unspent = cl.list_unspent(Some(6), None, None, None, Some(options)).unwrap();
-    let unspent = unspent.into_iter().nth(0).unwrap();
+    let unspent = cl.list_unspent(Some(6), None, None::<&[Address]>, None, Some(&options)).unwrap();
+    let first_unspent = unspent.into_iter().nth(0).unwrap();
     let input = json::CreateRawTransactionInput {
-        txid: unspent.txid,
-        vout: unspent.vout,
+        txid: first_unspent.txid,
+        vout: first_unspent.vout,
         sequence: None,
     };
-    let mut output = HashMap::new();
-    output.insert(RANDOM_ADDRESS.to_string(), btc(1));
-    let tx = cl.create_raw_transaction_hex(&[input.clone()], &output, Some(500_000), None).unwrap();
+    let output = (RANDOM_ADDRESS.clone(), btc(1));
+    let tx = cl.create_raw_transaction_hex(
+        &[input.clone()], &[output.clone().into()], Some(500_000), None,
+    ).unwrap();
 
-    let transaction = cl.combine_raw_transaction(&[tx.clone(), tx]).unwrap();
-
+    let transaction = cl.combine_raw_transaction_hex(&[tx.clone(), tx.clone()]).unwrap();
     assert!(!transaction.is_empty());
+    let _ = cl.combine_raw_transaction(&[tx.clone(), tx.clone()]).unwrap();
 }
 
 fn test_create_psbt(cl: &Client) {
@@ -925,7 +1082,7 @@ fn test_create_psbt(cl: &Client) {
         minimum_amount: Some(btc(2)),
         ..Default::default()
     };
-    let unspent = cl.list_unspent(Some(6), None, None, None, Some(options)).unwrap();
+    let unspent = cl.list_unspent(Some(6), None, None::<&[Address]>, None, Some(&options)).unwrap();
     let unspent = unspent.into_iter().nth(0).unwrap();
 
     let input = json::CreateRawTransactionInput {
@@ -933,10 +1090,11 @@ fn test_create_psbt(cl: &Client) {
         vout: unspent.vout,
         sequence: None,
     };
-    let mut output = HashMap::new();
-    output.insert(RANDOM_ADDRESS.to_string(), btc(1));
+    let output = (RANDOM_ADDRESS.clone(), btc(1));
 
-    let _ = cl.create_psbt(&[input], &output, Some(500_000), Some(true)).unwrap();
+    let _ = cl.create_psbt(
+        &[input], &[output.clone().into()], Some(500_000), Some(true),
+    ).unwrap();
 }
 
 fn test_finalize_psbt(cl: &Client) {
@@ -944,18 +1102,17 @@ fn test_finalize_psbt(cl: &Client) {
         minimum_amount: Some(btc(2)),
         ..Default::default()
     };
-    let unspent = cl.list_unspent(Some(6), None, None, None, Some(options)).unwrap();
+    let unspent = cl.list_unspent(Some(6), None, None::<&[Address]>, None, Some(&options)).unwrap();
     let unspent = unspent.into_iter().nth(0).unwrap();
     let input = json::CreateRawTransactionInput {
         txid: unspent.txid,
         vout: unspent.vout,
         sequence: None,
     };
-    let mut output = HashMap::new();
-    output.insert(RANDOM_ADDRESS.to_string(), btc(1));
-    let psbt = cl
-        .wallet_create_funded_psbt(&[input.clone()], &output, Some(500_000), None, Some(true))
-        .unwrap();
+    let output = (RANDOM_ADDRESS.clone(), unspent.amount - *FEE);
+    let psbt = cl.wallet_create_funded_psbt(
+        &[input.clone()], &[output.clone().into()], Some(500_000), None, Some(true),
+    ).unwrap();
 
     let res = cl.finalize_psbt(&psbt.psbt, Some(true)).unwrap();
     assert!(!res.complete);
@@ -965,12 +1122,14 @@ fn test_finalize_psbt(cl: &Client) {
 
 fn test_list_received_by_address(cl: &Client) {
     let addr = cl.get_new_address(None, None).unwrap().assume_checked();
-    let txid = cl.send_to_address(&addr, btc(1), None, None, None, None, None, None).unwrap();
+    let txid = cl.send_to_address(
+        &addr, btc(1), None, None, None, None, None, None, None, None,
+    ).unwrap();
 
     let _ = cl.list_received_by_address(Some(&addr), None, None, None).unwrap();
     let _ = cl.list_received_by_address(Some(&addr), None, Some(true), None).unwrap();
     let _ = cl.list_received_by_address(Some(&addr), None, None, Some(true)).unwrap();
-    let _ = cl.list_received_by_address(None, Some(200), None, None).unwrap();
+    let _ = cl.list_received_by_address(None::<&Address>, Some(200), None, None).unwrap();
 
     let res = cl.list_received_by_address(Some(&addr), Some(0), None, None).unwrap();
     assert_eq!(res[0].txids, vec![txid]);
@@ -1038,7 +1197,7 @@ fn test_estimate_smart_fee(cl: &Client) {
     }
 
     assert!(res.fee_rate.is_some(), "no fee estimate available: {:?}", res.errors);
-    assert!(res.fee_rate.unwrap() >= btc(0));
+    assert!(res.fee_rate.unwrap() >= sat_per_vb(1));
 }
 
 fn test_ping(cl: &Client) {
@@ -1113,26 +1272,28 @@ fn test_create_wallet(cl: &Client) {
     }
 
     for wallet_param in wallet_params {
-        let result = cl
-            .create_wallet(
-                wallet_param.name,
-                wallet_param.disable_private_keys,
-                wallet_param.blank,
-                wallet_param.passphrase,
-                wallet_param.avoid_reuse,
-            )
-            .unwrap();
+        let result = cl.create_wallet(
+            wallet_param.name,
+            wallet_param.disable_private_keys,
+            wallet_param.blank,
+            wallet_param.passphrase,
+            wallet_param.avoid_reuse,
+        )
+        .unwrap();
 
         assert_eq!(result.name, wallet_param.name);
         let expected_warning = match (wallet_param.passphrase, wallet_param.avoid_reuse) {
-            (None, Some(true)) => {
+            (None, Some(true)) => if version() < 19_00_00 {
                 Some("Empty string given as passphrase, wallet will not be encrypted.".to_string())
-            }
+            } else {
+                Some("".to_string())
+            },
             _ => Some("".to_string()),
         };
         assert_eq!(result.warning, expected_warning);
 
-        let wallet_client = new_wallet_client(wallet_param.name);
+        let wallet_client_url = format!("{}{}{}", get_rpc_url(), "/wallet/", wallet_param.name);
+        let wallet_client = make_client(&wallet_client_url);
         let wallet_info = wallet_client.get_wallet_info().unwrap();
 
         assert_eq!(wallet_info.wallet_name, wallet_param.name);
@@ -1169,7 +1330,7 @@ fn test_create_wallet(cl: &Client) {
 }
 
 fn test_get_tx_out_set_info(cl: &Client) {
-    cl.get_tx_out_set_info(None, None, None).unwrap();
+    cl.get_tx_out_set_info(None, None::<u32>, None).unwrap();
 }
 
 fn test_get_chain_tips(cl: &Client) {
@@ -1181,12 +1342,12 @@ fn test_add_node(cl: &Client) {
     cl.add_node("127.0.0.1:1234").unwrap();
     assert_error_message!(cl.add_node("127.0.0.1:1234"), -23, "Error: Node already added");
     cl.remove_node("127.0.0.1:1234").unwrap();
-    cl.onetry_node("127.0.0.1:1234").unwrap();
+    cl.add_node_onetry("127.0.0.1:1234").unwrap();
 }
 
 fn test_get_added_node_info(cl: &Client) {
     cl.add_node("127.0.0.1:1234").unwrap();
-    let added_info = cl.get_added_node_info(None).unwrap();
+    let added_info = cl.get_added_nodes_info().unwrap();
     assert_eq!(added_info.len(), 1);
 }
 
@@ -1242,9 +1403,9 @@ fn test_uptime(cl: &Client) {
 
 fn test_scantxoutset(cl: &Client) {
     let addr = cl.get_new_address(None, None).unwrap().assume_checked();
-
-    cl.generate_to_address(2, &addr).unwrap();
-    cl.generate_to_address(7, &cl.get_new_address(None, None).unwrap().assume_checked()).unwrap();
+    cl.generate_to_address(2, &addr, None).unwrap();
+    let addr2 = cl.get_new_address(None, None).unwrap().assume_checked();
+    cl.generate_to_address(7, &addr2, None).unwrap();
 
     let utxos = cl
         .scan_tx_out_set_blocking(&[ScanTxOutRequest::Single(format!("addr({})", addr))])
@@ -1259,13 +1420,13 @@ fn test_getblocktemplate(cl: &Client) {
     // contains an entry in the vector of GetBlockTemplateResultTransaction.
     // Otherwise the GetBlockTemplateResultTransaction deserialization wouldn't
     // be tested.
-    cl.send_to_address(&RANDOM_ADDRESS, btc(1), None, None, None, None, None, None).unwrap();
+    cl.send_to_address(&*RANDOM_ADDRESS, btc(1), None, None, None, None, None, None, None, None).unwrap();
 
     cl.get_block_template(GetBlockTemplateModes::Template, &[GetBlockTemplateRules::SegWit], &[])
         .unwrap();
 
     // cleanup mempool transaction
-    cl.generate_to_address(2, &RANDOM_ADDRESS).unwrap();
+    cl.generate_to_address(2, &*RANDOM_ADDRESS, None).unwrap();
 }
 
 fn test_unloadwallet(cl: &Client) {
@@ -1276,9 +1437,9 @@ fn test_unloadwallet(cl: &Client) {
         .unwrap();
 
     if version() >= 210000 {
-        assert!(res.is_some());
+        assert!(res.warning.is_some());
     } else {
-        assert!(res.is_none());
+        assert!(res.warning.is_none());
     }
 }
 
@@ -1291,6 +1452,6 @@ fn test_get_index_info(cl: &Client) {
     }
 }
 
-fn test_stop(cl: Client) {
+fn test_stop(cl: &Client) {
     println!("Stopping: '{}'", cl.stop().unwrap());
 }
