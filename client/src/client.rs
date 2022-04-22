@@ -20,7 +20,7 @@ use serde;
 use serde_json;
 
 use bitcoin::hashes::hex::{FromHex, ToHex};
-use bitcoin::secp256k1::Signature;
+use bitcoin::secp256k1::ecdsa::Signature;
 use bitcoin::{
     Address, Amount, Block, BlockHeader, OutPoint, PrivateKey, PublicKey, Script, Transaction,
 };
@@ -771,7 +771,7 @@ pub trait RpcApi: Sized {
         tx: R,
         utxos: Option<&[json::SignRawTransactionInput]>,
         private_keys: Option<&[PrivateKey]>,
-        sighash_type: Option<json::SigHashType>,
+        sighash_type: Option<json::EcdsaSighashType>,
     ) -> Result<json::SignRawTransactionResult> {
         let mut args = [
             tx.raw_hex().into(),
@@ -787,7 +787,7 @@ pub trait RpcApi: Sized {
         &self,
         tx: R,
         utxos: Option<&[json::SignRawTransactionInput]>,
-        sighash_type: Option<json::SigHashType>,
+        sighash_type: Option<json::EcdsaSighashType>,
     ) -> Result<json::SignRawTransactionResult> {
         let mut args = [tx.raw_hex().into(), opt_into_json(utxos)?, opt_into_json(sighash_type)?];
         let defaults = [empty_arr(), null()];
@@ -799,7 +799,7 @@ pub trait RpcApi: Sized {
         tx: R,
         privkeys: &[PrivateKey],
         prevtxs: Option<&[json::SignRawTransactionInput]>,
-        sighash_type: Option<json::SigHashType>,
+        sighash_type: Option<json::EcdsaSighashType>,
     ) -> Result<json::SignRawTransactionResult> {
         let mut args = [
             tx.raw_hex().into(),
@@ -1080,7 +1080,7 @@ pub trait RpcApi: Sized {
         &self,
         psbt: &str,
         sign: Option<bool>,
-        sighash_type: Option<json::SigHashType>,
+        sighash_type: Option<json::EcdsaSighashType>,
         bip32derivs: Option<bool>,
     ) -> Result<json::WalletProcessPsbtResult> {
         let mut args = [
@@ -1091,7 +1091,7 @@ pub trait RpcApi: Sized {
         ];
         let defaults = [
             true.into(),
-            into_json(json::SigHashType::from(bitcoin::SigHashType::All))?,
+            into_json(json::EcdsaSighashType::from(bitcoin::EcdsaSighashType::All))?,
             true.into(),
         ];
         self.call("walletprocesspsbt", handle_defaults(&mut args, &defaults))
