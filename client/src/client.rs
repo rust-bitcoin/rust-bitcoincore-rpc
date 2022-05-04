@@ -25,6 +25,7 @@ use bitcoin::{
     Address, Amount, Block, BlockHeader, OutPoint, PrivateKey, PublicKey, Script, Transaction,
 };
 use log::Level::{Debug, Trace, Warn};
+use serde_json::value::RawValue;
 
 use error::*;
 use json;
@@ -377,74 +378,117 @@ pub trait RpcApi: Sized {
     /// Returns a data structure containing various state info regarding
     /// blockchain processing.
     fn get_blockchain_info(&self) -> Result<json::GetBlockchainInfoResult> {
-        let mut raw: serde_json::Value = self.call("getblockchaininfo", &[])?;
-        // The softfork fields are not backwards compatible:
-        // - 0.18.x returns a "softforks" array and a "bip9_softforks" map.
-        // - 0.19.x returns a "softforks" map.
-        Ok(if self.version()? < 190000 {
-            use Error::UnexpectedStructure as err;
+        let raw: Box<RawValue> = self.call("getblockchaininfo", &[])?;
 
-            // First, remove both incompatible softfork fields.
-            // We need to scope the mutable ref here for v1.29 borrowck.
-            let (bip9_softforks, old_softforks) = {
-                let map = raw.as_object_mut().ok_or(err)?;
-                let bip9_softforks = map.remove("bip9_softforks").ok_or(err)?;
-                let old_softforks = map.remove("softforks").ok_or(err)?;
-                // Put back an empty "softforks" field.
-                map.insert("softforks".into(), serde_json::Map::new().into());
-                (bip9_softforks, old_softforks)
-            };
-            let mut ret: json::GetBlockchainInfoResult = serde_json::from_value(raw)?;
+        // Use a test structure to determine if the node is
+        // running v0.18.x or not.
+        #[derive(Deserialize)]
+        struct Test<'a> {
+            #[serde(borrow)]
+            bip9_softforks: Option<&'a RawValue>,
+        }
+        let test = serde_json::from_str::<Test>(raw.get())?;
 
-            // Then convert both softfork types and add them.
-            for sf in old_softforks.as_array().ok_or(err)?.iter() {
-                let json = sf.as_object().ok_or(err)?;
-                let id = json.get("id").ok_or(err)?.as_str().ok_or(err)?;
-                let reject = json.get("reject").ok_or(err)?.as_object().ok_or(err)?;
-                let active = reject.get("status").ok_or(err)?.as_bool().ok_or(err)?;
-                ret.softforks.insert(
-                    id.into(),
-                    json::Softfork {
-                        type_: json::SoftforkType::Buried,
-                        bip9: None,
-                        height: None,
-                        active: active,
-                    },
-                );
-            }
-            for (id, sf) in bip9_softforks.as_object().ok_or(err)?.iter() {
-                #[derive(Deserialize)]
-                struct OldBip9SoftFork {
-                    pub status: json::Bip9SoftforkStatus,
-                    pub bit: Option<u8>,
-                    #[serde(rename = "startTime")]
-                    pub start_time: i64,
-                    pub timeout: u64,
-                    pub since: u32,
-                    pub statistics: Option<json::Bip9SoftforkStatistics>,
-                }
-                let sf: OldBip9SoftFork = serde_json::from_value(sf.clone())?;
-                ret.softforks.insert(
-                    id.clone(),
-                    json::Softfork {
-                        type_: json::SoftforkType::Bip9,
-                        bip9: Some(json::Bip9SoftforkInfo {
-                            status: sf.status,
-                            bit: sf.bit,
-                            start_time: sf.start_time,
-                            timeout: sf.timeout,
-                            since: sf.since,
-                            statistics: sf.statistics,
-                        }),
-                        height: None,
-                        active: sf.status == json::Bip9SoftforkStatus::Active,
-                    },
-                );
-            }
-            ret
+        if test.bip9_softforks.is_none() {
+            // >= v0.19 -- we can simply parse the new format
+
+            Ok(serde_json::from_str(raw.get())?)
         } else {
-            serde_json::from_value(raw)?
-        })
+            // 0.18.x -- has an old incompatible format and we have to convert
+
+            #[derive(Deserialize)]
+            struct V018Bip9Softfork {
+                status: json::Bip9SoftforkStatus,
+                bit: Option<u8>,
+                #[serde(rename = "startTime")]
+                start_time: i64,
+                timeout: u64,
+                since: u32,
+                statistics: Option<json::Bip9SoftforkStatistics>,
+            }
+            #[derive(Deserialize)]
+            struct V018SoftforkReject {
+                status: bool,
+            }
+            #[derive(Deserialize)]
+            struct V018Softfork {
+                id: String,
+                reject: V018SoftforkReject,
+            }
+            #[derive(Deserialize)]
+            struct V018GetBlockChainInfoResult {
+                chain: String,
+                blocks: u64,
+                headers: u64,
+                #[serde(rename = "bestblockhash")]
+                best_block_hash: bitcoin::BlockHash,
+                difficulty: f64,
+                #[serde(rename = "mediantime")]
+                median_time: u64,
+                #[serde(rename = "verificationprogress")]
+                verification_progress: f64,
+                #[serde(rename = "initialblockdownload")]
+                initial_block_download: bool,
+                #[serde(rename = "chainwork", with = "bitcoincore_rpc_json::serde_hex")]
+                chain_work: Vec<u8>,
+                size_on_disk: u64,
+                pruned: bool,
+                #[serde(rename = "pruneheight")]
+                prune_height: Option<u64>,
+                automatic_pruning: Option<bool>,
+                prune_target_size: Option<u64>,
+                warnings: String,
+                #[serde(default)]
+                bip9_softforks: HashMap<String, V018Bip9Softfork>,
+                #[serde(default)]
+                softforks: Vec<V018Softfork>,
+            }
+            let resp = serde_json::from_str::<V018GetBlockChainInfoResult>(raw.get())?;
+            Ok(json::GetBlockchainInfoResult {
+                chain: resp.chain,
+                blocks: resp.blocks,
+                headers: resp.headers,
+                best_block_hash: resp.best_block_hash,
+                difficulty: resp.difficulty,
+                median_time: resp.median_time,
+                verification_progress: resp.verification_progress,
+                initial_block_download: resp.initial_block_download,
+                chain_work: resp.chain_work,
+                size_on_disk: resp.size_on_disk,
+                pruned: resp.pruned,
+                prune_height: resp.prune_height,
+                automatic_pruning: resp.automatic_pruning,
+                prune_target_size: resp.prune_target_size,
+                warnings: resp.warnings,
+                softforks: {
+                    let mut softforks = HashMap::new();
+                    for old in resp.softforks.into_iter() {
+                        softforks.insert(old.id, json::Softfork {
+                            type_: json::SoftforkType::Buried,
+                            bip9: None,
+                            height: None,
+                            active: old.reject.status,
+                        });
+                    }
+                    for (id, sf) in resp.bip9_softforks.into_iter() {
+                        softforks.insert(id, json::Softfork {
+                            type_: json::SoftforkType::Bip9,
+                            bip9: Some(json::Bip9SoftforkInfo {
+                                status: sf.status,
+                                bit: sf.bit,
+                                start_time: sf.start_time,
+                                timeout: sf.timeout,
+                                since: sf.since,
+                                statistics: sf.statistics,
+                            }),
+                            height: None,
+                            active: sf.status == json::Bip9SoftforkStatus::Active,
+                        });
+                    }
+                    softforks
+                },
+            })
+        }
     }
 
     /// Returns the numbers of block in the longest chain.
