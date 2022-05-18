@@ -27,8 +27,8 @@ use bitcoin::hashes::hex::{FromHex, ToHex};
 use bitcoin::hashes::Hash;
 use bitcoin::secp256k1;
 use bitcoin::{
-    Address, Amount, Network, OutPoint, PrivateKey, Script, EcdsaSighashType, SignedAmount, Transaction,
-    TxIn, TxOut, Txid, Witness,
+    Address, Amount, EcdsaSighashType, Network, OutPoint, PrivateKey, Script, SignedAmount,
+    Transaction, TxIn, TxOut, Txid, Witness,
 };
 use bitcoincore_rpc::bitcoincore_rpc_json::{
     GetBlockTemplateModes, GetBlockTemplateRules, ScanTxOutRequest,
@@ -596,8 +596,9 @@ fn test_sign_raw_transaction_with_send_raw_transaction(cl: &Client) {
         }],
     };
 
-    let res =
-        cl.sign_raw_transaction_with_key(&tx, &[sk], None, Some(EcdsaSighashType::All.into())).unwrap();
+    let res = cl
+        .sign_raw_transaction_with_key(&tx, &[sk], None, Some(EcdsaSighashType::All.into()))
+        .unwrap();
     assert!(res.complete);
     let _ = cl.send_raw_transaction(&res.transaction().unwrap()).unwrap();
 }
@@ -1081,11 +1082,7 @@ fn test_add_ban(cl: &Client) {
     let res = cl.list_banned().unwrap();
     assert_eq!(res.len(), 0);
 
-    assert_error_message!(
-        cl.add_ban("INVALID_STRING", 0, false),
-        -30,
-        "Error: Invalid IP/Subnet"
-    );
+    assert_error_message!(cl.add_ban("INVALID_STRING", 0, false), -30, "Error: Invalid IP/Subnet");
 }
 
 fn test_set_network_active(cl: &Client) {
