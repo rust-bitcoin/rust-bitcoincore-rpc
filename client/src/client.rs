@@ -14,21 +14,21 @@ use std::iter::FromIterator;
 use std::path::PathBuf;
 use std::{fmt, result};
 
-use bitcoin;
+use crate::bitcoin;
 use jsonrpc;
 use serde;
 use serde_json;
 
-use bitcoin::hashes::hex::{FromHex, ToHex};
-use bitcoin::secp256k1::ecdsa::Signature;
-use bitcoin::{
+use crate::bitcoin::hashes::hex::{FromHex, ToHex};
+use crate::bitcoin::secp256k1::ecdsa::Signature;
+use crate::bitcoin::{
     Address, Amount, Block, BlockHeader, OutPoint, PrivateKey, PublicKey, Script, Transaction,
 };
 use log::Level::{Debug, Trace, Warn};
 
-use error::*;
-use json;
-use queryable;
+use crate::error::*;
+use crate::json;
+use crate::queryable;
 
 /// Crate-specific Result type, shorthand for `std::result::Result` with our
 /// crate-specific Error type;
@@ -382,7 +382,7 @@ pub trait RpcApi: Sized {
         // - 0.18.x returns a "softforks" array and a "bip9_softforks" map.
         // - 0.19.x returns a "softforks" map.
         Ok(if self.version()? < 190000 {
-            use Error::UnexpectedStructure as err;
+            use crate::Error::UnexpectedStructure as err;
 
             // First, remove both incompatible softfork fields.
             // We need to scope the mutable ref here for v1.29 borrowck.
@@ -1256,12 +1256,12 @@ fn log_response(cmd: &str, resp: &Result<jsonrpc::Response>) {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use bitcoin;
+    use crate::bitcoin;
     use serde_json;
 
     #[test]
     fn test_raw_tx() {
-        use bitcoin::consensus::encode;
+        use crate::bitcoin::consensus::encode;
         let client = Client::new("http://localhost/".into(), Auth::None).unwrap();
         let tx: bitcoin::Transaction = encode::deserialize(&Vec::<u8>::from_hex("0200000001586bd02815cf5faabfec986a4e50d25dbee089bd2758621e61c5fab06c334af0000000006b483045022100e85425f6d7c589972ee061413bcf08dc8c8e589ce37b217535a42af924f0e4d602205c9ba9cb14ef15513c9d946fa1c4b797883e748e8c32171bdf6166583946e35c012103dae30a4d7870cd87b45dd53e6012f71318fdd059c1c2623b8cc73f8af287bb2dfeffffff021dc4260c010000001976a914f602e88b2b5901d8aab15ebe4a97cf92ec6e03b388ac00e1f505000000001976a914687ffeffe8cf4e4c038da46a9b1d37db385a472d88acfd211500").unwrap()).unwrap();
 
