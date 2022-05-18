@@ -12,6 +12,7 @@ repository = "https://github.com/rust-bitcoin/rust-bitcoincore-rpc/"
 description = "JSON-enabled type structs for bitcoincore-rpc crate."
 keywords = [ "crypto", "bitcoin", "bitcoin-core", "rpc" ]
 readme = "README.md"
+edition = "2018"
 
 [lib]
 name = "bitcoincore_rpc_json"

@@ -10,11 +10,8 @@
 
 #![deny(unused)]
 
-extern crate bitcoin;
-extern crate bitcoincore_rpc;
 #[macro_use]
 extern crate lazy_static;
-extern crate log;
 
 use std::collections::HashMap;
 
