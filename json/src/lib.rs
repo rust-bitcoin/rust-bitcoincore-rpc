@@ -1812,6 +1812,84 @@ pub struct FundRawTransactionResult {
     pub change_position: i32,
 }
 
+#[derive(Clone, PartialEq, Eq, Debug, Default)]
+pub struct BumpFeeOptions {
+    pub conf_target: Option<u16>,
+    /// Specify a fee rate instead of relying on the built-in fee estimator.
+    pub fee_rate: Option<FeeRate>,
+    /// Whether this transaction could be replaced due to BIP125 (replace-by-fee)
+    pub replaceable: Option<bool>,
+    /// The fee estimate mode
+    pub estimate_mode: Option<EstimateMode>,
+}
+
+impl BumpFeeOptions {
+    pub fn to_serializable(&self, version: usize) -> SerializableBumpFeeOptions {
+        let fee_rate = self.fee_rate.map(|x| {
+            if version < 210000 {
+                x.btc_per_kvbyte()
+            } else {
+                x.sat_per_vbyte()
+            }
+        });
+
+        SerializableBumpFeeOptions {
+            fee_rate,
+            conf_target: self.conf_target,
+            replaceable: self.replaceable,
+            estimate_mode: self.estimate_mode,
+        }
+    }
+}
+
+#[derive(Copy, Clone, PartialEq, Eq, Debug, Default)]
+pub struct FeeRate(Amount);
+
+impl FeeRate {
+    pub fn new(amount_per_vbyte: Amount) -> Self {
+        Self(amount_per_vbyte)
+    }
+    pub fn sat_per_vbyte(&self) -> f64 {
+        // multiply by the number of decimals to get sat
+        self.0.as_sat() as f64
+    }
+    pub fn btc_per_kvbyte(&self) -> f64 {
+        // divide by 10^8 to get btc/vbyte, then multiply by 10^3 to get btc/kbyte
+        self.0.as_sat() as f64 / 100_000.0
+    }
+}
+
+#[derive(Serialize, Clone, PartialEq, Debug, Default)]
+#[serde(rename_all = "camelCase")]
+pub struct SerializableBumpFeeOptions {
+    #[serde(rename = "conf_target", skip_serializing_if = "Option::is_none")]
+    pub conf_target: Option<u16>,
+    /// Specify a fee rate instead of relying on the built-in fee estimator.
+    #[serde(rename = "fee_rate")]
+    pub fee_rate: Option<f64>,
+    /// Whether this transaction could be replaced due to BIP125 (replace-by-fee)
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub replaceable: Option<bool>,
+    /// The fee estimate mode
+    #[serde(rename = "estimate_mode", skip_serializing_if = "Option::is_none")]
+    pub estimate_mode: Option<EstimateMode>,
+}
+
+#[derive(Deserialize, Clone, PartialEq, Eq, Debug)]
+#[serde(rename_all = "camelCase")]
+pub struct BumpFeeResult {
+    /// The base64-encoded unsigned PSBT of the new transaction. Only returned when wallet private keys are disabled.
+    pub psbt: Option<String>,
+    /// The id of the new transaction. Only returned when wallet private keys are enabled.
+    pub txid: Option<bitcoin::Txid>,
+    #[serde(with = "bitcoin::util::amount::serde::as_btc")]
+    pub origfee: Amount,
+    #[serde(with = "bitcoin::util::amount::serde::as_btc")]
+    pub fee: Amount,
+    /// Errors encountered during processing.
+    pub errors: Vec<String>,
+}
+
 #[derive(Deserialize, Clone, PartialEq, Eq, Debug)]
 pub struct GetBalancesResultEntry {
     #[serde(with = "bitcoin::util::amount::serde::as_btc")]
