@@ -1030,7 +1030,11 @@ fn test_create_wallet(cl: &Client) {
 }
 
 fn test_get_tx_out_set_info(cl: &Client) {
-    cl.get_tx_out_set_info(None, None, None).unwrap();
+    if version() >= 220000 {
+        cl.get_tx_out_set_info(Some(json::TxOutSetHashType::Muhash), None, Some(true)).unwrap();
+    } else {
+        cl.get_tx_out_set_info(None, None, None).unwrap();
+    }
 }
 
 fn test_get_chain_tips(cl: &Client) {
