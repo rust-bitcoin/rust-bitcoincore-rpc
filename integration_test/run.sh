@@ -21,14 +21,23 @@ sleep 3
 BLOCKFILTERARG=""
 if bitcoind -version | grep -q "v0\.\(19\|2\)"; then
     BLOCKFILTERARG="-blockfilterindex=1"
+elif bitcoind -version | grep -q "v\(22\|23\)"; then
+    BLOCKFILTERARG="-blockfilterindex=1"
 fi
 
 FALLBACKFEEARG=""
 if bitcoind -version | grep -q "v0\.2"; then
     FALLBACKFEEARG="-fallbackfee=0.00001000"
+elif bitcoind -version | grep -q "v\(22\|23\)"; then
+    FALLBACKFEEARG="-fallbackfee=0.00001000"
 fi
 
-bitcoind -regtest $BLOCKFILTERARG $FALLBACKFEEARG \
+COINSTATSINDEXARG=""
+if bitcoind -version | grep -q "v[2-9]"; then
+    COINSTATSINDEXARG="-coinstatsindex=1"
+fi
+
+bitcoind -regtest $BLOCKFILTERARG $FALLBACKFEEARG $COINSTATSINDEXARG \
     -datadir=${TESTDIR}/2 \
     -connect=127.0.0.1:12348 \
     -rpcport=12349 \

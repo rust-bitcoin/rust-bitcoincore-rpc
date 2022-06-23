@@ -271,22 +271,28 @@ pub trait RpcApi: Sized {
 
     fn create_wallet(
         &self,
-        wallet: &str,
+        wallet_name: &str,
         disable_private_keys: Option<bool>,
         blank: Option<bool>,
         passphrase: Option<&str>,
         avoid_reuse: Option<bool>,
+        descriptors: Option<bool>,
+        load_on_startup: Option<bool>,
+        external_signer: Option<bool>,
     ) -> Result<json::LoadWalletResult> {
         let mut args = [
-            wallet.into(),
+            wallet_name.into(),
             opt_into_json(disable_private_keys)?,
             opt_into_json(blank)?,
             opt_into_json(passphrase)?,
             opt_into_json(avoid_reuse)?,
+            opt_into_json(descriptors)?,
+            opt_into_json(load_on_startup)?,
+            opt_into_json(external_signer)?,
         ];
         self.call(
             "createwallet",
-            handle_defaults(&mut args, &[false.into(), false.into(), into_json("")?, false.into()]),
+            handle_defaults(&mut args, &[false.into(), false.into(), into_json("")?, false.into(), true.into(), false.into(), false.into()]),
         )
     }
 
@@ -1133,9 +1139,16 @@ pub trait RpcApi: Sized {
     }
 
     /// Returns statistics about the unspent transaction output set.
-    /// This call may take some time.
-    fn get_tx_out_set_info(&self) -> Result<json::GetTxOutSetInfoResult> {
-        self.call("gettxoutsetinfo", &[])
+    /// Note this call may take some time if you are not using coinstatsindex.
+    fn get_tx_out_set_info(
+        &self,
+        hash_type: Option<json::TxOutSetHashType>,
+        hash_or_height: Option<json::HashOrHeight>,
+        use_index: Option<bool>,
+    ) -> Result<json::GetTxOutSetInfoResult> {
+        let mut args =
+            [opt_into_json(hash_type)?, opt_into_json(hash_or_height)?, opt_into_json(use_index)?];
+        self.call("gettxoutsetinfo", handle_defaults(&mut args, &[null(), null(), null()]))
     }
 
     /// Returns information about network traffic, including bytes in, bytes out,

@@ -27,8 +27,8 @@ use bitcoin::hashes::hex::{FromHex, ToHex};
 use bitcoin::hashes::Hash;
 use bitcoin::secp256k1;
 use bitcoin::{
-    Address, Amount, Network, OutPoint, PrivateKey, Script, EcdsaSighashType, SignedAmount, Transaction,
-    TxIn, TxOut, Txid, Witness,
+    Address, Amount, EcdsaSighashType, Network, OutPoint, PrivateKey, Script, SignedAmount,
+    Transaction, TxIn, TxOut, Txid, Witness,
 };
 use bitcoincore_rpc::bitcoincore_rpc_json::{
     GetBlockTemplateModes, GetBlockTemplateRules, ScanTxOutRequest,
@@ -134,7 +134,7 @@ fn main() {
     unsafe { VERSION = cl.version().unwrap() };
     println!("Version: {}", version());
 
-    cl.create_wallet("testwallet", None, None, None, None).unwrap();
+    cl.create_wallet("testwallet", None, None, None, None, Some(false), None, None).unwrap();
 
     test_get_mining_info(&cl);
     test_get_blockchain_info(&cl);
@@ -596,8 +596,9 @@ fn test_sign_raw_transaction_with_send_raw_transaction(cl: &Client) {
         }],
     };
 
-    let res =
-        cl.sign_raw_transaction_with_key(&tx, &[sk], None, Some(EcdsaSighashType::All.into())).unwrap();
+    let res = cl
+        .sign_raw_transaction_with_key(&tx, &[sk], None, Some(EcdsaSighashType::All.into()))
+        .unwrap();
     assert!(res.complete);
     let _ = cl.send_raw_transaction(&res.transaction().unwrap()).unwrap();
 }
@@ -936,6 +937,9 @@ fn test_create_wallet(cl: &Client) {
         blank: Option<bool>,
         passphrase: Option<&'a str>,
         avoid_reuse: Option<bool>,
+        descriptors: Option<bool>,
+        load_on_startup: Option<bool>,
+        external_signer: Option<bool>,
     }
 
     let mut wallet_params = vec![
@@ -945,6 +949,9 @@ fn test_create_wallet(cl: &Client) {
             blank: None,
             passphrase: None,
             avoid_reuse: None,
+            descriptors: None,
+            load_on_startup: None,
+            external_signer: None,
         },
         WalletParams {
             name: wallet_names[1],
@@ -952,6 +959,9 @@ fn test_create_wallet(cl: &Client) {
             blank: None,
             passphrase: None,
             avoid_reuse: None,
+            descriptors: None,
+            load_on_startup: None,
+            external_signer: None,
         },
         WalletParams {
             name: wallet_names[2],
@@ -959,6 +969,9 @@ fn test_create_wallet(cl: &Client) {
             blank: Some(true),
             passphrase: None,
             avoid_reuse: None,
+            descriptors: None,
+            load_on_startup: None,
+            external_signer: None,
         },
     ];
 
@@ -969,6 +982,9 @@ fn test_create_wallet(cl: &Client) {
             blank: None,
             passphrase: Some("pass"),
             avoid_reuse: None,
+            descriptors: None,
+            load_on_startup: None,
+            external_signer: None,
         });
         wallet_params.push(WalletParams {
             name: wallet_names[4],
@@ -976,6 +992,9 @@ fn test_create_wallet(cl: &Client) {
             blank: None,
             passphrase: None,
             avoid_reuse: Some(true),
+            descriptors: None,
+            load_on_startup: None,
+            external_signer: None,
         });
     }
 
@@ -987,6 +1006,9 @@ fn test_create_wallet(cl: &Client) {
                 wallet_param.blank,
                 wallet_param.passphrase,
                 wallet_param.avoid_reuse,
+                wallet_param.descriptors,
+                wallet_param.load_on_startup,
+                wallet_param.external_signer,
             )
             .unwrap();
 
@@ -1030,7 +1052,11 @@ fn test_create_wallet(cl: &Client) {
 }
 
 fn test_get_tx_out_set_info(cl: &Client) {
-    cl.get_tx_out_set_info().unwrap();
+    if version() >= 220000 {
+        cl.get_tx_out_set_info(Some(json::TxOutSetHashType::Muhash), None, Some(true)).unwrap();
+    } else {
+        cl.get_tx_out_set_info(None, None, None).unwrap();
+    }
 }
 
 fn test_get_chain_tips(cl: &Client) {
@@ -1081,11 +1107,7 @@ fn test_add_ban(cl: &Client) {
     let res = cl.list_banned().unwrap();
     assert_eq!(res.len(), 0);
 
-    assert_error_message!(
-        cl.add_ban("INVALID_STRING", 0, false),
-        -30,
-        "Error: Invalid IP/Subnet"
-    );
+    assert_error_message!(cl.add_ban("INVALID_STRING", 0, false), -30, "Error: Invalid IP/Subnet");
 }
 
 fn test_set_network_active(cl: &Client) {
