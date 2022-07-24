@@ -8,7 +8,7 @@
 // If not, see <http://creativecommons.org/publicdomain/zero/1.0/>.
 //
 
-use bitcoin;
+use dashcore;
 use serde_json;
 
 use client::Result;
@@ -22,30 +22,30 @@ pub trait Queryable<C: RpcApi>: Sized {
     fn query(rpc: &C, id: &Self::Id) -> Result<Self>;
 }
 
-impl<C: RpcApi> Queryable<C> for bitcoin::blockdata::block::Block {
-    type Id = bitcoin::BlockHash;
+impl<C: RpcApi> Queryable<C> for dashcore::blockdata::block::Block {
+    type Id = dashcore::BlockHash;
 
     fn query(rpc: &C, id: &Self::Id) -> Result<Self> {
         let rpc_name = "getblock";
         let hex: String = rpc.call(rpc_name, &[serde_json::to_value(id)?, 0.into()])?;
-        let bytes: Vec<u8> = bitcoin::hashes::hex::FromHex::from_hex(&hex)?;
-        Ok(bitcoin::consensus::encode::deserialize(&bytes)?)
+        let bytes: Vec<u8> = dashcore::hashes::hex::FromHex::from_hex(&hex)?;
+        Ok(dashcore::consensus::encode::deserialize(&bytes)?)
     }
 }
 
-impl<C: RpcApi> Queryable<C> for bitcoin::blockdata::transaction::Transaction {
-    type Id = bitcoin::Txid;
+impl<C: RpcApi> Queryable<C> for dashcore::blockdata::transaction::Transaction {
+    type Id = dashcore::Txid;
 
     fn query(rpc: &C, id: &Self::Id) -> Result<Self> {
         let rpc_name = "getrawtransaction";
         let hex: String = rpc.call(rpc_name, &[serde_json::to_value(id)?])?;
-        let bytes: Vec<u8> = bitcoin::hashes::hex::FromHex::from_hex(&hex)?;
-        Ok(bitcoin::consensus::encode::deserialize(&bytes)?)
+        let bytes: Vec<u8> = dashcore::hashes::hex::FromHex::from_hex(&hex)?;
+        Ok(dashcore::consensus::encode::deserialize(&bytes)?)
     }
 }
 
 impl<C: RpcApi> Queryable<C> for Option<::json::GetTxOutResult> {
-    type Id = bitcoin::OutPoint;
+    type Id = dashcore::OutPoint;
 
     fn query(rpc: &C, id: &Self::Id) -> Result<Self> {
         rpc.get_tx_out(&id.txid, id.vout, Some(true))
