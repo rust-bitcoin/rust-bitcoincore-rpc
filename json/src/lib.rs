@@ -8,9 +8,9 @@
 // If not, see <http://creativecommons.org/publicdomain/zero/1.0/>.
 //
 
-//! # Rust Client for Dashcore Core API
+//! # Rust Client for Dash Core API
 //!
-//! This is a client library for the Dashcore Core JSON-RPC API.
+//! This is a client library for the Dash Core JSON-RPC API.
 //!
 
 #![crate_name = "dashcore_rpc_json"]
