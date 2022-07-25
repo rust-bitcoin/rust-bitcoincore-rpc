@@ -1,4 +1,4 @@
-//! # rust-bitcoincore-rpc integration test
+//! # rust-dashcore-rpc integration test
 //!
 //! The test methods are named to mention the methods tested.
 //! Individual test methods don't use any methods not tested before or
@@ -10,27 +10,27 @@
 
 #![deny(unused)]
 
-extern crate bitcoin;
-extern crate bitcoincore_rpc;
+extern crate dashcore;
+extern crate dashcore_rpc;
 #[macro_use]
 extern crate lazy_static;
 extern crate log;
 
 use std::collections::HashMap;
 
-use bitcoincore_rpc::json;
-use bitcoincore_rpc::jsonrpc::error::Error as JsonRpcError;
-use bitcoincore_rpc::{Auth, Client, Error, RpcApi};
+use dashcore_rpc::json;
+use dashcore_rpc::jsonrpc::error::Error as JsonRpcError;
+use dashcore_rpc::{Auth, Client, Error, RpcApi};
 
-use bitcoin::consensus::encode::{deserialize, serialize};
-use bitcoin::hashes::hex::{FromHex, ToHex};
-use bitcoin::hashes::Hash;
-use bitcoin::secp256k1;
-use bitcoin::{
+use dashcore::consensus::encode::{deserialize, serialize};
+use dashcore::hashes::hex::{FromHex, ToHex};
+use dashcore::hashes::Hash;
+use dashcore::secp256k1;
+use dashcore::{
     Address, Amount, Network, OutPoint, PrivateKey, Script, EcdsaSighashType, SignedAmount, Transaction,
     TxIn, TxOut, Txid, Witness,
 };
-use bitcoincore_rpc::bitcoincore_rpc_json::{
+use dashcore_rpc::dashcore_rpc_json::{
     GetBlockTemplateModes, GetBlockTemplateRules, ScanTxOutRequest,
 };
 use json::BlockStatsFields as BsFields;
@@ -48,7 +48,7 @@ struct StdLogger;
 
 impl log::Log for StdLogger {
     fn enabled(&self, metadata: &log::Metadata) -> bool {
-        metadata.target().contains("jsonrpc") || metadata.target().contains("bitcoincore_rpc")
+        metadata.target().contains("jsonrpc") || metadata.target().contains("dashcore_rpc")
     }
 
     fn log(&self, record: &log::Record) {
@@ -112,7 +112,7 @@ fn get_rpc_url() -> String {
     return std::env::var("RPC_URL").expect("RPC_URL must be set");
 }
 
-fn get_auth() -> bitcoincore_rpc::Auth {
+fn get_auth() -> dashcore_rpc::Auth {
     if let Ok(cookie) = std::env::var("RPC_COOKIE") {
         return Auth::CookieFile(cookie.into());
     } else if let Ok(user) = std::env::var("RPC_USER") {
@@ -230,13 +230,13 @@ fn test_get_blockchain_info(cl: &Client) {
 
 fn test_get_new_address(cl: &Client) {
     let addr = cl.get_new_address(None, Some(json::AddressType::Legacy)).unwrap();
-    assert_eq!(addr.address_type(), Some(bitcoin::AddressType::P2pkh));
+    assert_eq!(addr.address_type(), Some(dashcore::AddressType::P2pkh));
 
     let addr = cl.get_new_address(None, Some(json::AddressType::Bech32)).unwrap();
-    assert_eq!(addr.address_type(), Some(bitcoin::AddressType::P2wpkh));
+    assert_eq!(addr.address_type(), Some(dashcore::AddressType::P2wpkh));
 
     let addr = cl.get_new_address(None, Some(json::AddressType::P2shSegwit)).unwrap();
-    assert_eq!(addr.address_type(), Some(bitcoin::AddressType::P2sh));
+    assert_eq!(addr.address_type(), Some(dashcore::AddressType::P2sh));
 }
 
 fn test_dump_private_key(cl: &Client) {

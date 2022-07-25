@@ -10,9 +10,9 @@
 
 //! A very simple example used as a self-test of this library against a Bitcoin
 //! Core node.
-extern crate bitcoincore_rpc;
+extern crate dashcore_rpc;
 
-use bitcoincore_rpc::{bitcoin, Auth, Client, Error, RpcApi};
+use dashcore_rpc::{dashcore, Auth, Client, Error, RpcApi};
 
 fn main_result() -> Result<(), Error> {
     let mut args = std::env::args();
@@ -35,10 +35,10 @@ fn main_result() -> Result<(), Error> {
     println!("best block hash by height: {}", best_block_hash_by_height);
     assert_eq!(best_block_hash_by_height, best_block_hash);
 
-    let bitcoin_block: bitcoin::Block = rpc.get_by_id(&best_block_hash)?;
-    println!("best block hash by `get`: {}", bitcoin_block.header.prev_blockhash);
-    let bitcoin_tx: bitcoin::Transaction = rpc.get_by_id(&bitcoin_block.txdata[0].txid())?;
-    println!("tx by `get`: {}", bitcoin_tx.txid());
+    let dashcore_block: dashcore::Block = rpc.get_by_id(&best_block_hash)?;
+    println!("best block hash by `get`: {}", dashcore_block.header.prev_blockhash);
+    let dashcore_tx: dashcore::Transaction = rpc.get_by_id(&dashcore_block.txdata[0].txid())?;
+    println!("tx by `get`: {}", dashcore_tx.txid());
 
     Ok(())
 }

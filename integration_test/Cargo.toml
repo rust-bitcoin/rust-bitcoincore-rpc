@@ -4,7 +4,7 @@ version = "0.1.0"
 authors = ["Steven Roose <steven@stevenroose.org>"]
 
 [dependencies]
-bitcoincore-rpc = { path = "../client" }
-bitcoin = { version = "0.28.0", features = [ "use-serde", "rand" ] }
+dashcore-rpc = { path = "../client" }
+dashcore = { git = "https://github.com/dashevo/rust-dashcore", branch = "master", features = [ "use-serde", "rand" ] }
 lazy_static = "1.4.0"
 log = "0.4"

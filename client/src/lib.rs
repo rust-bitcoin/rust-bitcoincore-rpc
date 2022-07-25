@@ -13,7 +13,7 @@
 //! This is a client library for the Bitcoin Core JSON-RPC API.
 //!
 
-#![crate_name = "bitcoincore_rpc"]
+#![crate_name = "dashcore_rpc"]
 #![crate_type = "rlib"]
 
 #[macro_use]
@@ -25,9 +25,9 @@ extern crate serde_json;
 
 pub extern crate jsonrpc;
 
-pub extern crate bitcoincore_rpc_json;
-pub use bitcoincore_rpc_json as json;
-pub use json::bitcoin;
+pub extern crate dashcore_rpc_json;
+pub use dashcore_rpc_json as json;
+pub use json::dashcore;
 
 mod client;
 mod error;
