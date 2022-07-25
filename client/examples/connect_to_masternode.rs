@@ -4,7 +4,7 @@ use dashcore_rpc::{Auth, Client, RpcApi};
 
 fn main() {
     let rpc = Client::new(
-        &"http://127.0.0.1:19998".to_string(),
+        "localhost:19998".to_string(),
         Auth::UserPass("dashrpc".to_string(), "rpcpassword".to_string()),
     )
     .unwrap();
