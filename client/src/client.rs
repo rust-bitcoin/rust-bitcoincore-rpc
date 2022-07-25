@@ -1161,6 +1161,13 @@ pub trait RpcApi: Sized {
     ) -> Result<json::ScanTxOutResult> {
         self.call("scantxoutset", &["start".into(), into_json(descriptors)?])
     }
+
+    // --------------------------- Masternode -------------------------------
+
+    /// Returns information about the number of known masternodes
+    fn get_masternode_count(&self) -> Result<json::GetMasternodeCountResult> {
+        self.call("masternode", &["count".into()])
+    }
 }
 
 /// Client implements a JSON-RPC client for the Bitcoin Core daemon or compatible APIs.

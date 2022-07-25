@@ -1977,6 +1977,16 @@ impl<'a> serde::Serialize for PubKeyOrAddress<'a> {
     }
 }
 
+
+// --------------------------- Masternode -------------------------------
+
+#[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
+pub struct GetMasternodeCountResult {
+    pub total: u32,
+    pub enabled: u32,
+}
+
+
 // Custom deserializer functions.
 
 /// deserialize_hex_array_opt deserializes a vector of hex-encoded byte arrays.
@@ -1994,3 +2004,4 @@ where
     }
     Ok(Some(res))
 }
+
