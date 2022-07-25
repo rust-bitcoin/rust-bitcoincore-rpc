@@ -1182,7 +1182,7 @@ impl fmt::Debug for Client {
 }
 
 impl Client {
-    /// Creates a client to a dashcored JSON-RPC server.
+    /// Creates a client to a dashd JSON-RPC server.
     ///
     /// Can only return [Err] when using cookie authentication.
     pub fn new(url: &str, auth: Auth) -> Result<Self> {
