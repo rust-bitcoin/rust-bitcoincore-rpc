@@ -1170,7 +1170,7 @@ pub trait RpcApi: Sized {
     }
 }
 
-/// Client implements a JSON-RPC client for the Bitcoin Core daemon or compatible APIs.
+/// Client implements a JSON-RPC client for the Dash Core daemon or compatible APIs.
 pub struct Client {
     client: jsonrpc::client::Client,
 }
