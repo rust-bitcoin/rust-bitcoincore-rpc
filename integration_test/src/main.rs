@@ -213,6 +213,7 @@ fn main() {
     test_add_ban(&cl);
     test_set_network_active(&cl);
     test_stop(cl);
+    test_get_masternode_count(cl);
 }
 
 fn test_get_network_info(cl: &Client) {
@@ -1135,4 +1136,12 @@ fn test_getblocktemplate(cl: &Client) {
 
 fn test_stop(cl: Client) {
     println!("Stopping: '{}'", cl.stop().unwrap());
+}
+
+
+// ---------------------- Masternode RPC tests---------------------
+
+fn test_get_masternode_count(cl: &Client) {
+    let masternode_count = rpc.get_masternode_count().unwrap();
+    assert!(masternode_count > 0);
 }
