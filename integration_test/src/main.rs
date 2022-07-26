@@ -1143,5 +1143,7 @@ fn test_stop(cl: Client) {
 
 fn test_get_masternode_count(cl: &Client) {
     let masternode_count = rpc.get_masternode_count().unwrap();
-    assert!(masternode_count > 0);
+    assert!(masternode_count.total > 0);
+    assert!(masternode_count.enabled > 0);
+    assert!(masternode_count.total >= masternode_count.enabled);
 }
