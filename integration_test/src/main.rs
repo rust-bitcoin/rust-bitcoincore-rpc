@@ -214,6 +214,7 @@ fn main() {
     test_set_network_active(&cl);
     test_stop(cl);
     test_get_masternode_count(cl);
+    test_get_masternode_list(cl);
 }
 
 fn test_get_network_info(cl: &Client) {
@@ -1146,4 +1147,8 @@ fn test_get_masternode_count(cl: &Client) {
     assert!(masternode_count.total > 0);
     assert!(masternode_count.enabled > 0);
     assert!(masternode_count.total >= masternode_count.enabled);
+}
+
+fn test_get_masternode_list(cl: &Client) {
+    let masternode_count = rpc.get_masternode_count().unwrap();
 }

@@ -1168,6 +1168,15 @@ pub trait RpcApi: Sized {
     fn get_masternode_count(&self) -> Result<json::GetMasternodeCountResult> {
         self.call("masternode", &["count".into()])
     }
+
+
+    /// Returns a list of known masternodes
+     fn get_masternode_list(&self) -> Result<HashMap<String, json::GetMasternodeListJSON>>{ 
+        let mut args = ["list".into(), "json".into()];
+        self.call::<HashMap<String, json::GetMasternodeListJSON>>("masternode", handle_defaults(&mut args, &[null()])) 
+    }
+
+
 }
 
 /// Client implements a JSON-RPC client for the Dash Core daemon or compatible APIs.

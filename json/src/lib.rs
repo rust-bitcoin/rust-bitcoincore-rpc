@@ -1986,6 +1986,27 @@ pub struct GetMasternodeCountResult {
     pub enabled: u32,
 }
 
+#[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
+pub struct GetMasternodeListJSON {
+    #[serde(rename = "proTxHash")]
+    pub pro_tx_hash: String,
+    pub address: String,
+    pub payee: String,
+    pub status: String,
+    #[serde(rename = "lastpaidtime")]
+    pub last_paid_time: u32,
+    #[serde(rename = "lastpaidblock")]
+    pub last_paid_block: u32,
+    #[serde(rename = "owneraddress")]
+    pub owner_address: String,
+    #[serde(rename = "votingaddress")]
+    pub voting_address: String,
+    #[serde(rename = "collateraladdress")]
+    pub collateral_address: String,
+    #[serde(rename = "pubkeyoperator")]
+    pub pubkey_operator: String,
+}
+
 
 // Custom deserializer functions.
 
