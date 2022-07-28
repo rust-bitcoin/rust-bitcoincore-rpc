@@ -1176,6 +1176,12 @@ pub trait RpcApi: Sized {
         self.call::<HashMap<String, json::GetMasternodeListJSON>>("masternode", handle_defaults(&mut args, &[null()])) 
     }
 
+    /// Returns masternode compatible outputs
+    fn get_masternode_outputs(&self) -> Result<HashMap<String, String>>{ 
+            let mut args = ["outputs".into()];
+            self.call::<HashMap<String, String>>("masternode", handle_defaults(&mut args, &[null()])) 
+    }
+
 
 }
 
