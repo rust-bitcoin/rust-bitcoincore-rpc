@@ -217,6 +217,7 @@ fn main() {
     test_get_masternode_list(cl);
     test_get_masternode_outputs(cl);
     test_get_masternode_payments(cl);
+    test_get_masternode_status(cl);
 }
 
 fn test_get_network_info(cl: &Client) {
@@ -1171,4 +1172,8 @@ fn test_get_masternode_payments(cl: &Client) {
 
 fn test_get_masternode_status(cl: &Client) {
     let masternode_status = rpc.get_masternode_status().unwrap();
+}
+
+fn test_get_masternode_winners(cl: &Client) {
+    let masternode_winners = rpc.get_masternode_winners("10", "").unwrap();
 }

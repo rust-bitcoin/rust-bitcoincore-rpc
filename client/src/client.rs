@@ -1193,6 +1193,11 @@ pub trait RpcApi: Sized {
             self.call("masternode", &["status".into()])
     }
 
+    /// Returns the list of masternode winners
+    fn get_masternode_winners(&self, count: &str, filter: &str) -> Result<HashMap<String, String>> {
+            self.call("masternode", &["winners".into(), count.into(), filter.into()])
+    }
+
 
 }
 
