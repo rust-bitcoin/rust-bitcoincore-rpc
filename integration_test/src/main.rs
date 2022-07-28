@@ -218,6 +218,7 @@ fn main() {
     test_get_masternode_outputs(cl);
     test_get_masternode_payments(cl);
     test_get_masternode_status(cl);
+    test_get_masternode_winners(cl);
 }
 
 fn test_get_network_info(cl: &Client) {
