@@ -2031,6 +2031,47 @@ pub struct GetMasternodePaymentsResult {
     pub masternodes: Vec<Masternode>,
 }
 
+#[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
+pub struct DMNState {
+    pub service: String,
+    #[serde(rename = "registeredHeight")]
+    pub registered_height: u32,
+    #[serde(rename = "lastPaidHeight")]
+    pub last_paid_height: u32,
+    #[serde(rename = "PoSePenalty")]
+    pub pose_penalty: u32,
+    #[serde(rename = "PoSeRevivedHeight")]
+    pub pose_revived_height: u32,
+    #[serde(rename = "PoSeBanHeight")]
+    pub pose_ban_height: i32,
+    #[serde(rename = "revocationReason")]
+    pub revocation_reason: u32,
+    #[serde(rename = "ownerAddress")]
+    pub owner_address: String,
+    #[serde(rename = "votingAddress")]
+    pub voting_address: String,
+    #[serde(rename = "payoutAddress")]
+    pub payout_address: String,
+    #[serde(rename = "pubKeyOperator")]
+    pub pubkey_operator: String,
+}
+
+#[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
+pub struct GetMasternodeStatusResult {
+    pub outpoint: String,
+    pub service: String,
+    #[serde(rename = "proTxHash")]
+    pub pro_tx_hash: String,
+    #[serde(rename = "collateralHash")]
+    pub collateral_hash: String,
+    #[serde(rename = "collateralIndex")]
+    pub collateral_index: u32,
+    #[serde(rename = "dmnState")]
+    pub dmn_state: DMNState,
+    pub state: String,
+    pub status: String,
+}
+
 // Custom deserializer functions.
 
 /// deserialize_hex_array_opt deserializes a vector of hex-encoded byte arrays.

@@ -1168,3 +1168,7 @@ fn test_get_masternode_payments(cl: &Client) {
     assert_eq!(masternode_payments[0].amount, masternode_payments[0].masternodes[0].amount);
     assert_eq!(masternode_payments[0].amount, masternode_payments[0].masternodes[0].payees[0].amount);
 }
+
+fn test_get_masternode_status(cl: &Client) {
+    let masternode_status = rpc.get_masternode_status().unwrap();
+}

@@ -1188,6 +1188,11 @@ pub trait RpcApi: Sized {
             self.call::<Vec<json::GetMasternodePaymentsResult>>("masternode", handle_defaults(&mut args, &[null()])) 
     }
 
+    /// Returns masternode status information
+    fn get_masternode_status(&self) -> Result<json::GetMasternodeStatusResult> {
+            self.call("masternode", &["status".into()])
+    }
+
 
 }
 
