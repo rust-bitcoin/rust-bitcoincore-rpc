@@ -1150,5 +1150,5 @@ fn test_get_masternode_count(cl: &Client) {
 }
 
 fn test_get_masternode_list(cl: &Client) {
-    let masternode_count = rpc.get_masternode_count().unwrap();
+    let masternode_count = rpc.get_masternode_list().unwrap();
 }
