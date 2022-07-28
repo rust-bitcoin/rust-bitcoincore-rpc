@@ -1171,9 +1171,9 @@ pub trait RpcApi: Sized {
 
 
     /// Returns a list of known masternodes
-     fn get_masternode_list(&self) -> Result<HashMap<String, json::GetMasternodeListJSON>>{ 
+     fn get_masternode_list(&self) -> Result<HashMap<String, json::Masternode>>{ 
         let mut args = ["list".into(), "json".into()];
-        self.call::<HashMap<String, json::GetMasternodeListJSON>>("masternode", handle_defaults(&mut args, &[null()])) 
+        self.call::<HashMap<String, json::Masternode>>("masternode", handle_defaults(&mut args, &[null()])) 
     }
 
     /// Returns masternode compatible outputs
@@ -1189,7 +1189,7 @@ pub trait RpcApi: Sized {
     }
 
     /// Returns masternode status information
-    fn get_masternode_status(&self) -> Result<json::GetMasternodeStatusResult> {
+    fn get_masternode_status(&self) -> Result<json::MasternodeStatus> {
             self.call("masternode", &["status".into()])
     }
 

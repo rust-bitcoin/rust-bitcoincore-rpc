@@ -1987,7 +1987,7 @@ pub struct GetMasternodeCountResult {
 }
 
 #[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
-pub struct GetMasternodeListJSON {
+pub struct Masternode {
     #[serde(rename = "proTxHash")]
     pub pro_tx_hash: String,
     pub address: String,
@@ -2015,7 +2015,7 @@ pub struct Payee {
 }
 
 #[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
-pub struct Masternode {
+pub struct MasternodePayment {
     #[serde(rename = "proTxHash")]
     pub pro_tx_hash: String,
     pub amount: u32,
@@ -2026,38 +2026,32 @@ pub struct Masternode {
 pub struct GetMasternodePaymentsResult {
     pub height: u32,
     #[serde(rename = "blockhash")]
-    pub block_hash: String,
+    pub block_hash: dashcore::BlockHash,
     pub amount: u32,
-    pub masternodes: Vec<Masternode>,
+    pub masternodes: Vec<MasternodePayment>,
 }
 
 #[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct DMNState {
     pub service: String,
-    #[serde(rename = "registeredHeight")]
     pub registered_height: u32,
-    #[serde(rename = "lastPaidHeight")]
     pub last_paid_height: u32,
     #[serde(rename = "PoSePenalty")]
     pub pose_penalty: u32,
     #[serde(rename = "PoSeRevivedHeight")]
     pub pose_revived_height: u32,
     #[serde(rename = "PoSeBanHeight")]
-    pub pose_ban_height: i32,
-    #[serde(rename = "revocationReason")]
+    pub pose_ban_height: u32,
     pub revocation_reason: u32,
-    #[serde(rename = "ownerAddress")]
     pub owner_address: String,
-    #[serde(rename = "votingAddress")]
     pub voting_address: String,
-    #[serde(rename = "payoutAddress")]
     pub payout_address: String,
-    #[serde(rename = "pubKeyOperator")]
-    pub pubkey_operator: String,
+    pub pub_key_operator: String,
 }
 
 #[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
-pub struct GetMasternodeStatusResult {
+pub struct MasternodeStatus {
     pub outpoint: String,
     pub service: String,
     #[serde(rename = "proTxHash")]
