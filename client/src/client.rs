@@ -1182,6 +1182,12 @@ pub trait RpcApi: Sized {
             self.call::<HashMap<String, String>>("masternode", handle_defaults(&mut args, &[null()])) 
     }
 
+    /// Returns an array of deterministic masternodes and their payments for the specified block
+    fn get_masternode_payments(&self) -> Result<Vec<json::GetMasternodePaymentsResult>>{ 
+            let mut args = ["payments".into()];
+            self.call::<Vec<json::GetMasternodePaymentsResult>>("masternode", handle_defaults(&mut args, &[null()])) 
+    }
+
 
 }
 

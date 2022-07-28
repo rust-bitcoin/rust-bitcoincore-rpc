@@ -2007,6 +2007,29 @@ pub struct GetMasternodeListJSON {
     pub pubkey_operator: String,
 }
 
+#[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
+pub struct Payee {
+    pub address: String,
+    pub script: String,
+    pub amount: u32,
+}
+
+#[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
+pub struct Masternode {
+    #[serde(rename = "proTxHash")]
+    pub pro_tx_hash: String,
+    pub amount: u32,
+    pub payees: Vec<Payee>,
+}
+
+#[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
+pub struct GetMasternodePaymentsResult {
+    pub height: u32,
+    #[serde(rename = "blockhash")]
+    pub block_hash: String,
+    pub amount: u32,
+    pub masternodes: Vec<Masternode>,
+}
 
 // Custom deserializer functions.
 

@@ -216,6 +216,7 @@ fn main() {
     test_get_masternode_count(cl);
     test_get_masternode_list(cl);
     test_get_masternode_outputs(cl);
+    test_get_masternode_payments(cl);
 }
 
 fn test_get_network_info(cl: &Client) {
@@ -1151,9 +1152,19 @@ fn test_get_masternode_count(cl: &Client) {
 }
 
 fn test_get_masternode_list(cl: &Client) {
-    let masternode_count = rpc.get_masternode_list().unwrap();
+    let masternode_list = rpc.get_masternode_list().unwrap();
 }
 
 fn test_get_masternode_outputs(cl: &Client) {
-    let masternode_count = rpc.get_masternode_outputs().unwrap();
+    let masternode_outputs = rpc.get_masternode_outputs().unwrap();
+}
+
+fn test_get_masternode_payments(cl: &Client) {
+    let masternode_payments = rpc.get_masternode_payments().unwrap();
+    assert!(masternode_payments[0].height > 0);
+    assert!(masternode_payments[0].amount > 0);
+    assert!(masternode_payments[0].masternodes[0].amount > 0);
+    assert!(masternode_payments[0].masternodes[0].payees[0].amount > 0);
+    assert_eq!(masternode_payments[0].amount, masternode_payments[0].masternodes[0].amount);
+    assert_eq!(masternode_payments[0].amount, masternode_payments[0].masternodes[0].payees[0].amount);
 }
