@@ -21,6 +21,7 @@ pub extern crate dashcore;
 #[macro_use] // `macro_use` is needed for v1.24.0 compilation.
 extern crate serde;
 extern crate serde_json;
+extern crate serde_with;
 
 use std::collections::HashMap;
 
@@ -31,7 +32,9 @@ use dashcore::util::{bip158, bip32};
 use dashcore::{Address, Amount, PrivateKey, PublicKey, Script, SignedAmount, Transaction};
 use serde::de::Error as SerdeError;
 use serde::{Deserialize, Serialize};
+use serde_with::{serde_as, DisplayFromStr};
 use std::fmt;
+use std::net::{SocketAddr};
 
 //TODO(stevenroose) consider using a Time type
 
@@ -1986,18 +1989,13 @@ pub struct GetMasternodeCountResult {
     pub enabled: u32,
 }
 
-#[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize, Default)]
-pub struct MasternodeAddress {
-    pub ip: String,
-    pub port: String,
-}
-
+#[serde_as]
 #[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
 pub struct Masternode {
     #[serde(rename = "proTxHash", with = "::serde_hex")]
     pub pro_tx_hash: Vec<u8>,
-    #[serde(default, deserialize_with = "deserialize_mn_address")]
-    pub address: MasternodeAddress,
+    #[serde_as(as = "DisplayFromStr")]
+    pub address: SocketAddr,
     pub payee: String,
     pub status: String,
     #[serde(rename = "lastpaidtime")]
@@ -2115,23 +2113,3 @@ where
     Ok(outpoint)
 }
 
-/// deserialize_mn_address deserializes a masternode address
-fn deserialize_mn_address<'de, D>(deserializer: D) -> Result<MasternodeAddress, D::Error>
-where
-    D: serde::Deserializer<'de>,
-{
-    let str_sequence = String::deserialize(deserializer)?;
-    let str_array: Vec<String> = str_sequence
-        .split(':')
-        .map(|item| item.to_owned())
-        .collect();
-
-    let ip: String = str_array[0].to_string();
-    let port: String = str_array[1].to_string();
-
-    let mn_address = MasternodeAddress{
-        ip: ip,
-        port: port,
-    };
-    Ok(mn_address)
-}
