@@ -32,7 +32,7 @@ use dashcore::util::{bip158, bip32};
 use dashcore::{Address, Amount, PrivateKey, PublicKey, Script, SignedAmount, Transaction};
 use serde::de::Error as SerdeError;
 use serde::{Deserialize, Serialize};
-use serde_with::{serde_as, DisplayFromStr};
+use serde_with::{serde_as, DisplayFromStr, Bytes};
 use std::fmt;
 use std::net::{SocketAddr};
 
@@ -1996,25 +1996,32 @@ pub struct Masternode {
     pub pro_tx_hash: Vec<u8>,
     #[serde_as(as = "DisplayFromStr")]
     pub address: SocketAddr,
-    pub payee: String,
+    #[serde_as(as = "Bytes")]
+    pub payee: Vec<u8>,
     pub status: String,
     #[serde(rename = "lastpaidtime")]
     pub last_paid_time: u32,
     #[serde(rename = "lastpaidblock")]
     pub last_paid_block: u32,
+    #[serde_as(as = "Bytes")]
     #[serde(rename = "owneraddress")]
-    pub owner_address: String,
+    pub owner_address: Vec<u8>,
+    #[serde_as(as = "Bytes")]
     #[serde(rename = "votingaddress")]
-    pub voting_address: String,
+    pub voting_address: Vec<u8>,
+    #[serde_as(as = "Bytes")]
     #[serde(rename = "collateraladdress")]
-    pub collateral_address: String,
+    pub collateral_address: Vec<u8>,
+    #[serde_as(as = "Bytes")]
     #[serde(rename = "pubkeyoperator")]
-    pub pubkey_operator: String,
+    pub pubkey_operator: Vec<u8>,
 }
 
+#[serde_as]
 #[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
 pub struct Payee {
-    pub address: String,
+    #[serde_as(as = "Bytes")]
+    pub address: Vec<u8>,
     pub script: Script,
     pub amount: u32,
 }
@@ -2051,12 +2058,14 @@ pub struct DMNState {
     #[serde(rename = "PoSeBanHeight")]
     pub pose_ban_height: u32,
     pub revocation_reason: u32,
-    pub owner_address: String,
-    #[serde(with = "::serde_hex")]
+    #[serde_as(as = "Bytes")]
+    pub owner_address: Vec<u8>,
+    #[serde_as(as = "Bytes")]
     pub voting_address: Vec<u8>,
-    #[serde(with = "::serde_hex")]
+    #[serde_as(as = "Bytes")]
     pub payout_address: Vec<u8>,
-    pub pub_key_operator: String,
+    #[serde_as(as = "Bytes")]
+    pub pub_key_operator: Vec<u8>,
 }
 
 #[serde_as]
