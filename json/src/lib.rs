@@ -2052,9 +2052,10 @@ pub struct DMNState {
 
 #[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
 pub struct MasternodeStatus {
-    pub outpoint: String,
+    #[serde(default, deserialize_with = "deserialize_outpoint")]
+    pub outpoint: dashcore::OutPoint,
     pub service: String,
-    #[serde(rename = "proTxHash",with = "::serde_hex")]
+    #[serde(rename = "proTxHash", with = "::serde_hex")]
     pub pro_tx_hash: Vec<u8>,
     #[serde(rename = "collateralHash")]
     pub collateral_hash: String,
@@ -2082,5 +2083,26 @@ where
         res.push(FromHex::from_hex(&h).map_err(D::Error::custom)?);
     }
     Ok(Some(res))
+}
+
+/// deserialize_outpoint deserialzes a hex-encoded outpoint
+fn deserialize_outpoint<'de, D>(deserializer: D) -> Result<dashcore::OutPoint, D::Error>
+where
+    D: serde::Deserializer<'de>,
+{
+    let str_sequence = String::deserialize(deserializer)?;
+    let str_array: Vec<String> = str_sequence
+        .split('-')
+        .map(|item| item.to_owned())
+        .collect();
+
+    let tx_id: dashcore::Txid = dashcore::Txid::from_hex(&str_array[0]).unwrap();
+    let vout: u32 = str_array[1].parse().unwrap();
+
+    let outpoint = dashcore::OutPoint{
+        txid: tx_id,
+        vout: vout,
+    };
+    Ok(outpoint)
 }
 
