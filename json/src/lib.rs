@@ -1994,7 +1994,7 @@ pub struct MasternodeAddress {
 
 #[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
 pub struct Masternode {
-    #[serde(rename = "proTxHash",with = "::serde_hex")]
+    #[serde(rename = "proTxHash", with = "::serde_hex")]
     pub pro_tx_hash: Vec<u8>,
     #[serde(default, deserialize_with = "deserialize_mn_address")]
     pub address: MasternodeAddress,
@@ -2023,7 +2023,7 @@ pub struct Payee {
 
 #[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
 pub struct MasternodePayment {
-    #[serde(rename = "proTxHash",with = "::serde_hex")]
+    #[serde(rename = "proTxHash", with = "::serde_hex")]
     pub pro_tx_hash: Vec<u8>,
     pub amount: u32,
     pub payees: Vec<Payee>,
@@ -2052,8 +2052,10 @@ pub struct DMNState {
     pub pose_ban_height: u32,
     pub revocation_reason: u32,
     pub owner_address: String,
-    pub voting_address: String,
-    pub payout_address: String,
+    #[serde(with = "::serde_hex")]
+    pub voting_address: Vec<u8>,
+    #[serde(with = "::serde_hex")]
+    pub payout_address: Vec<u8>,
     pub pub_key_operator: String,
 }
 
@@ -2092,7 +2094,7 @@ where
     Ok(Some(res))
 }
 
-/// deserialize_outpoint deserialzes a hex-encoded outpoint
+/// deserialize_outpoint deserializes a hex-encoded outpoint
 fn deserialize_outpoint<'de, D>(deserializer: D) -> Result<dashcore::OutPoint, D::Error>
 where
     D: serde::Deserializer<'de>,
@@ -2113,7 +2115,7 @@ where
     Ok(outpoint)
 }
 
-/// deserialize_mn_address deserialzes a masternode address
+/// deserialize_mn_address deserializes a masternode address
 fn deserialize_mn_address<'de, D>(deserializer: D) -> Result<MasternodeAddress, D::Error>
 where
     D: serde::Deserializer<'de>,
@@ -2133,5 +2135,3 @@ where
     };
     Ok(mn_address)
 }
-
-
