@@ -1988,8 +1988,8 @@ pub struct GetMasternodeCountResult {
 
 #[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
 pub struct Masternode {
-    #[serde(rename = "proTxHash")]
-    pub pro_tx_hash: String,
+    #[serde(rename = "proTxHash",with = "::serde_hex")]
+    pub pro_tx_hash: Vec<u8>,
     pub address: String,
     pub payee: String,
     pub status: String,
@@ -2016,8 +2016,8 @@ pub struct Payee {
 
 #[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
 pub struct MasternodePayment {
-    #[serde(rename = "proTxHash")]
-    pub pro_tx_hash: String,
+    #[serde(rename = "proTxHash",with = "::serde_hex")]
+    pub pro_tx_hash: Vec<u8>,
     pub amount: u32,
     pub payees: Vec<Payee>,
 }
@@ -2054,8 +2054,8 @@ pub struct DMNState {
 pub struct MasternodeStatus {
     pub outpoint: String,
     pub service: String,
-    #[serde(rename = "proTxHash")]
-    pub pro_tx_hash: String,
+    #[serde(rename = "proTxHash",with = "::serde_hex")]
+    pub pro_tx_hash: Vec<u8>,
     #[serde(rename = "collateralHash")]
     pub collateral_hash: String,
     #[serde(rename = "collateralIndex")]
