@@ -2015,7 +2015,7 @@ pub struct Masternode {
 #[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
 pub struct Payee {
     pub address: String,
-    pub script: String,
+    pub script: Script,
     pub amount: u32,
 }
 
@@ -2036,10 +2036,12 @@ pub struct GetMasternodePaymentsResult {
     pub masternodes: Vec<MasternodePayment>,
 }
 
+#[serde_as]
 #[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct DMNState {
-    pub service: String,
+    #[serde_as(as = "DisplayFromStr")]
+    pub service: SocketAddr,
     pub registered_height: u32,
     pub last_paid_height: u32,
     #[serde(rename = "PoSePenalty")]
@@ -2057,15 +2059,17 @@ pub struct DMNState {
     pub pub_key_operator: String,
 }
 
+#[serde_as]
 #[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
 pub struct MasternodeStatus {
     #[serde(default, deserialize_with = "deserialize_outpoint")]
     pub outpoint: dashcore::OutPoint,
-    pub service: String,
+    #[serde_as(as = "DisplayFromStr")]
+    pub service: SocketAddr,
     #[serde(rename = "proTxHash", with = "::serde_hex")]
     pub pro_tx_hash: Vec<u8>,
-    #[serde(rename = "collateralHash")]
-    pub collateral_hash: String,
+    #[serde(rename = "collateralHash", with = "::serde_hex")]
+    pub collateral_hash: Vec<u8>,
     #[serde(rename = "collateralIndex")]
     pub collateral_index: u32,
     #[serde(rename = "dmnState")]
