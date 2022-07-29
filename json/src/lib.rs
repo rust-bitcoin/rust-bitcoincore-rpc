@@ -1986,11 +1986,18 @@ pub struct GetMasternodeCountResult {
     pub enabled: u32,
 }
 
+#[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize, Default)]
+pub struct MasternodeAddress {
+    pub ip: String,
+    pub port: String,
+}
+
 #[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
 pub struct Masternode {
     #[serde(rename = "proTxHash",with = "::serde_hex")]
     pub pro_tx_hash: Vec<u8>,
-    pub address: String,
+    #[serde(default, deserialize_with = "deserialize_mn_address")]
+    pub address: MasternodeAddress,
     pub payee: String,
     pub status: String,
     #[serde(rename = "lastpaidtime")]
@@ -2096,13 +2103,35 @@ where
         .map(|item| item.to_owned())
         .collect();
 
-    let tx_id: dashcore::Txid = dashcore::Txid::from_hex(&str_array[0]).unwrap();
+    let txid: dashcore::Txid = dashcore::Txid::from_hex(&str_array[0]).unwrap();
     let vout: u32 = str_array[1].parse().unwrap();
 
     let outpoint = dashcore::OutPoint{
-        txid: tx_id,
+        txid: txid,
         vout: vout,
     };
     Ok(outpoint)
 }
+
+/// deserialize_mn_address deserialzes a masternode address
+fn deserialize_mn_address<'de, D>(deserializer: D) -> Result<MasternodeAddress, D::Error>
+where
+    D: serde::Deserializer<'de>,
+{
+    let str_sequence = String::deserialize(deserializer)?;
+    let str_array: Vec<String> = str_sequence
+        .split(':')
+        .map(|item| item.to_owned())
+        .collect();
+
+    let ip: String = str_array[0].to_string();
+    let port: String = str_array[1].to_string();
+
+    let mn_address = MasternodeAddress{
+        ip: ip,
+        port: port,
+    };
+    Ok(mn_address)
+}
+
 
