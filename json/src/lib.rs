@@ -2068,6 +2068,19 @@ pub struct DMNState {
     pub pub_key_operator: Vec<u8>,
 }
 
+#[serde(untagged)]
+#[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
+pub enum MasternodeState{
+    MASTERNODE_WAITING_FOR_PROTX,
+    MASTERNODE_POSE_BANNED,
+    MASTERNODE_REMOVED,
+    MASTERNODE_OPERATOR_KEY_CHANGED,
+    MASTERNODE_PROTX_IP_CHANGED,
+    MASTERNODE_READY,
+    MASTERNODE_ERROR,
+    UNKNOWN   
+}
+
 #[serde_as]
 #[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
 pub struct MasternodeStatus {
@@ -2083,7 +2096,8 @@ pub struct MasternodeStatus {
     pub collateral_index: u32,
     #[serde(rename = "dmnState")]
     pub dmn_state: DMNState,
-    pub state: String,
+    #[serde(deserialize_with = "deserialize_mn_state")]
+    pub state: MasternodeState,
     pub status: String,
 }
 
@@ -2125,4 +2139,27 @@ where
     };
     Ok(outpoint)
 }
+
+/// deserialize_mn_state deserializes a masternode state
+fn deserialize_mn_state<'de, D>(deserializer: D) -> Result<MasternodeState, D::Error>
+where
+    D: serde::Deserializer<'de>,
+{
+    let str_sequence = String::deserialize(deserializer)?;
+    
+    Ok(
+        match str_sequence.as_str() {
+        "WAITING_FOR_PROTX" => MasternodeState::MASTERNODE_WAITING_FOR_PROTX,
+        "POSE_BANNED" => MasternodeState::MASTERNODE_POSE_BANNED,
+        "REMOVED" => MasternodeState::MASTERNODE_REMOVED,
+        "OPERATOR_KEY_CHANGED" => MasternodeState::MASTERNODE_OPERATOR_KEY_CHANGED,
+        "PROTX_IP_CHANGED" => MasternodeState::MASTERNODE_PROTX_IP_CHANGED,
+        "READY" => MasternodeState::MASTERNODE_READY,
+        "ERROR" => MasternodeState::MASTERNODE_ERROR,
+        "UNKNOWN" => MasternodeState::UNKNOWN,
+        _ => panic!(),
+    }
+)
+}
+
 
