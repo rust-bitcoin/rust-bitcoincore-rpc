@@ -1171,9 +1171,9 @@ pub trait RpcApi: Sized {
 
 
     /// Returns a list of known masternodes
-     fn get_masternode_list(&self) -> Result<HashMap<String, json::Masternode>>{ 
-        let mut args = ["list".into(), "json".into()];
-        self.call::<HashMap<String, json::Masternode>>("masternode", handle_defaults(&mut args, &[null()])) 
+     fn get_masternode_list(&self, mode: Option<&str>, filter: Option<&str>) -> Result<HashMap<String, json::Masternode>>{ 
+        let mut args = ["list".into(), into_json(mode)?, opt_into_json(filter)?];
+        self.call::<HashMap<String, json::Masternode>>("masternode", handle_defaults(&mut args, &["json".into(), null()])) 
     }
 
     /// Returns masternode compatible outputs
@@ -1183,9 +1183,9 @@ pub trait RpcApi: Sized {
     }
 
     /// Returns an array of deterministic masternodes and their payments for the specified block
-    fn get_masternode_payments(&self) -> Result<Vec<json::GetMasternodePaymentsResult>>{ 
-            let mut args = ["payments".into()];
-            self.call::<Vec<json::GetMasternodePaymentsResult>>("masternode", handle_defaults(&mut args, &[null()])) 
+    fn get_masternode_payments(&self, block_hash: Option<&str>, count: Option<&str>) -> Result<Vec<json::GetMasternodePaymentsResult>>{ 
+            let mut args = ["payments".into(), opt_into_json(block_hash)?, opt_into_json(count)?];
+            self.call::<Vec<json::GetMasternodePaymentsResult>>("masternode", handle_defaults(&mut args, &[null(), null()])) 
     }
 
     /// Returns masternode status information
@@ -1194,8 +1194,9 @@ pub trait RpcApi: Sized {
     }
 
     /// Returns the list of masternode winners
-    fn get_masternode_winners(&self, count: &str, filter: &str) -> Result<HashMap<String, String>> {
-            self.call("masternode", &["winners".into(), count.into(), filter.into()])
+    fn get_masternode_winners(&self, count: Option<&str>, filter: Option<&str>) -> Result<HashMap<String, String>> {
+            let mut args = ["winners".into(), opt_into_json(count)?, opt_into_json(filter)?];
+            self.call::<HashMap<String, String>>("masternode", handle_defaults(&mut args, &["10".into(), null()])) 
     }
 
 
