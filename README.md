@@ -26,7 +26,8 @@ use dashcore_rpc::{Auth, Client, RpcApi};
 
 fn main() {
 
-    let rpc = Client::new("localhost:19998",
+    let rpc = Client::new(
+        "localhost:19998",
                           Auth::UserPass("<FILL RPC USERNAME>".to_string(),
                                          "<FILL RPC PASSWORD>".to_string())).unwrap();
     let best_block_hash = rpc.get_best_block_hash().unwrap();
