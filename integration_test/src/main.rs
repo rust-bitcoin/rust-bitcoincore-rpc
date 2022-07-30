@@ -1154,7 +1154,7 @@ fn test_get_masternode_count(cl: &Client) {
 }
 
 fn test_get_masternode_list(cl: &Client) {
-    let masternode_list = rpc.get_masternode_list().unwrap();
+    let masternode_list = rpc.get_masternode_list(Some("json"), None).unwrap();
 }
 
 fn test_get_masternode_outputs(cl: &Client) {
@@ -1162,7 +1162,7 @@ fn test_get_masternode_outputs(cl: &Client) {
 }
 
 fn test_get_masternode_payments(cl: &Client) {
-    let masternode_payments = rpc.get_masternode_payments().unwrap();
+    let masternode_payments = rpc.get_masternode_payments(None, None).unwrap();
     assert!(masternode_payments[0].height > 0);
     assert!(masternode_payments[0].amount > 0);
     assert!(masternode_payments[0].masternodes[0].amount > 0);
@@ -1176,5 +1176,5 @@ fn test_get_masternode_status(cl: &Client) {
 }
 
 fn test_get_masternode_winners(cl: &Client) {
-    let masternode_winners = rpc.get_masternode_winners("10", "").unwrap();
+    let masternode_winners = rpc.get_masternode_winners(None, None).unwrap();
 }
