@@ -2078,7 +2078,8 @@ pub enum MasternodeState{
     MASTERNODE_PROTX_IP_CHANGED,
     MASTERNODE_READY,
     MASTERNODE_ERROR,
-    UNKNOWN   
+    UNKNOWN,  
+    NONRECOGNISED,
 }
 
 #[serde_as]
@@ -2157,7 +2158,7 @@ where
         "READY" => MasternodeState::MASTERNODE_READY,
         "ERROR" => MasternodeState::MASTERNODE_ERROR,
         "UNKNOWN" => MasternodeState::UNKNOWN,
-        _ => panic!(),
+        _ => MasternodeState::NONRECOGNISED,
     }
 )
 }
