@@ -21,6 +21,7 @@ pub extern crate dashcore;
 #[macro_use] // `macro_use` is needed for v1.24.0 compilation.
 extern crate serde;
 extern crate serde_json;
+extern crate serde_with;
 
 use std::collections::HashMap;
 
@@ -31,7 +32,9 @@ use dashcore::util::{bip158, bip32};
 use dashcore::{Address, Amount, PrivateKey, PublicKey, Script, SignedAmount, Transaction};
 use serde::de::Error as SerdeError;
 use serde::{Deserialize, Serialize};
+use serde_with::{serde_as, DisplayFromStr, Bytes};
 use std::fmt;
+use std::net::{SocketAddr};
 
 //TODO(stevenroose) consider using a Time type
 
@@ -1986,6 +1989,118 @@ pub struct GetMasternodeCountResult {
     pub enabled: u32,
 }
 
+#[serde_as]
+#[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
+pub struct Masternode {
+    #[serde(rename = "proTxHash", with = "::serde_hex")]
+    pub pro_tx_hash: Vec<u8>,
+    #[serde_as(as = "DisplayFromStr")]
+    pub address: SocketAddr,
+    #[serde_as(as = "Bytes")]
+    pub payee: Vec<u8>,
+    pub status: String,
+    #[serde(rename = "lastpaidtime")]
+    pub last_paid_time: u32,
+    #[serde(rename = "lastpaidblock")]
+    pub last_paid_block: u32,
+    #[serde_as(as = "Bytes")]
+    #[serde(rename = "owneraddress")]
+    pub owner_address: Vec<u8>,
+    #[serde_as(as = "Bytes")]
+    #[serde(rename = "votingaddress")]
+    pub voting_address: Vec<u8>,
+    #[serde_as(as = "Bytes")]
+    #[serde(rename = "collateraladdress")]
+    pub collateral_address: Vec<u8>,
+    #[serde_as(as = "Bytes")]
+    #[serde(rename = "pubkeyoperator")]
+    pub pubkey_operator: Vec<u8>,
+}
+
+#[serde_as]
+#[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
+pub struct Payee {
+    #[serde_as(as = "Bytes")]
+    pub address: Vec<u8>,
+    pub script: Script,
+    pub amount: u32,
+}
+
+#[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
+pub struct MasternodePayment {
+    #[serde(rename = "proTxHash", with = "::serde_hex")]
+    pub pro_tx_hash: Vec<u8>,
+    pub amount: u32,
+    pub payees: Vec<Payee>,
+}
+
+#[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
+pub struct GetMasternodePaymentsResult {
+    pub height: u32,
+    #[serde(rename = "blockhash")]
+    pub block_hash: dashcore::BlockHash,
+    pub amount: u32,
+    pub masternodes: Vec<MasternodePayment>,
+}
+
+#[serde_as]
+#[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct DMNState {
+    #[serde_as(as = "DisplayFromStr")]
+    pub service: SocketAddr,
+    pub registered_height: u32,
+    pub last_paid_height: u32,
+    #[serde(rename = "PoSePenalty")]
+    pub pose_penalty: u32,
+    #[serde(rename = "PoSeRevivedHeight")]
+    pub pose_revived_height: u32,
+    #[serde(rename = "PoSeBanHeight")]
+    pub pose_ban_height: u32,
+    pub revocation_reason: u32,
+    #[serde_as(as = "Bytes")]
+    pub owner_address: Vec<u8>,
+    #[serde_as(as = "Bytes")]
+    pub voting_address: Vec<u8>,
+    #[serde_as(as = "Bytes")]
+    pub payout_address: Vec<u8>,
+    #[serde_as(as = "Bytes")]
+    pub pub_key_operator: Vec<u8>,
+}
+
+#[serde(untagged)]
+#[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
+pub enum MasternodeState{
+    MASTERNODE_WAITING_FOR_PROTX,
+    MASTERNODE_POSE_BANNED,
+    MASTERNODE_REMOVED,
+    MASTERNODE_OPERATOR_KEY_CHANGED,
+    MASTERNODE_PROTX_IP_CHANGED,
+    MASTERNODE_READY,
+    MASTERNODE_ERROR,
+    UNKNOWN,  
+    NONRECOGNISED,
+}
+
+#[serde_as]
+#[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
+pub struct MasternodeStatus {
+    #[serde(default, deserialize_with = "deserialize_outpoint")]
+    pub outpoint: dashcore::OutPoint,
+    #[serde_as(as = "DisplayFromStr")]
+    pub service: SocketAddr,
+    #[serde(rename = "proTxHash", with = "::serde_hex")]
+    pub pro_tx_hash: Vec<u8>,
+    #[serde(rename = "collateralHash", with = "::serde_hex")]
+    pub collateral_hash: Vec<u8>,
+    #[serde(rename = "collateralIndex")]
+    pub collateral_index: u32,
+    #[serde(rename = "dmnState")]
+    pub dmn_state: DMNState,
+    #[serde(deserialize_with = "deserialize_mn_state")]
+    pub state: MasternodeState,
+    pub status: String,
+}
 
 // Custom deserializer functions.
 
@@ -2004,4 +2119,48 @@ where
     }
     Ok(Some(res))
 }
+
+/// deserialize_outpoint deserializes a hex-encoded outpoint
+fn deserialize_outpoint<'de, D>(deserializer: D) -> Result<dashcore::OutPoint, D::Error>
+where
+    D: serde::Deserializer<'de>,
+{
+    let str_sequence = String::deserialize(deserializer)?;
+    let str_array: Vec<String> = str_sequence
+        .split('-')
+        .map(|item| item.to_owned())
+        .collect();
+
+    let txid: dashcore::Txid = dashcore::Txid::from_hex(&str_array[0]).unwrap();
+    let vout: u32 = str_array[1].parse().unwrap();
+
+    let outpoint = dashcore::OutPoint{
+        txid: txid,
+        vout: vout,
+    };
+    Ok(outpoint)
+}
+
+/// deserialize_mn_state deserializes a masternode state
+fn deserialize_mn_state<'de, D>(deserializer: D) -> Result<MasternodeState, D::Error>
+where
+    D: serde::Deserializer<'de>,
+{
+    let str_sequence = String::deserialize(deserializer)?;
+    
+    Ok(
+        match str_sequence.as_str() {
+        "WAITING_FOR_PROTX" => MasternodeState::MASTERNODE_WAITING_FOR_PROTX,
+        "POSE_BANNED" => MasternodeState::MASTERNODE_POSE_BANNED,
+        "REMOVED" => MasternodeState::MASTERNODE_REMOVED,
+        "OPERATOR_KEY_CHANGED" => MasternodeState::MASTERNODE_OPERATOR_KEY_CHANGED,
+        "PROTX_IP_CHANGED" => MasternodeState::MASTERNODE_PROTX_IP_CHANGED,
+        "READY" => MasternodeState::MASTERNODE_READY,
+        "ERROR" => MasternodeState::MASTERNODE_ERROR,
+        "UNKNOWN" => MasternodeState::UNKNOWN,
+        _ => MasternodeState::NONRECOGNISED,
+    }
+)
+}
+
 

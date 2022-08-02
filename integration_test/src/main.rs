@@ -213,6 +213,12 @@ fn main() {
     test_add_ban(&cl);
     test_set_network_active(&cl);
     test_stop(cl);
+    test_get_masternode_count(cl);
+    test_get_masternode_list(cl);
+    test_get_masternode_outputs(cl);
+    test_get_masternode_payments(cl);
+    test_get_masternode_status(cl);
+    test_get_masternode_winners(cl);
 }
 
 fn test_get_network_info(cl: &Client) {
@@ -1135,4 +1141,40 @@ fn test_getblocktemplate(cl: &Client) {
 
 fn test_stop(cl: Client) {
     println!("Stopping: '{}'", cl.stop().unwrap());
+}
+
+
+// ---------------------- Masternode RPC tests---------------------
+
+fn test_get_masternode_count(cl: &Client) {
+    let masternode_count = rpc.get_masternode_count().unwrap();
+    assert!(masternode_count.total > 0);
+    assert!(masternode_count.enabled > 0);
+    assert!(masternode_count.total >= masternode_count.enabled);
+}
+
+fn test_get_masternode_list(cl: &Client) {
+    let masternode_list = rpc.get_masternode_list(Some("json"), None).unwrap();
+}
+
+fn test_get_masternode_outputs(cl: &Client) {
+    let masternode_outputs = rpc.get_masternode_outputs().unwrap();
+}
+
+fn test_get_masternode_payments(cl: &Client) {
+    let masternode_payments = rpc.get_masternode_payments(None, None).unwrap();
+    assert!(masternode_payments[0].height > 0);
+    assert!(masternode_payments[0].amount > 0);
+    assert!(masternode_payments[0].masternodes[0].amount > 0);
+    assert!(masternode_payments[0].masternodes[0].payees[0].amount > 0);
+    assert_eq!(masternode_payments[0].amount, masternode_payments[0].masternodes[0].amount);
+    assert_eq!(masternode_payments[0].amount, masternode_payments[0].masternodes[0].payees[0].amount);
+}
+
+fn test_get_masternode_status(cl: &Client) {
+    let masternode_status = rpc.get_masternode_status().unwrap();
+}
+
+fn test_get_masternode_winners(cl: &Client) {
+    let masternode_winners = rpc.get_masternode_winners(None, None).unwrap();
 }
