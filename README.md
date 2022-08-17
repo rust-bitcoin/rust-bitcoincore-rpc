@@ -26,7 +26,7 @@ use bitcoincore_rpc::{Auth, Client, RpcApi};
 
 fn main() {
 
-    let rpc = Client::new("http://localhost:8332".to_string(),
+    let rpc = Client::new("http://localhost:8332",
                           Auth::UserPass("<FILL RPC USERNAME>".to_string(),
                                          "<FILL RPC PASSWORD>".to_string())).unwrap();
     let best_block_hash = rpc.get_best_block_hash().unwrap();
