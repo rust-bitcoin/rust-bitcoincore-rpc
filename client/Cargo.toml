@@ -12,6 +12,7 @@ repository = "https://github.com/rust-bitcoin/rust-bitcoincore-rpc/"
 description = "RPC client library for the Bitcoin Core JSON-RPC API."
 keywords = ["crypto", "bitcoin", "bitcoin-core", "rpc"]
 readme = "README.md"
+edition = "2018"
 
 [lib]
 name = "bitcoincore_rpc"

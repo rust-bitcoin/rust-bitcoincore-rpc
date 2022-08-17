@@ -21,18 +21,17 @@ extern crate log;
 #[allow(unused)]
 #[macro_use] // `macro_use` is needed for v1.24.0 compilation.
 extern crate serde;
-extern crate serde_json;
 
 pub extern crate jsonrpc;
 
 pub extern crate bitcoincore_rpc_json;
+pub use crate::json::bitcoin;
 pub use bitcoincore_rpc_json as json;
-pub use json::bitcoin;
 
 mod client;
 mod error;
 mod queryable;
 
-pub use client::*;
-pub use error::Error;
-pub use queryable::*;
+pub use crate::client::*;
+pub use crate::error::Error;
+pub use crate::queryable::*;

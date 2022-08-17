@@ -10,9 +10,9 @@
 
 use std::{error, fmt, io};
 
-use bitcoin;
-use bitcoin::hashes::hex;
-use bitcoin::secp256k1;
+use crate::bitcoin;
+use crate::bitcoin::hashes::hex;
+use crate::bitcoin::secp256k1;
 use jsonrpc;
 use serde_json;
 
