@@ -1852,27 +1852,96 @@ pub struct SignRawTransactionInput {
     pub amount: Option<Amount>,
 }
 
+/// Used to represent UTXO set hash type
+#[derive(Clone, Serialize, PartialEq, Eq, Debug)]
+#[serde(rename_all = "snake_case")]
+pub enum TxOutSetHashType {
+    HashSerialized2,
+    Muhash,
+    None,
+}
+
+/// Used to specify a block hash or a height
+#[derive(Clone, Serialize, PartialEq, Eq, Debug)]
+#[serde(untagged)]
+pub enum HashOrHeight {
+    BlockHash(bitcoin::BlockHash),
+    Height(u64),
+}
+
 #[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
 pub struct GetTxOutSetInfoResult {
-    /// The current block height (index)
+    /// The block height (index) of the returned statistics
     pub height: u64,
-    /// The hash of the block at the tip of the chain
+    /// The hash of the block at which these statistics are calculated
     #[serde(rename = "bestblock")]
     pub best_block: bitcoin::BlockHash,
-    /// The number of transactions with unspent outputs
-    pub transactions: u64,
+    /// The number of transactions with unspent outputs (not available when coinstatsindex is used)
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub transactions: Option<u64>,
     /// The number of unspent transaction outputs
     #[serde(rename = "txouts")]
     pub tx_outs: u64,
     /// A meaningless metric for UTXO set size
     pub bogosize: u64,
-    /// The serialized hash
-    pub hash_serialized_2: sha256::Hash,
-    /// The estimated size of the chainstate on disk
-    pub disk_size: u64,
+    /// The serialized hash (only present if 'hash_serialized_2' hash_type is chosen)
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub hash_serialized_2: Option<sha256::Hash>,
+    /// The serialized hash (only present if 'muhash' hash_type is chosen)
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub muhash: Option<sha256::Hash>,
+    /// The estimated size of the chainstate on disk (not available when coinstatsindex is used)
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub disk_size: Option<u64>,
     /// The total amount
     #[serde(with = "bitcoin::util::amount::serde::as_btc")]
     pub total_amount: Amount,
+    /// The total amount of coins permanently excluded from the UTXO set (only available if coinstatsindex is used)
+    #[serde(
+        default,
+        skip_serializing_if = "Option::is_none",
+        with = "bitcoin::util::amount::serde::as_btc::opt"
+    )]
+    pub total_unspendable_amount: Option<Amount>,
+    /// Info on amounts in the block at this block height (only available if coinstatsindex is used)
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub block_info: Option<BlockInfo>,
+}
+
+/// Info on amounts in the block at the block height of the `gettxoutsetinfo` call (only available if coinstatsindex is used)
+#[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
+pub struct BlockInfo {
+    /// Amount of previous outputs spent
+    #[serde(with = "bitcoin::util::amount::serde::as_btc")]
+    pub prevout_spent: Amount,
+    /// Output size of the coinbase transaction
+    #[serde(with = "bitcoin::util::amount::serde::as_btc")]
+    pub coinbase: Amount,
+    /// Newly-created outputs
+    #[serde(with = "bitcoin::util::amount::serde::as_btc")]
+    pub new_outputs_ex_coinbase: Amount,
+    /// Amount of unspendable outputs
+    #[serde(with = "bitcoin::util::amount::serde::as_btc")]
+    pub unspendable: Amount,
+    /// Detailed view of the unspendable categories
+    pub unspendables: Unspendables,
+}
+
+/// Detailed view of the unspendable categories
+#[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
+pub struct Unspendables {
+    /// Unspendable coins from the Genesis block
+    #[serde(with = "bitcoin::util::amount::serde::as_btc")]
+    pub genesis_block: Amount,
+    /// Transactions overridden by duplicates (no longer possible with BIP30)
+    #[serde(with = "bitcoin::util::amount::serde::as_btc")]
+    pub bip30: Amount,
+    /// Amounts sent to scripts that are unspendable (for example OP_RETURN outputs)
+    #[serde(with = "bitcoin::util::amount::serde::as_btc")]
+    pub scripts: Amount,
+    /// Fee rewards that miners did not claim in their coinbase transaction
+    #[serde(with = "bitcoin::util::amount::serde::as_btc")]
+    pub unclaimed_rewards: Amount,
 }
 
 #[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]

@@ -1133,9 +1133,16 @@ pub trait RpcApi: Sized {
     }
 
     /// Returns statistics about the unspent transaction output set.
-    /// This call may take some time.
-    fn get_tx_out_set_info(&self) -> Result<json::GetTxOutSetInfoResult> {
-        self.call("gettxoutsetinfo", &[])
+    /// Note this call may take some time if you are not using coinstatsindex.
+    fn get_tx_out_set_info(
+        &self,
+        hash_type: Option<json::TxOutSetHashType>,
+        hash_or_height: Option<json::HashOrHeight>,
+        use_index: Option<bool>,
+    ) -> Result<json::GetTxOutSetInfoResult> {
+        let mut args =
+            [opt_into_json(hash_type)?, opt_into_json(hash_or_height)?, opt_into_json(use_index)?];
+        self.call("gettxoutsetinfo", handle_defaults(&mut args, &[null(), null(), null()]))
     }
 
     /// Returns information about network traffic, including bytes in, bytes out,

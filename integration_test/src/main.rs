@@ -1028,7 +1028,7 @@ fn test_create_wallet(cl: &Client) {
 }
 
 fn test_get_tx_out_set_info(cl: &Client) {
-    cl.get_tx_out_set_info().unwrap();
+    cl.get_tx_out_set_info(None, None, None).unwrap();
 }
 
 fn test_get_chain_tips(cl: &Client) {
