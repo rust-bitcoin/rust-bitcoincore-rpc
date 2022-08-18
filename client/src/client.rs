@@ -730,7 +730,7 @@ pub trait RpcApi: Sized {
         replaceable: Option<bool>,
     ) -> Result<String> {
         let outs_converted = serde_json::Map::from_iter(
-            outs.iter().map(|(k, v)| (k.clone(), serde_json::Value::from(v.as_btc()))),
+            outs.iter().map(|(k, v)| (k.clone(), serde_json::Value::from(v.to_btc()))),
         );
         let mut args = [
             into_json(utxos)?,
@@ -903,7 +903,7 @@ pub trait RpcApi: Sized {
     ) -> Result<bitcoin::Txid> {
         let mut args = [
             address.to_string().into(),
-            into_json(amount.as_btc())?,
+            into_json(amount.to_btc())?,
             opt_into_json(comment)?,
             opt_into_json(comment_to)?,
             opt_into_json(subtract_fee)?,
@@ -1061,7 +1061,7 @@ pub trait RpcApi: Sized {
         bip32derivs: Option<bool>,
     ) -> Result<json::WalletCreateFundedPsbtResult> {
         let outputs_converted = serde_json::Map::from_iter(
-            outputs.iter().map(|(k, v)| (k.clone(), serde_json::Value::from(v.as_btc()))),
+            outputs.iter().map(|(k, v)| (k.clone(), serde_json::Value::from(v.to_btc()))),
         );
         let mut args = [
             into_json(inputs)?,

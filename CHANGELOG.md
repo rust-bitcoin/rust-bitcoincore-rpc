@@ -1,3 +1,6 @@
+# 0.16.0
+
+- bump bitcoin crate version to 0.29.0
 
 # 0.15.0
 
