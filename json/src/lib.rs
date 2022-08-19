@@ -35,6 +35,37 @@ use std::fmt;
 
 //TODO(stevenroose) consider using a Time type
 
+/// A representation of a fee rate. Bitcoin Core uses different units in different
+/// versions. To avoid burdening the user with using the correct unit, this struct
+/// provides an umambiguous way to represent the fee rate, and the lib will perform
+/// the necessary conversions.
+#[derive(Copy, Clone, PartialEq, Eq, Debug, Default)]
+pub struct FeeRate(Amount);
+
+impl FeeRate {
+    /// Construct FeeRate from the amount per vbyte
+    pub fn per_vbyte(amount_per_vbyte: Amount) -> Self {
+        // internal representation is amount per vbyte
+        Self(amount_per_vbyte)
+    }
+
+    /// Construct FeeRate from the amount per kilo-vbyte
+    pub fn per_kvbyte(amount_per_kvbyte: Amount) -> Self {
+        // internal representation is amount per vbyte, so divide by 1000
+        Self::per_vbyte(amount_per_kvbyte / 1000)
+    }
+
+    pub fn as_sat_per_vbyte(&self) -> f64 {
+        // multiply by the number of decimals to get sat
+        self.0.as_sat() as f64
+    }
+
+    pub fn as_btc_per_kvbyte(&self) -> f64 {
+        // divide by 10^8 to get btc/vbyte, then multiply by 10^3 to get btc/kbyte
+        self.0.as_sat() as f64 / 100_000.0
+    }
+}
+
 /// A module used for serde serialization of bytes in hexadecimal format.
 ///
 /// The module is compatible with the serde attribute.
@@ -1827,9 +1858,9 @@ impl BumpFeeOptions {
     pub fn to_serializable(&self, version: usize) -> SerializableBumpFeeOptions {
         let fee_rate = self.fee_rate.map(|x| {
             if version < 210000 {
-                x.btc_per_kvbyte()
+                x.as_btc_per_kvbyte()
             } else {
-                x.sat_per_vbyte()
+                x.as_sat_per_vbyte()
             }
         });
 
@@ -1839,23 +1870,6 @@ impl BumpFeeOptions {
             replaceable: self.replaceable,
             estimate_mode: self.estimate_mode,
         }
-    }
-}
-
-#[derive(Copy, Clone, PartialEq, Eq, Debug, Default)]
-pub struct FeeRate(Amount);
-
-impl FeeRate {
-    pub fn new(amount_per_vbyte: Amount) -> Self {
-        Self(amount_per_vbyte)
-    }
-    pub fn sat_per_vbyte(&self) -> f64 {
-        // multiply by the number of decimals to get sat
-        self.0.as_sat() as f64
-    }
-    pub fn btc_per_kvbyte(&self) -> f64 {
-        // divide by 10^8 to get btc/vbyte, then multiply by 10^3 to get btc/kbyte
-        self.0.as_sat() as f64 / 100_000.0
     }
 }
 
@@ -2071,4 +2085,19 @@ where
         res.push(FromHex::from_hex(&h).map_err(D::Error::custom)?);
     }
     Ok(Some(res))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_fee_rate_conversion() {
+        let rate_1 = FeeRate::per_kvbyte(Amount::from_sat(10_000));
+        let rate_2 = FeeRate::per_vbyte(Amount::from_sat(10));
+        assert_eq!(rate_1, rate_2);
+
+        assert_eq!(rate_1.as_sat_per_vbyte(), 10.0);
+        assert_eq!(rate_1.as_btc_per_kvbyte(), 10.0 * 1e3 / 1e8);
+    }
 }

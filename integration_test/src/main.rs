@@ -687,7 +687,7 @@ fn test_bump_fee(cl: &Client) {
 
     // bump with explicit fee rate
     let amount_per_vbyte = Amount::from_sat(500);
-    let new_fee_rate = json::FeeRate::new(amount_per_vbyte);
+    let new_fee_rate = json::FeeRate::per_vbyte(amount_per_vbyte);
     let options = json::BumpFeeOptions {
         fee_rate: Some(new_fee_rate),
         replaceable: Some(true),
