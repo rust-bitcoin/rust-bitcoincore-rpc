@@ -2102,6 +2102,40 @@ pub struct MasternodeStatus {
     pub status: String,
 }
 
+// --------------------------- Quorum -------------------------------
+
+#[serde_as]
+#[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct QuorumMember {
+    #[serde(with = "::serde_hex")]
+    pub pro_tx_hash: Vec<u8>,
+    #[serde_as(as = "Bytes")]
+    pub pub_key_operator: Vec<u8>,
+    pub valid: bool,
+    #[serde(default, with = "::serde_hex::opt")]
+    pub pub_key_share: Option<Vec<u8>>,
+}
+
+#[serde_as]
+#[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct QuorumInfoResult {
+    pub height: u32,
+    #[serde(rename = "type")]
+    pub quorum_type: String,
+    #[serde(with = "::serde_hex")]
+    pub quorum_hash: Vec<u8>,
+    pub quorum_index: u32,
+    #[serde(with = "::serde_hex")]
+    pub mined_block: Vec<u8>,
+    pub members: Vec<QuorumMember>,
+    #[serde_as(as = "Bytes")]
+    pub quorum_public_key: Vec<u8>,
+    #[serde(default, with = "::serde_hex::opt")]
+    pub quorum_secret_share: Option<Vec<u8>>,
+}
+
 // Custom deserializer functions.
 
 /// deserialize_hex_array_opt deserializes a vector of hex-encoded byte arrays.

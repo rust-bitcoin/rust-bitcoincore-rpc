@@ -1200,6 +1200,21 @@ pub trait RpcApi: Sized {
     }
 
 
+    // -------------------------- Quorum -------------------------------
+
+    /// Returns a list of on-chain quorums
+    fn get_quorum_list(&self, count: Option<&str>) -> Result<HashMap<String, Vec<String>>> {
+            let mut args = ["list".into(), opt_into_json(count)?];
+            self.call::<HashMap<String, Vec<String>>>("quorum", handle_defaults(&mut args, &["1".into(), null()]))
+    }
+
+    /// Returns information about a specific quorum
+    fn get_quorum_info(&self, llmq_type: &str, quorum_hash: &str, include_sk_share: Option<bool>) -> Result<json::QuorumInfoResult> {
+            let mut args = ["info".into(), into_json(llmq_type)?, into_json(quorum_hash)?, opt_into_json(include_sk_share)?];
+            self.call::<json::QuorumInfoResult>("quorum", handle_defaults(&mut args, &[null()]))
+    }
+
+
 }
 
 /// Client implements a JSON-RPC client for the Dash Core daemon or compatible APIs.

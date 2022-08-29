@@ -212,13 +212,15 @@ fn main() {
     test_disconnect_node(&cl);
     test_add_ban(&cl);
     test_set_network_active(&cl);
-    test_stop(cl);
-    test_get_masternode_count(cl);
-    test_get_masternode_list(cl);
-    test_get_masternode_outputs(cl);
-    test_get_masternode_payments(cl);
-    test_get_masternode_status(cl);
-    test_get_masternode_winners(cl);
+    test_stop(&cl);
+    test_get_masternode_count(&cl);
+    test_get_masternode_list(&cl);
+    test_get_masternode_outputs(&cl);
+    test_get_masternode_payments(&cl);
+    test_get_masternode_status(&cl);
+    test_get_masternode_winners(&cl);
+    test_get_quorum_list(&cl);
+    test_get_quorum_info(&cl);
 }
 
 fn test_get_network_info(cl: &Client) {
@@ -1177,4 +1179,16 @@ fn test_get_masternode_status(cl: &Client) {
 
 fn test_get_masternode_winners(cl: &Client) {
     let masternode_winners = rpc.get_masternode_winners(None, None).unwrap();
+}
+
+
+// ---------------------- Quorum RPC tests---------------------
+
+fn test_get_quorum_list(cl: &Client) {
+    let quorum_list = rpc.get_quorum_list(Some("1")).unwrap();
+}
+
+fn test_get_quorum_info(cl: &Client) {
+    let quorum_info = rpc.get_quorum_info("1", "0000000002fda1c422902234398d0721cb58e465d8046c8112376914ef30c6fe", None).unwrap();
+    assert!(quorum_info.height > 0);
 }
