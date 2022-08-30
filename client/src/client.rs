@@ -1232,6 +1232,12 @@ pub trait RpcApi: Sized {
         self.call::<json::QuorumSignature>("quorum", handle_defaults(&mut args, &[null()]))
     }
 
+    /// Returns the status of a recovered signature for a previous threshold-signing message request
+    fn get_quorum_hasrecsig(&self, llmq_type: u8, id: &str, msg_hash: &str) -> Result<bool> {
+        let mut args = ["getrecsig".into(), into_json(llmq_type)?, into_json(id)?, into_json(msg_hash)?];
+        self.call::<bool>("quorum", handle_defaults(&mut args, &[null()]))
+    }
+
 }
 
 /// Client implements a JSON-RPC client for the Dash Core daemon or compatible APIs.

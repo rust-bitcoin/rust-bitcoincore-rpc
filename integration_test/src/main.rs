@@ -223,6 +223,8 @@ fn main() {
     test_get_quorum_info(&cl);
     test_get_quorum_dkgstatus(&cl);
     test_get_quorum_sign(&cl);
+    test_get_quorum_getrecsig(&cl);
+    test_get_quorum_hasrecsig(&cl);
 }
 
 fn test_get_network_info(cl: &Client) {
@@ -1211,4 +1213,8 @@ fn test_get_quorum_sign(cl: &Client) {
 
 fn test_get_quorum_getrecsig(cl: &Client) {
     let quorum_dkgstatus = rpc.get_quorum_getrecsig(1, "abcd1234abcd1234abcd1234abcd1234abcd1234abcd1234abcd1234abcd1234", "51c11d287dfa85aef3eebb5420834c8e443e01d15c0b0a8e397d67e2e51aa239").unwrap();
+}
+
+fn test_get_quorum_hasrecsig(cl: &Client) {
+    let quorum_dkgstatus = rpc.get_quorum_hasrecsig(1, "abcd1234abcd1234abcd1234abcd1234abcd1234abcd1234abcd1234abcd1234", "51c11d287dfa85aef3eebb5420834c8e443e01d15c0b0a8e397d67e2e51aa239").unwrap();
 }
