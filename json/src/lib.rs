@@ -55,12 +55,12 @@ impl FeeRate {
         Self::per_vbyte(amount_per_kvbyte / 1000)
     }
 
-    pub fn as_sat_per_vbyte(&self) -> f64 {
+    pub fn to_sat_per_vbyte(&self) -> f64 {
         // multiply by the number of decimals to get sat
         self.0.as_sat() as f64
     }
 
-    pub fn as_btc_per_kvbyte(&self) -> f64 {
+    pub fn to_btc_per_kvbyte(&self) -> f64 {
         // divide by 10^8 to get btc/vbyte, then multiply by 10^3 to get btc/kbyte
         self.0.as_sat() as f64 / 100_000.0
     }
@@ -1845,6 +1845,7 @@ pub struct FundRawTransactionResult {
 
 #[derive(Clone, PartialEq, Eq, Debug, Default)]
 pub struct BumpFeeOptions {
+    /// Confirmation target in blocks.
     pub conf_target: Option<u16>,
     /// Specify a fee rate instead of relying on the built-in fee estimator.
     pub fee_rate: Option<FeeRate>,
@@ -1858,9 +1859,9 @@ impl BumpFeeOptions {
     pub fn to_serializable(&self, version: usize) -> SerializableBumpFeeOptions {
         let fee_rate = self.fee_rate.map(|x| {
             if version < 210000 {
-                x.as_btc_per_kvbyte()
+                x.to_btc_per_kvbyte()
             } else {
-                x.as_sat_per_vbyte()
+                x.to_sat_per_vbyte()
             }
         });
 
@@ -1877,6 +1878,7 @@ impl BumpFeeOptions {
 #[serde(rename_all = "camelCase")]
 pub struct SerializableBumpFeeOptions {
     #[serde(rename = "conf_target", skip_serializing_if = "Option::is_none")]
+    /// Confirmation target in blocks.
     pub conf_target: Option<u16>,
     /// Specify a fee rate instead of relying on the built-in fee estimator.
     #[serde(rename = "fee_rate")]
@@ -2097,7 +2099,8 @@ mod tests {
         let rate_2 = FeeRate::per_vbyte(Amount::from_sat(10));
         assert_eq!(rate_1, rate_2);
 
-        assert_eq!(rate_1.as_sat_per_vbyte(), 10.0);
-        assert_eq!(rate_1.as_btc_per_kvbyte(), 10.0 * 1e3 / 1e8);
+        assert_eq!(rate_1.to_sat_per_vbyte(), 10.0);
+        // multiply 10.0 by 1e3 to get sat/kvbyte, then divide by 1e8 to get btc/kvbyte
+        assert_eq!(rate_1.to_btc_per_kvbyte(), 0.0001);
     }
 }
