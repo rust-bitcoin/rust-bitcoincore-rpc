@@ -221,6 +221,7 @@ fn main() {
     test_get_masternode_winners(&cl);
     test_get_quorum_list(&cl);
     test_get_quorum_info(&cl);
+    test_get_quorum_dkgstatus(&cl);
 }
 
 fn test_get_network_info(cl: &Client) {
@@ -1189,6 +1190,16 @@ fn test_get_quorum_list(cl: &Client) {
 }
 
 fn test_get_quorum_info(cl: &Client) {
-    let quorum_info = rpc.get_quorum_info("1", "0000000002fda1c422902234398d0721cb58e465d8046c8112376914ef30c6fe", None).unwrap();
+    let quorum_info = rpc.get_quorum_info("1", "000000000c9eddd5d2a707281b7e30d5aac974dac600ff10f01937e1ca36066f", None).unwrap();
     assert!(quorum_info.height > 0);
+    assert!(quorum_info.quorum_index >= 0);
+    assert!(quorum_info.members.len() >= 0);
+}
+
+fn test_get_quorum_dkgstatus(cl: &Client) {
+    let quorum_dkgstatus = rpc.get_quorum_dkgstatus().unwrap();
+    assert!(quorum_dkgstatus.time >= 0);
+    assert!(quorum_dkgstatus.session.len() >= 0);
+    assert!(quorum_dkgstatus.quorum_connections.len() >= 0);
+    assert!(quorum_dkgstatus.minable_commitments.len() >= 0);
 }

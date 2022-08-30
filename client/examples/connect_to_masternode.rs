@@ -50,4 +50,16 @@ fn main() {
     let mn_winners = rpc.get_masternode_winners(None, None).unwrap();
     println!("\n\nMasternode Winners: \n{:?}", mn_winners);
 
+    // Get Quorum list
+    let quorum_list = rpc.get_quorum_list(None).unwrap();
+    println!("\nQuorum list: \n{:?}", quorum_list);
+
+    // Get Quorum info
+    let quorum_info = rpc.get_quorum_info("1", "000000000c9eddd5d2a707281b7e30d5aac974dac600ff10f01937e1ca36066f", None).unwrap();
+    println!("\nQuorum info: \n{:?}", quorum_info);
+
+    // Get Quorum DKG status
+    let quorum_dkgstatus = rpc.get_quorum_dkgstatus().unwrap();
+    println!("\nQuorum list: \n{:?}", quorum_dkgstatus);
+
 }
