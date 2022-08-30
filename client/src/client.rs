@@ -1203,29 +1203,34 @@ pub trait RpcApi: Sized {
     // -------------------------- Quorum -------------------------------
 
     /// Returns a list of on-chain quorums
-    fn get_quorum_list(&self, count: Option<u32>) -> Result<json::QuorumListResult> {
+    fn get_quorum_list(&self, count: Option<u8>) -> Result<json::QuorumListResult> {
             let mut args = ["list".into(), opt_into_json(count)?];
             self.call::<json::QuorumListResult>("quorum", handle_defaults(&mut args, &[1.into(), null()]))
     }
 
     /// Returns information about a specific quorum
-    fn get_quorum_info(&self, llmq_type: u32, quorum_hash: &str, include_sk_share: Option<bool>) -> Result<json::QuorumInfoResult> {
+    fn get_quorum_info(&self, llmq_type: u8, quorum_hash: &str, include_sk_share: Option<bool>) -> Result<json::QuorumInfoResult> {
             let mut args = ["info".into(), into_json(llmq_type)?, into_json(quorum_hash)?, opt_into_json(include_sk_share)?];
             self.call::<json::QuorumInfoResult>("quorum", handle_defaults(&mut args, &[null()]))
     }
 
     /// Returns the status of the current DKG process
-    fn get_quorum_dkgstatus(&self, detail_level: Option<u32>) -> Result<json::QuorumDKGStatus> {
+    fn get_quorum_dkgstatus(&self, detail_level: Option<u8>) -> Result<json::QuorumDKGStatus> {
            let mut args = ["dkgstatus".into(), opt_into_json(detail_level)?];
            self.call::<json::QuorumDKGStatus>("quorum", handle_defaults(&mut args, &[0.into(), null()]))
     }  
 
-    /// Requests threshold-signing for a message.
-    fn get_quorum_sign(&self, llmq_type: u32, id: &str, msg_hash: &str, quorum_hash: Option<&str>, submit: Option<bool>) -> Result<json::QuorumSignResult> {
+    /// Requests threshold-signing for a message
+    fn get_quorum_sign(&self, llmq_type: u8, id: &str, msg_hash: &str, quorum_hash: Option<&str>, submit: Option<bool>) -> Result<json::QuorumSignResult> {
             let mut args = ["sign".into(), into_json(llmq_type)?, into_json(id)?, into_json(msg_hash)?, opt_into_json(quorum_hash)?, opt_into_json(submit)?];
             self.call::<json::QuorumSignResult>("quorum", handle_defaults(&mut args, &[null()]))
     }
 
+    /// Returns the recovered signature for a previous threshold-signing message request
+    fn get_quorum_getrecsig(&self, llmq_type: u8, id: &str, msg_hash: &str) -> Result<json::QuorumSignature> {
+        let mut args = ["getrecsig".into(), into_json(llmq_type)?, into_json(id)?, into_json(msg_hash)?];
+        self.call::<json::QuorumSignature>("quorum", handle_defaults(&mut args, &[null()]))
+    }
 
 }
 

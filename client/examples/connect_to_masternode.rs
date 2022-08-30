@@ -65,4 +65,8 @@ fn main() {
     // Get Quorum sign
     let quorum_sign = rpc.get_quorum_sign(1, "abcd1234abcd1234abcd1234abcd1234abcd1234abcd1234abcd1234abcd1234", "51c11d287dfa85aef3eebb5420834c8e443e01d15c0b0a8e397d67e2e51aa239", None, None).unwrap();
     println!("\nQuorum sign: \n{:?}", quorum_sign);
+
+    // Get Quorum GetRecSig
+    let quorum_getrecsig = rpc.get_quorum_getrecsig(1, "e980ebf295b42f24b03321ffb255818753b2b211e8c46b61c0b6fde91242d12f", "907087d4720850e639b7b5cc41d7a6d020e5a50debb3bc3974f0cb3d7d378ea4").unwrap();
+    println!("\nQuorum getrecsig: \n{:?}", quorum_getrecsig);
 }
