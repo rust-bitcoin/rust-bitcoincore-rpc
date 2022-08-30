@@ -2105,6 +2105,20 @@ pub struct MasternodeStatus {
 
 // --------------------------- Quorum -------------------------------
 
+#[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
+pub struct QuorumHash(
+    #[serde(with = "::serde_hex")]
+    pub Vec<u8>
+);
+
+#[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
+pub struct QuorumListResult {
+    pub llmq_50_60: Option<Vec<QuorumHash>>,
+    pub llmq_400_60: Option<Vec<QuorumHash>>,
+    pub llmq_400_85: Option<Vec<QuorumHash>>,
+    pub llmq_100_67: Option<Vec<QuorumHash>>,
+}
+
 #[serde_as]
 #[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -2125,8 +2139,7 @@ pub struct QuorumInfoResult {
     pub height: u32,
     #[serde(rename = "type")]
     pub quorum_type: String,
-    #[serde(with = "::serde_hex")]
-    pub quorum_hash: Vec<u8>,
+    pub quorum_hash: QuorumHash,
     pub quorum_index: u32,
     #[serde(with = "::serde_hex")]
     pub mined_block: Vec<u8>,
@@ -2157,8 +2170,7 @@ pub enum MemberDetail{
 #[serde(rename_all = "camelCase")]
 pub struct QuorumSessionStatus {
     pub llmq_type: u32,
-    #[serde(default, with = "::serde_hex")]
-    pub quorum_hash: Vec<u8>,
+    pub quorum_hash: QuorumHash,
     pub quorum_height: u32,
     pub phase: u8,
     pub sent_contributions: bool,
@@ -2240,6 +2252,30 @@ pub struct QuorumDKGStatus {
     pub session: Vec<QuorumSession>,
     pub quorum_connections: Vec<QuorumConnection>,
     pub minable_commitments: Vec<QuorumMinableCommitments>,
+}
+
+#[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct QuorumSignature {
+    pub llmq_type: u8,
+    #[serde(with = "::serde_hex")]
+    pub quorum_hash: Vec<u8>,
+    pub quorum_member: Option<u8>,
+    #[serde(with = "::serde_hex")]
+    pub id: Vec<u8>,
+    #[serde(with = "::serde_hex")]
+    pub msg_hash: Vec<u8>,
+    #[serde(with = "::serde_hex")]
+    pub sign_hash: Vec<u8>,
+    #[serde(with = "::serde_hex")]
+    pub signature: Vec<u8>,
+}
+
+#[serde(untagged)]
+#[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
+pub enum QuorumSignResult{
+    QuorumSignStatus(bool),
+    QuorumSignSignatureShare(QuorumSignature),
 }
 
 

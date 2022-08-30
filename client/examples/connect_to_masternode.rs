@@ -55,11 +55,14 @@ fn main() {
     println!("\nQuorum list: \n{:?}", quorum_list);
 
     // Get Quorum info
-    let quorum_info = rpc.get_quorum_info("1", "000000000c9eddd5d2a707281b7e30d5aac974dac600ff10f01937e1ca36066f", None).unwrap();
+    let quorum_info = rpc.get_quorum_info(1, "000000000c9eddd5d2a707281b7e30d5aac974dac600ff10f01937e1ca36066f", None).unwrap();
     println!("\nQuorum info: \n{:?}", quorum_info);
 
     // Get Quorum DKG status
     let quorum_dkgstatus = rpc.get_quorum_dkgstatus(None).unwrap();
-    println!("\nQuorum list: \n{:?}", quorum_dkgstatus);
+    println!("\nQuorum dkg status: \n{:?}", quorum_dkgstatus);
 
+    // Get Quorum sign
+    let quorum_sign = rpc.get_quorum_sign(1, "abcd1234abcd1234abcd1234abcd1234abcd1234abcd1234abcd1234abcd1234", "51c11d287dfa85aef3eebb5420834c8e443e01d15c0b0a8e397d67e2e51aa239", None, None).unwrap();
+    println!("\nQuorum sign: \n{:?}", quorum_sign);
 }
