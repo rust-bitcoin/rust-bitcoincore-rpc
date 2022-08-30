@@ -59,7 +59,7 @@ fn main() {
     println!("\nQuorum info: \n{:?}", quorum_info);
 
     // Get Quorum DKG status
-    let quorum_dkgstatus = rpc.get_quorum_dkgstatus().unwrap();
+    let quorum_dkgstatus = rpc.get_quorum_dkgstatus(None).unwrap();
     println!("\nQuorum list: \n{:?}", quorum_dkgstatus);
 
 }

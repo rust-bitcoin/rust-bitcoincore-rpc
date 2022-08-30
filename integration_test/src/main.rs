@@ -1197,7 +1197,7 @@ fn test_get_quorum_info(cl: &Client) {
 }
 
 fn test_get_quorum_dkgstatus(cl: &Client) {
-    let quorum_dkgstatus = rpc.get_quorum_dkgstatus().unwrap();
+    let quorum_dkgstatus = rpc.get_quorum_dkgstatus(None).unwrap();
     assert!(quorum_dkgstatus.time >= 0);
     assert!(quorum_dkgstatus.session.len() >= 0);
     assert!(quorum_dkgstatus.quorum_connections.len() >= 0);

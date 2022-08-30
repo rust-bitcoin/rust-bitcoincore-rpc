@@ -24,6 +24,8 @@ extern crate serde_json;
 extern crate serde_with;
 
 use std::collections::HashMap;
+use std::fmt;
+use std::net::{SocketAddr};
 
 use dashcore::consensus::encode;
 use dashcore::hashes::hex::{FromHex, ToHex};
@@ -33,8 +35,7 @@ use dashcore::{Address, Amount, PrivateKey, PublicKey, Script, SignedAmount, Tra
 use serde::de::Error as SerdeError;
 use serde::{Deserialize, Serialize};
 use serde_with::{serde_as, DisplayFromStr, Bytes};
-use std::fmt;
-use std::net::{SocketAddr};
+
 
 //TODO(stevenroose) consider using a Time type
 
@@ -2144,6 +2145,14 @@ pub struct QuorumSessionStatusMember {
     pub pro_tx_hash: Vec<u8>,
 }
 
+#[serde(untagged)]
+#[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
+pub enum MemberDetail{
+    Level0(i32),
+    Level1(Vec<i32>),
+    Level2(Vec<QuorumSessionStatusMember>),
+}
+
 #[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct QuorumSessionStatus {
@@ -2157,14 +2166,14 @@ pub struct QuorumSessionStatus {
     pub sent_justification: bool,
     pub sent_premature_commitment: bool,
     pub aborted: bool,
-    pub bad_members: Vec<u8>,
-    pub we_complain: Vec<u8>,
-    pub received_contributions: QuorumSessionStatusMember,
-    pub received_complaints: Vec<u8>,
-    pub received_justifications: Vec<u8>,
-    pub received_premature_commitments: QuorumSessionStatusMember,
-    #[serde(with = "::serde_hex")]
-    pub all_members: Vec<u8>,
+    pub bad_members: MemberDetail,
+    pub we_complain: MemberDetail,
+    pub received_contributions: MemberDetail,
+    pub received_complaints: MemberDetail,
+    pub received_justifications: MemberDetail,
+    pub received_premature_commitments: MemberDetail,
+    #[serde(default, with = "::serde_hex::opt")]
+    pub all_members: Option<Vec<u8>>,
 }
 
 #[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]

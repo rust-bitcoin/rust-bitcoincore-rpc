@@ -1215,8 +1215,9 @@ pub trait RpcApi: Sized {
     }
 
     /// Returns the status of the current DKG process
-    fn get_quorum_dkgstatus(&self) -> Result<json::QuorumDKGStatus> {
-           self.call::<json::QuorumDKGStatus>("quorum", &["dkgstatus".into(), "2".into()])
+    fn get_quorum_dkgstatus(&self, detail_level: Option<&str>) -> Result<json::QuorumDKGStatus> {
+           let mut args = ["dkgstatus".into(), opt_into_json(detail_level)?];
+           self.call::<json::QuorumDKGStatus>("quorum", handle_defaults(&mut args, &["0".into(), null()]))
     }  
 
 
