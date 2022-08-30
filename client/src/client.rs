@@ -1232,9 +1232,15 @@ pub trait RpcApi: Sized {
         self.call::<json::QuorumSignature>("quorum", handle_defaults(&mut args, &[null()]))
     }
 
-    /// Returns the status of a recovered signature for a previous threshold-signing message request
+    /// Checks for a recovered signature for a previous threshold-signing message request
     fn get_quorum_hasrecsig(&self, llmq_type: u8, id: &str, msg_hash: &str) -> Result<bool> {
-        let mut args = ["getrecsig".into(), into_json(llmq_type)?, into_json(id)?, into_json(msg_hash)?];
+        let mut args = ["hasrecsig".into(), into_json(llmq_type)?, into_json(id)?, into_json(msg_hash)?];
+        self.call::<bool>("quorum", handle_defaults(&mut args, &[null()]))
+    }
+
+    /// Checks if there is a conflict for a threshold-signing message request
+    fn get_quorum_isconflicting(&self, llmq_type: u8, id: &str, msg_hash: &str) -> Result<bool> {
+        let mut args = ["isconflicting".into(), into_json(llmq_type)?, into_json(id)?, into_json(msg_hash)?];
         self.call::<bool>("quorum", handle_defaults(&mut args, &[null()]))
     }
 

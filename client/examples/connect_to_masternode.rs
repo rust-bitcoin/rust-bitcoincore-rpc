@@ -69,4 +69,12 @@ fn main() {
     // Get Quorum GetRecSig
     let quorum_getrecsig = rpc.get_quorum_getrecsig(1, "e980ebf295b42f24b03321ffb255818753b2b211e8c46b61c0b6fde91242d12f", "907087d4720850e639b7b5cc41d7a6d020e5a50debb3bc3974f0cb3d7d378ea4").unwrap();
     println!("\nQuorum getrecsig: \n{:?}", quorum_getrecsig);
+
+    // Get Quorum HasRecSig
+    let quorum_hasrecsig = rpc.get_quorum_hasrecsig(1, "e980ebf295b42f24b03321ffb255818753b2b211e8c46b61c0b6fde91242d12f", "907087d4720850e639b7b5cc41d7a6d020e5a50debb3bc3974f0cb3d7d378ea4").unwrap();
+    println!("\nQuorum hasrecsig: \n{:?}", quorum_hasrecsig);
+
+    // Get Quorum isconflicting
+    let quorum_isconflicting = rpc.get_quorum_isconflicting(1, "e980ebf295b42f24b03321ffb255818753b2b211e8c46b61c0b6fde91242d12f", "907087d4720850e639b7b5cc41d7a6d020e5a50debb3bc3974f0cb3d7d378ea4").unwrap();
+    println!("\nQuorum isconflicting: \n{:?}", quorum_isconflicting);
 }
