@@ -1262,6 +1262,13 @@ pub trait RpcApi: Sized {
         self.call::<json::SelectQuorumResult>("quorum", handle_defaults(&mut args, &[null()]))
     }
 
+    /// Tests if a quorum signature is valid for a request id and a message hash
+    fn get_quorum_verify(&self, llmq_type: u8, id: &str, msg_hash: &str, signature: &str, quorum_hash: Option<&str>, sign_height: Option<u32>) -> Result<bool> {
+            let mut args = ["verify".into(), into_json(llmq_type)?, into_json(id)?, into_json(msg_hash)?, into_json(signature)?, opt_into_json(quorum_hash)?, opt_into_json(sign_height)?];
+            self.call::<bool>("quorum", handle_defaults(&mut args, &[null()]))
+    }
+
+
 }
 
 /// Client implements a JSON-RPC client for the Dash Core daemon or compatible APIs.
