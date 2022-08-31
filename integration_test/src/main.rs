@@ -226,6 +226,7 @@ fn main() {
     test_get_quorum_getrecsig(&cl);
     test_get_quorum_hasrecsig(&cl);
     test_get_quorum_isconflicting(&cl);
+    test_get_quorum_memberof(&cl);
 }
 
 fn test_get_network_info(cl: &Client) {
@@ -1222,4 +1223,9 @@ fn test_get_quorum_hasrecsig(cl: &Client) {
 
 fn test_get_quorum_isconflicting(cl: &Client) {
     let quorum_isconflicting = rpc.get_quorum_isconflicting(1, "abcd1234abcd1234abcd1234abcd1234abcd1234abcd1234abcd1234abcd1234", "51c11d287dfa85aef3eebb5420834c8e443e01d15c0b0a8e397d67e2e51aa239").unwrap();
+}
+
+fn test_get_quorum_memberof(cl: &Client) {
+    let quorum_memberof = rpc.get_quorum_memberof("39c07d2c9c6d0ead56f52726b63c15e295cb5c3ecf7fe1fefcfb23b2e3cfed1f", Some(1)).unwrap();
+    assert!(quorum_memberof[0].height > 0);
 }

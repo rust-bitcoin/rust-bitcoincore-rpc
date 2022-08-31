@@ -2278,6 +2278,27 @@ pub enum QuorumSignResult{
     QuorumSignSignatureShare(QuorumSignature),
 }
 
+#[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct QuorumMemberOf {
+    pub height: u32,
+    #[serde(rename = "type")]
+    pub quorum_type: String,
+    #[serde(with = "::serde_hex")]
+    pub quorum_hash: Vec<u8>,
+    #[serde(with = "::serde_hex")]
+    pub mined_block: Vec<u8>,
+    #[serde(with = "::serde_hex")]
+    pub quorum_public_key: Vec<u8>,
+    pub is_valid_member: bool,
+    pub member_index: u32,
+}
+
+#[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
+pub struct QuorumMemberOfResult(
+    pub Vec<QuorumMemberOf>
+);
+
 
 // Custom deserializer functions.
 

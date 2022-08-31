@@ -1244,6 +1244,12 @@ pub trait RpcApi: Sized {
         self.call::<bool>("quorum", handle_defaults(&mut args, &[null()]))
     }
 
+    /// Checks which quorums the given masternode is a member of
+    fn get_quorum_memberof(&self, pro_tx_hash: &str, scan_quorums_count: Option<u8>) -> Result<json::QuorumMemberOfResult> {
+        let mut args = ["memberof".into(), into_json(pro_tx_hash)?, opt_into_json(scan_quorums_count)?];
+        self.call::<json::QuorumMemberOfResult>("quorum", handle_defaults(&mut args, &[null()]))
+}
+
 }
 
 /// Client implements a JSON-RPC client for the Dash Core daemon or compatible APIs.

@@ -77,4 +77,8 @@ fn main() {
     // Get Quorum isconflicting
     let quorum_isconflicting = rpc.get_quorum_isconflicting(1, "e980ebf295b42f24b03321ffb255818753b2b211e8c46b61c0b6fde91242d12f", "907087d4720850e639b7b5cc41d7a6d020e5a50debb3bc3974f0cb3d7d378ea4").unwrap();
     println!("\nQuorum isconflicting: \n{:?}", quorum_isconflicting);
+
+    // Get Quorum memberof
+    let quorum_memberof = rpc.get_quorum_memberof("39c07d2c9c6d0ead56f52726b63c15e295cb5c3ecf7fe1fefcfb23b2e3cfed1f", Some(1)).unwrap();
+    println!("\nQuorum memberof: \n{:?}", quorum_memberof);
 }
