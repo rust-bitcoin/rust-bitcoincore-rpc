@@ -2184,8 +2184,7 @@ pub struct QuorumSessionStatus {
     pub received_complaints: MemberDetail,
     pub received_justifications: MemberDetail,
     pub received_premature_commitments: MemberDetail,
-    #[serde(default, with = "::serde_hex::opt")]
-    pub all_members: Option<Vec<u8>>,
+    pub all_members: Option<Vec<QuorumHash>>,
 }
 
 #[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
