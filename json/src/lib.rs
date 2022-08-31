@@ -2202,7 +2202,8 @@ pub struct QuorumConnectionInfo {
     #[serde(with = "::serde_hex")]
     pub pro_tx_hash: Vec<u8>,
     pub connected: bool,
-    pub address: Option<SocketAddr>,
+    #[serde_as(as = "DisplayFromStr")]
+    pub address: SocketAddr,
     pub outbound: bool,
 }
 
