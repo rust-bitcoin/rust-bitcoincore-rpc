@@ -81,4 +81,12 @@ fn main() {
     // Get Quorum memberof
     let quorum_memberof = rpc.get_quorum_memberof("39c07d2c9c6d0ead56f52726b63c15e295cb5c3ecf7fe1fefcfb23b2e3cfed1f", Some(1)).unwrap();
     println!("\nQuorum memberof: \n{:?}", quorum_memberof);
+
+    // Get Quorum rotationinfo
+    let quorum_rotationinfo = rpc.get_quorum_rotationinfo("0000012197b7ca6360af3756c6a49c217dbbdf8b595fd55e0fcef7ffcd546044", None, None).unwrap();
+    println!("\nQuorum rotationinfo: \n{:?}", quorum_rotationinfo);
+
+    // Get Quorum selectquorum
+    let quorum_selectquorum = rpc.get_quorum_selectquorum(1, "b95205c3bba72e9edfbe7380ec91fe5a97e16a189e28f39b03c6822757ad1a34").unwrap();
+    println!("\nQuorum selectquorum: \n{:?}", quorum_selectquorum);
 }

@@ -1248,7 +1248,19 @@ pub trait RpcApi: Sized {
     fn get_quorum_memberof(&self, pro_tx_hash: &str, scan_quorums_count: Option<u8>) -> Result<json::QuorumMemberOfResult> {
         let mut args = ["memberof".into(), into_json(pro_tx_hash)?, opt_into_json(scan_quorums_count)?];
         self.call::<json::QuorumMemberOfResult>("quorum", handle_defaults(&mut args, &[null()]))
-}
+    }
+
+    /// Returns quorum rotation information
+    fn get_quorum_rotationinfo(&self, block_request_hash: &str, extra_share: Option<bool>, base_block_hash: Option<&str>) -> Result<json::QuorumRotationInfo> {
+        let mut args = ["rotationinfo".into(), into_json(block_request_hash)?, opt_into_json(extra_share)?, opt_into_json(base_block_hash)?];
+        self.call::<json::QuorumRotationInfo>("quorum", handle_defaults(&mut args, &[false.into(), "".into(), null()]))
+    }
+
+    /// Returns information about the quorum that would/should sign a request
+    fn get_quorum_selectquorum(&self, llmq_type: u8, id: &str) -> Result<json::SelectQuorumResult> {
+        let mut args = ["selectquorum".into(), into_json(llmq_type)?, into_json(id)?];
+        self.call::<json::SelectQuorumResult>("quorum", handle_defaults(&mut args, &[null()]))
+    }
 
 }
 

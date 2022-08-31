@@ -227,6 +227,8 @@ fn main() {
     test_get_quorum_hasrecsig(&cl);
     test_get_quorum_isconflicting(&cl);
     test_get_quorum_memberof(&cl);
+    test_get_quorum_rotationinfo(&cl);
+    test_get_quorum_selectquorum(&cl);
 }
 
 fn test_get_network_info(cl: &Client) {
@@ -1228,4 +1230,12 @@ fn test_get_quorum_isconflicting(cl: &Client) {
 fn test_get_quorum_memberof(cl: &Client) {
     let quorum_memberof = rpc.get_quorum_memberof("39c07d2c9c6d0ead56f52726b63c15e295cb5c3ecf7fe1fefcfb23b2e3cfed1f", Some(1)).unwrap();
     assert!(quorum_memberof[0].height > 0);
+}
+
+fn test_get_quorum_rotationinfo(cl: &Client) {
+    let quorum_rotationinfo = rpc.get_quorum_rotationinfo("0000012197b7ca6360af3756c6a49c217dbbdf8b595fd55e0fcef7ffcd546044", None, None).unwrap();
+}
+
+fn test_get_quorum_selectquorum(cl: &Client) {
+    let quorum_selectquorum = rpc.get_quorum_selectquorum(1, "b95205c3bba72e9edfbe7380ec91fe5a97e16a189e28f39b03c6822757ad1a34").unwrap();
 }

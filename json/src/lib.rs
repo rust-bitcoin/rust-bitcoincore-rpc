@@ -2213,8 +2213,7 @@ pub struct QuorumConnection {
     pub llmq_type: String,
     pub quorum_index: u32,
     pub p_quorum_base_block_index: u32,
-    #[serde(with = "::serde_hex")]
-    pub quorum_hash: Vec<u8>,
+    pub quorum_hash: QuorumHash,
     pub pindex_tip: u32,
     pub quorum_connections: Vec<QuorumConnectionInfo>
 }
@@ -2225,8 +2224,7 @@ pub struct QuorumConnection {
 pub struct QuorumMinableCommitments {
     pub version: u8,
     pub llmq_type: u8,
-    #[serde(with = "::serde_hex")]
-    pub quorum_hash: Vec<u8>,
+    pub quorum_hash: QuorumHash,
     pub quorum_index: u32,
     pub signers_count: u32,
     #[serde_as(as = "Bytes")]
@@ -2258,8 +2256,7 @@ pub struct QuorumDKGStatus {
 #[serde(rename_all = "camelCase")]
 pub struct QuorumSignature {
     pub llmq_type: u8,
-    #[serde(with = "::serde_hex")]
-    pub quorum_hash: Vec<u8>,
+    pub quorum_hash: QuorumHash,
     pub quorum_member: Option<u8>,
     #[serde(with = "::serde_hex")]
     pub id: Vec<u8>,
@@ -2284,8 +2281,7 @@ pub struct QuorumMemberOf {
     pub height: u32,
     #[serde(rename = "type")]
     pub quorum_type: String,
-    #[serde(with = "::serde_hex")]
-    pub quorum_hash: Vec<u8>,
+    pub quorum_hash: QuorumHash,
     #[serde(with = "::serde_hex")]
     pub mined_block: Vec<u8>,
     #[serde(with = "::serde_hex")]
@@ -2298,6 +2294,78 @@ pub struct QuorumMemberOf {
 pub struct QuorumMemberOfResult(
     pub Vec<QuorumMemberOf>
 );
+
+#[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct QuorumSnapshot {
+    pub active_quorum_members: Vec<bool>,
+    pub mn_skip_list_mode: u8,
+    pub mn_skip_list: Vec<u8>,
+}
+
+#[serde_as]
+#[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct QuorumMasternodeListItem {
+    #[serde(with = "::serde_hex")]
+    pub pro_reg_tx_hash: Vec<u8>,
+    #[serde(with = "::serde_hex")]
+    pub confirmed_hash: Vec<u8>,
+    #[serde_as(as = "DisplayFromStr")]
+    pub service: SocketAddr,
+    #[serde_as(as = "Bytes")]
+    pub pub_key_operator: Vec<u8>,
+    #[serde_as(as = "Bytes")]
+    pub voting_address: Vec<u8>,
+    pub is_valid: bool,
+}
+
+#[serde_as]
+#[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct MasternodeListDiff {
+    pub base_block_hash: dashcore::BlockHash,
+    pub block_hash: dashcore::BlockHash,
+    #[serde_as(as = "Bytes")]
+    pub cb_tx_merkle_tree: Vec<u8>,
+    #[serde_as(as = "Bytes")]
+    pub cb_tx: Vec<u8>,
+    #[serde(rename = "deletedMNs")]
+    pub deleted_mns: Vec<QuorumMasternodeListItem>,
+    pub mn_list: Vec<QuorumMasternodeListItem>,
+    pub deleted_quorums: Vec<QuorumMinableCommitments>,
+    pub new_quorums: Vec<QuorumMinableCommitments>,
+    #[serde(rename = "merkleRootMNList", with = "::serde_hex")]
+    pub merkle_root_mn_list: Vec<u8>,
+    #[serde(rename = "merkleRootQuorums", with = "::serde_hex")]
+    pub merkle_root_quorums: Vec<u8>,
+}
+
+
+#[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct QuorumRotationInfo {
+    pub extra_share: bool,
+    pub quorum_snapshot_at_h_minus_c: QuorumSnapshot,
+    pub quorum_snapshot_at_h_minus_2c: QuorumSnapshot,
+    pub quorum_snapshot_at_h_minus_3c: QuorumSnapshot,
+    pub mn_list_diff_tip: MasternodeListDiff,
+    pub mn_list_diff_h: MasternodeListDiff,
+    pub mn_list_diff_at_h_minus_c: MasternodeListDiff,
+    pub mn_list_diff_at_h_minus_2c: MasternodeListDiff,
+    pub mn_list_diff_at_h_minus_3c: MasternodeListDiff,
+    pub block_hash_list: Vec<dashcore::BlockHash>,
+    pub quorum_snapshot_list: Vec<QuorumSnapshot>,
+    pub mn_list_diff_list: Vec<MasternodeListDiff>,
+}
+
+
+#[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct SelectQuorumResult {
+    pub quorum_hash: QuorumHash,
+    pub recovery_members: Vec<QuorumHash>
+}
 
 
 // Custom deserializer functions.
