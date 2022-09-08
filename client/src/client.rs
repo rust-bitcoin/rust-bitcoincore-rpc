@@ -1268,6 +1268,14 @@ pub trait RpcApi: Sized {
             self.call::<bool>("quorum", handle_defaults(&mut args, &[null()]))
     }
 
+    
+    // --------------------------- ProTx -------------------------------
+   
+    /// Returns a diff and a proof between two masternode list
+    fn get_protx_diff(&self, base_block: u32, block: u32) -> Result<json::MasternodeListDiff> {
+        let mut args = ["diff".into(), into_json(base_block)?, into_json(block)?];
+        self.call::<json::MasternodeListDiff>("protx", handle_defaults(&mut args, &[null()]))
+    }
 
 }
 

@@ -93,4 +93,8 @@ fn main() {
     // Get Quorum verify
     let quorum_verify = rpc.get_quorum_verify(1, "2ceeaa7ff20de327ef65b14de692199d15b67b9458d0ded7d68735cce98dd039", "8b5174d0e95b5642ebec23c3fe8f0bbf8f6993502f4210322871bba0e818ff3b", "99cf2a0deb08286a2d1ffdd2564b35522fd748c8802e561abed330dea20df5cb5a5dffeddbe627ea32cb36de13d5b4a516fdfaebae9886b2f7969a5d112416cf8d1983ebcbf1463a64f7522505627e08b9c76c036616fbb1649271a2773a1653", Some("000000583a348d1a0a5f753ef98e6a69f9bcd9b27919f10eb1a1c3edb6c79182"), None).unwrap();
     println!("\nQuorum verify: \n{:?}", quorum_verify);
+
+    // Get Protx diff
+    let protx_diff = rpc.get_protx_diff(75000, 76000).unwrap();
+    println!("\nProtx diff: \n{:?}", protx_diff);
 }
