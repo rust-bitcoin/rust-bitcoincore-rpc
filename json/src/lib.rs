@@ -2108,8 +2108,11 @@ pub struct MasternodeStatus {
 #[serde(untagged)]
 #[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
 pub enum QuorumType{
-    Integer(u8),
-    String(String),
+    LLMQ_50_60,
+    LLMQ_400_60,
+    LLMQ_400_85,
+    LLMQ_100_67,
+    UNKNOWN,
 }
 
 #[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
@@ -2144,7 +2147,7 @@ pub struct QuorumMember {
 #[serde(rename_all = "camelCase")]
 pub struct QuorumInfoResult {
     pub height: u32,
-    #[serde(rename = "type")]
+    #[serde(rename = "type", deserialize_with = "deserialize_quorum_type")]
     pub quorum_type: QuorumType,
     pub quorum_hash: QuorumHash,
     pub quorum_index: u32,
@@ -2176,6 +2179,7 @@ pub enum MemberDetail{
 #[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct QuorumSessionStatus {
+    #[serde(deserialize_with = "deserialize_quorum_type")]
     pub llmq_type: QuorumType,
     pub quorum_hash: QuorumHash,
     pub quorum_height: u32,
@@ -2197,6 +2201,7 @@ pub struct QuorumSessionStatus {
 #[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct QuorumSession {
+    #[serde(deserialize_with = "deserialize_quorum_type")]
     pub llmq_type: QuorumType,
     pub quorum_index: u32,
     pub status: QuorumSessionStatus,
@@ -2217,6 +2222,7 @@ pub struct QuorumConnectionInfo {
 #[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct QuorumConnection {
+    #[serde(deserialize_with = "deserialize_quorum_type")]
     pub llmq_type: QuorumType,
     pub quorum_index: u32,
     pub p_quorum_base_block_index: u32,
@@ -2230,6 +2236,7 @@ pub struct QuorumConnection {
 #[serde(rename_all = "camelCase")]
 pub struct QuorumMinableCommitments {
     pub version: u8,
+    #[serde(deserialize_with = "deserialize_quorum_type")]
     pub llmq_type: QuorumType,
     pub quorum_hash: QuorumHash,
     pub quorum_index: u32,
@@ -2262,6 +2269,7 @@ pub struct QuorumDKGStatus {
 #[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct QuorumSignature {
+    #[serde(deserialize_with = "deserialize_quorum_type")]
     pub llmq_type: QuorumType,
     pub quorum_hash: QuorumHash,
     pub quorum_member: Option<u8>,
@@ -2286,7 +2294,7 @@ pub enum QuorumSignResult{
 #[serde(rename_all = "camelCase")]
 pub struct QuorumMemberOf {
     pub height: u32,
-    #[serde(rename = "type")]
+    #[serde(rename = "type", deserialize_with = "deserialize_quorum_type")]
     pub quorum_type: QuorumType,
     pub quorum_hash: QuorumHash,
     #[serde(with = "::serde_hex")]
@@ -2374,6 +2382,12 @@ pub struct SelectQuorumResult {
     pub recovery_members: Vec<QuorumHash>
 }
 
+#[serde(untagged)]
+#[derive(Deserialize)]
+enum IntegerOrString<'a> {
+    Integer(u32),
+    String(&'a str),
+}
 
 // Custom deserializer functions.
 
@@ -2434,4 +2448,37 @@ where
         _ => MasternodeState::NONRECOGNISED,
     }
 )
+}
+
+/// deserialize_quorum_type deserializes a quorum type
+fn deserialize_quorum_type<'de, D>(deserializer: D) -> Result<QuorumType, D::Error>
+where
+    D: serde::Deserializer<'de>,
+{
+    let type_value = IntegerOrString::deserialize(deserializer)?;
+    
+    match type_value {
+        IntegerOrString::Integer(type_value) => {
+            Ok(
+                match type_value {
+                    1 => QuorumType::LLMQ_50_60,
+                    2 => QuorumType::LLMQ_400_60,
+                    3 => QuorumType::LLMQ_400_85,
+                    4 => QuorumType::LLMQ_100_67,
+                    _ => QuorumType::UNKNOWN
+                }
+            )
+        },
+        IntegerOrString::String(type_value) => {
+            Ok(
+                match type_value {
+                    "llmq_50_60" => QuorumType::LLMQ_50_60,
+                    "llmq_400_60" => QuorumType::LLMQ_400_60,
+                    "llmq_400_85" => QuorumType::LLMQ_400_85,
+                    "llmq_100_67" => QuorumType::LLMQ_100_67,
+                    _ => QuorumType::UNKNOWN
+                }
+            )
+        }
+    }
 }
