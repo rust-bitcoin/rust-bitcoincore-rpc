@@ -2102,6 +2102,17 @@ pub struct MasternodeStatus {
     pub status: String,
 }
 
+// --------------------------- BLS -------------------------------
+
+#[serde_as]
+#[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
+pub struct BLS {
+    #[serde_as(as = "Bytes")]
+    pub secret: Vec<u8>,
+    #[serde_as(as = "Bytes")]
+    pub public: Vec<u8>
+}
+
 // Custom deserializer functions.
 
 /// deserialize_hex_array_opt deserializes a vector of hex-encoded byte arrays.
