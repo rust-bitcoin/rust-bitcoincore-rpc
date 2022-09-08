@@ -2105,6 +2105,13 @@ pub struct MasternodeStatus {
 
 // --------------------------- Quorum -------------------------------
 
+#[serde(untagged)]
+#[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
+pub enum QuorumType{
+    Integer(u8),
+    String(String),
+}
+
 #[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
 pub struct QuorumHash(
     #[serde(with = "::serde_hex")]
@@ -2138,7 +2145,7 @@ pub struct QuorumMember {
 pub struct QuorumInfoResult {
     pub height: u32,
     #[serde(rename = "type")]
-    pub quorum_type: String,
+    pub quorum_type: QuorumType,
     pub quorum_hash: QuorumHash,
     pub quorum_index: u32,
     #[serde(with = "::serde_hex")]
@@ -2169,7 +2176,7 @@ pub enum MemberDetail{
 #[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct QuorumSessionStatus {
-    pub llmq_type: u32,
+    pub llmq_type: QuorumType,
     pub quorum_hash: QuorumHash,
     pub quorum_height: u32,
     pub phase: u8,
@@ -2190,7 +2197,7 @@ pub struct QuorumSessionStatus {
 #[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct QuorumSession {
-    pub llmq_type: String,
+    pub llmq_type: QuorumType,
     pub quorum_index: u32,
     pub status: QuorumSessionStatus,
 }
@@ -2210,7 +2217,7 @@ pub struct QuorumConnectionInfo {
 #[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct QuorumConnection {
-    pub llmq_type: String,
+    pub llmq_type: QuorumType,
     pub quorum_index: u32,
     pub p_quorum_base_block_index: u32,
     pub quorum_hash: QuorumHash,
@@ -2223,7 +2230,7 @@ pub struct QuorumConnection {
 #[serde(rename_all = "camelCase")]
 pub struct QuorumMinableCommitments {
     pub version: u8,
-    pub llmq_type: u8,
+    pub llmq_type: QuorumType,
     pub quorum_hash: QuorumHash,
     pub quorum_index: u32,
     pub signers_count: u32,
@@ -2255,7 +2262,7 @@ pub struct QuorumDKGStatus {
 #[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct QuorumSignature {
-    pub llmq_type: u8,
+    pub llmq_type: QuorumType,
     pub quorum_hash: QuorumHash,
     pub quorum_member: Option<u8>,
     #[serde(with = "::serde_hex")]
@@ -2280,7 +2287,7 @@ pub enum QuorumSignResult{
 pub struct QuorumMemberOf {
     pub height: u32,
     #[serde(rename = "type")]
-    pub quorum_type: String,
+    pub quorum_type: QuorumType,
     pub quorum_hash: QuorumHash,
     #[serde(with = "::serde_hex")]
     pub mined_block: Vec<u8>,
