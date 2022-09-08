@@ -2389,6 +2389,51 @@ enum IntegerOrString<'a> {
     String(&'a str),
 }
 
+// --------------------------- ProTx -------------------------------
+
+#[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct Wallet{
+    pub has_owner_key: bool,
+    pub has_operator_key: bool,
+    pub has_voting_key: bool,
+    pub owns_collateral: bool,
+    pub owns_payee_script: bool,
+    pub owns_operator_reward_script: bool
+}
+
+#[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct MetaInfo{
+    #[serde(rename = "lastDSQ")]
+    pub last_dsq: u32,
+    pub mixing_tx_count: u32,
+    pub last_outbound_attempt: u32,
+    pub last_outbound_attempt_elapsed: u32,
+    pub last_outbound_success: u32,
+    pub last_outbound_success_elapsed: u32
+}
+
+#[serde_as]
+#[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ProTxInfo {
+    #[serde(with = "::serde_hex")]
+    pub pro_tx_hash: Vec<u8>,
+    #[serde(with = "::serde_hex")]
+    pub collateral_hash: Vec<u8>,
+    pub collateral_index: u32,
+    #[serde_as(as = "Bytes")]
+    pub collateral_address: Vec<u8>,
+    pub operator_reward: u32,
+    pub state: DMNState,
+    pub confirmations: u32,
+    pub wallet: Wallet,
+    pub meta_info: MetaInfo
+}
+
+
+
 // Custom deserializer functions.
 
 /// deserialize_hex_array_opt deserializes a vector of hex-encoded byte arrays.

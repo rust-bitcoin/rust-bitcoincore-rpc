@@ -1277,6 +1277,12 @@ pub trait RpcApi: Sized {
         self.call::<json::MasternodeListDiff>("protx", handle_defaults(&mut args, &[null()]))
     }
 
+    /// Returns a returns detailed information about a deterministic masternode
+    fn get_protx_info(&self, protx_hash: &str) -> Result<json::ProTxInfo> {
+        let mut args = ["info".into(), into_json(protx_hash)?];
+        self.call::<json::ProTxInfo>("protx", handle_defaults(&mut args, &[null()]))
+    }
+
 }
 
 /// Client implements a JSON-RPC client for the Dash Core daemon or compatible APIs.

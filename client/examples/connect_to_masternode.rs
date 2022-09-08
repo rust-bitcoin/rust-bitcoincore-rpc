@@ -97,4 +97,8 @@ fn main() {
     // Get Protx diff
     let protx_diff = rpc.get_protx_diff(75000, 76000).unwrap();
     println!("\nProtx diff: \n{:?}", protx_diff);
+
+    // Get Protx info
+    let protx_info = rpc.get_protx_info("000000000c9eddd5d2a707281b7e30d5aac974dac600ff10f01937e1ca36066f").unwrap();
+    println!("\nProtx info: \n{:?}", protx_info);
 }
