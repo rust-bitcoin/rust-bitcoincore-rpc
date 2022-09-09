@@ -1283,6 +1283,12 @@ pub trait RpcApi: Sized {
         self.call::<json::ProTxInfo>("protx", handle_defaults(&mut args, &[null()]))
     }
 
+    /// Returns a list of provider transactions
+    fn get_protx_list(&self, protx_type: Option<&str>, detailed: Option<bool>, height: Option<u32>) -> Result<json::ProTxList> {
+            let mut args = ["list".into(), opt_into_json(protx_type)?, opt_into_json(detailed)?, opt_into_json(height)?];
+            self.call::<json::ProTxList>("protx", handle_defaults(&mut args, &[null()]))
+    }
+
 }
 
 /// Client implements a JSON-RPC client for the Dash Core daemon or compatible APIs.

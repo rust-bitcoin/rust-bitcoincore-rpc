@@ -101,4 +101,8 @@ fn main() {
     // Get Protx info
     let protx_info = rpc.get_protx_info("000000000c9eddd5d2a707281b7e30d5aac974dac600ff10f01937e1ca36066f").unwrap();
     println!("\nProtx info: \n{:?}", protx_info);
+
+    // Get Protx list
+    let protx_list = rpc.get_protx_list(Some("valid"), Some(true), Some(7090)).unwrap();
+    println!("\nProtx list: \n{:?}", protx_list);
 }

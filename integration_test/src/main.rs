@@ -232,6 +232,7 @@ fn main() {
     test_get_quorum_verify(&cl);
     test_get_protx_diff(&cl);
     test_get_protx_info(&cl);
+    test_get_protx_list(&cl);
 }
 
 fn test_get_network_info(cl: &Client) {
@@ -1255,4 +1256,8 @@ fn test_get_protx_info(cl: &Client) {
     let protx_info = rpc.get_protx_info("000000000c9eddd5d2a707281b7e30d5aac974dac600ff10f01937e1ca36066f").unwrap();
     assert!(protx_info.collateralIndex >= 0);
     assert!(protx_info.operatorReward >= 0);
+}
+
+fn test_get_protx_list(cl: &Client) {
+    let protx_list = rpc.get_protx_list(Some("valid"), Some(true), Some(7090)).unwrap();
 }
