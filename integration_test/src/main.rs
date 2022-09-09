@@ -234,6 +234,7 @@ fn main() {
     test_get_protx_info(&cl);
     test_get_protx_list(&cl);
     test_get_protx_register(&cl);
+    test_get_protx_register_fund(&cl);
 }
 
 fn test_get_network_info(cl: &Client) {
@@ -1264,5 +1265,9 @@ fn test_get_protx_list(cl: &Client) {
 }
 
 fn test_get_protx_register(cl: &Client) {
-    llet protx_register = rpc.get_protx_register("8b2eab3413abb6e04d17d1defe2b71039ba6b6f72ea1e5dab29bb10e7b745948", 1, "2.3.4.5:2345", "yNLuVTXJbjbxgrQX5LSMi7hV19We8hT2d6", "88d719278eef605d9c19037366910b59bc28d437de4a8db4d76fda6d6985dbdf10404fb9bb5cd0e8c22f4a914a6c5566", "yNLuVTXJbjbxgrQX5LSMi7hV19We8hT2d6", 5, "yjJJLkYDUN6X8gWjXbCoKEXoiLeKxxMMRt", None, Some(false)).unwrap();
+    let protx_register = rpc.get_protx_register("8b2eab3413abb6e04d17d1defe2b71039ba6b6f72ea1e5dab29bb10e7b745948", 1, "2.3.4.5:2345", "yNLuVTXJbjbxgrQX5LSMi7hV19We8hT2d6", "88d719278eef605d9c19037366910b59bc28d437de4a8db4d76fda6d6985dbdf10404fb9bb5cd0e8c22f4a914a6c5566", "yNLuVTXJbjbxgrQX5LSMi7hV19We8hT2d6", 5, "yjJJLkYDUN6X8gWjXbCoKEXoiLeKxxMMRt", None, Some(false)).unwrap();
+}
+
+fn test_get_protx_register_fund(cl: &Client) {
+    let protx_register_fund = rpc.get_protx_register_fund("yakx4mMRptKhgfjedNzX5FGQq7kSSBF2e7", "3.4.5.6:3456", "yURczr3qY31xkQZfFu8eZvKz19eAEPQxsd", "0e02146e9c34cfbcb3f3037574a1abb35525e2ca0c3c6901dbf82ac591e30218d1711223b7ca956edf39f3d984d06d51", "yURczr3qY31xkQZfFu8eZvKz19eAEPQxsd", 5, "yUYTxqjpCfAAK4vgxXtBPywRBtZqsxN7Vy", Some("yRMFHxcJ2aS2vfo5whhE2Gg73dfQVm8LAF"), Some(false)).unwrap();
 }
