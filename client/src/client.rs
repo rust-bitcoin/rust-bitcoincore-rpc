@@ -1289,6 +1289,12 @@ pub trait RpcApi: Sized {
             self.call::<json::ProTxList>("protx", handle_defaults(&mut args, &[null()]))
     }
 
+    /// Creates a ProRegTx referencing an existing collateral and and sends it to the network
+    fn get_protx_register(&self, collateral_hash: &str, collateral_index: u32, ip_and_port: &str, owner_address: &str, operator_pub_key: &str, voting_address: &str, operator_reward: u32, payout_address: &str, fee_source_address: Option<&str>, submit: Option<bool>) -> Result<json::ProRegTxHash> {
+        let mut args = ["register".into(), into_json(collateral_hash)?, into_json(collateral_index)?, into_json(ip_and_port)?, into_json(owner_address)?, into_json(operator_pub_key)?, into_json(voting_address)?, into_json(operator_reward)?, into_json(payout_address)?, opt_into_json(fee_source_address)?, opt_into_json(submit)?];
+        self.call::<json::ProRegTxHash>("protx", handle_defaults(&mut args, &[null()]))
+}
+
 }
 
 /// Client implements a JSON-RPC client for the Dash Core daemon or compatible APIs.

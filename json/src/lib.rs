@@ -1991,6 +1991,12 @@ pub struct ProTxHash(
 );
 
 #[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
+pub struct ProRegTxHash(
+    #[serde(with = "::serde_hex")]
+    pub Vec<u8>
+);
+
+#[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
 pub struct GetMasternodeCountResult {
     pub total: u32,
     pub enabled: u32,

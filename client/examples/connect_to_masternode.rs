@@ -105,4 +105,8 @@ fn main() {
     // Get Protx list
     let protx_list = rpc.get_protx_list(Some("valid"), Some(true), Some(7090)).unwrap();
     println!("\nProtx list: \n{:?}", protx_list);
+
+    // Get Protx register
+    let protx_register = rpc.get_protx_register("8b2eab3413abb6e04d17d1defe2b71039ba6b6f72ea1e5dab29bb10e7b745948", 1, "2.3.4.5:2345", "yNLuVTXJbjbxgrQX5LSMi7hV19We8hT2d6", "88d719278eef605d9c19037366910b59bc28d437de4a8db4d76fda6d6985dbdf10404fb9bb5cd0e8c22f4a914a6c5566", "yNLuVTXJbjbxgrQX5LSMi7hV19We8hT2d6", 5, "yjJJLkYDUN6X8gWjXbCoKEXoiLeKxxMMRt", None, Some(false)).unwrap();
+    println!("\nProtx list: \n{:?}", protx_register);
 }
