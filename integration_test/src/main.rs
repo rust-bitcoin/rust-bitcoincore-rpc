@@ -212,13 +212,24 @@ fn main() {
     test_disconnect_node(&cl);
     test_add_ban(&cl);
     test_set_network_active(&cl);
-    test_stop(cl);
-    test_get_masternode_count(cl);
-    test_get_masternode_list(cl);
-    test_get_masternode_outputs(cl);
-    test_get_masternode_payments(cl);
-    test_get_masternode_status(cl);
-    test_get_masternode_winners(cl);
+    test_stop(&cl);
+    test_get_masternode_count(&cl);
+    test_get_masternode_list(&cl);
+    test_get_masternode_outputs(&cl);
+    test_get_masternode_payments(&cl);
+    test_get_masternode_status(&cl);
+    test_get_masternode_winners(&cl);
+    test_get_quorum_list(&cl);
+    test_get_quorum_info(&cl);
+    test_get_quorum_dkgstatus(&cl);
+    test_get_quorum_sign(&cl);
+    test_get_quorum_getrecsig(&cl);
+    test_get_quorum_hasrecsig(&cl);
+    test_get_quorum_isconflicting(&cl);
+    test_get_quorum_memberof(&cl);
+    test_get_quorum_rotationinfo(&cl);
+    test_get_quorum_selectquorum(&cl);
+    test_get_quorum_verify(&cl);
 }
 
 fn test_get_network_info(cl: &Client) {
@@ -1177,4 +1188,59 @@ fn test_get_masternode_status(cl: &Client) {
 
 fn test_get_masternode_winners(cl: &Client) {
     let masternode_winners = rpc.get_masternode_winners(None, None).unwrap();
+}
+
+
+// ---------------------- Quorum RPC tests---------------------
+
+fn test_get_quorum_list(cl: &Client) {
+    let quorum_list = rpc.get_quorum_list(Some("1")).unwrap();
+}
+
+fn test_get_quorum_info(cl: &Client) {
+    let quorum_info = rpc.get_quorum_info("1", "000000000c9eddd5d2a707281b7e30d5aac974dac600ff10f01937e1ca36066f", None).unwrap();
+    assert!(quorum_info.height > 0);
+    assert!(quorum_info.quorum_index >= 0);
+    assert!(quorum_info.members.len() >= 0);
+}
+
+fn test_get_quorum_dkgstatus(cl: &Client) {
+    let quorum_dkgstatus = rpc.get_quorum_dkgstatus(None).unwrap();
+    assert!(quorum_dkgstatus.time >= 0);
+    assert!(quorum_dkgstatus.session.len() >= 0);
+    assert!(quorum_dkgstatus.quorum_connections.len() >= 0);
+    assert!(quorum_dkgstatus.minable_commitments.len() >= 0);
+}
+
+fn test_get_quorum_sign(cl: &Client) {
+    let quorum_dkgstatus = rpc.get_quorum_sign(1, "abcd1234abcd1234abcd1234abcd1234abcd1234abcd1234abcd1234abcd1234", "51c11d287dfa85aef3eebb5420834c8e443e01d15c0b0a8e397d67e2e51aa239", None, None).unwrap();
+}
+
+fn test_get_quorum_getrecsig(cl: &Client) {
+    let quorum_getrecsig = rpc.get_quorum_getrecsig(1, "abcd1234abcd1234abcd1234abcd1234abcd1234abcd1234abcd1234abcd1234", "51c11d287dfa85aef3eebb5420834c8e443e01d15c0b0a8e397d67e2e51aa239").unwrap();
+}
+
+fn test_get_quorum_hasrecsig(cl: &Client) {
+    let quorum_hasrecsig = rpc.get_quorum_hasrecsig(1, "abcd1234abcd1234abcd1234abcd1234abcd1234abcd1234abcd1234abcd1234", "51c11d287dfa85aef3eebb5420834c8e443e01d15c0b0a8e397d67e2e51aa239").unwrap();
+}
+
+fn test_get_quorum_isconflicting(cl: &Client) {
+    let quorum_isconflicting = rpc.get_quorum_isconflicting(1, "abcd1234abcd1234abcd1234abcd1234abcd1234abcd1234abcd1234abcd1234", "51c11d287dfa85aef3eebb5420834c8e443e01d15c0b0a8e397d67e2e51aa239").unwrap();
+}
+
+fn test_get_quorum_memberof(cl: &Client) {
+    let quorum_memberof = rpc.get_quorum_memberof("39c07d2c9c6d0ead56f52726b63c15e295cb5c3ecf7fe1fefcfb23b2e3cfed1f", Some(1)).unwrap();
+    assert!(quorum_memberof[0].height > 0);
+}
+
+fn test_get_quorum_rotationinfo(cl: &Client) {
+    let quorum_rotationinfo = rpc.get_quorum_rotationinfo("0000012197b7ca6360af3756c6a49c217dbbdf8b595fd55e0fcef7ffcd546044", None, None).unwrap();
+}
+
+fn test_get_quorum_selectquorum(cl: &Client) {
+    let quorum_selectquorum = rpc.get_quorum_selectquorum(1, "b95205c3bba72e9edfbe7380ec91fe5a97e16a189e28f39b03c6822757ad1a34").unwrap();
+}
+
+fn test_get_quorum_verify(cl: &Client) {
+    let quorum_verify = rpc.get_quorum_verify(1, "2ceeaa7ff20de327ef65b14de692199d15b67b9458d0ded7d68735cce98dd039", "8b5174d0e95b5642ebec23c3fe8f0bbf8f6993502f4210322871bba0e818ff3b", "99cf2a0deb08286a2d1ffdd2564b35522fd748c8802e561abed330dea20df5cb5a5dffeddbe627ea32cb36de13d5b4a516fdfaebae9886b2f7969a5d112416cf8d1983ebcbf1463a64f7522505627e08b9c76c036616fbb1649271a2773a1653", Some("000000583a348d1a0a5f753ef98e6a69f9bcd9b27919f10eb1a1c3edb6c79182"), None).unwrap();
 }

@@ -1200,6 +1200,75 @@ pub trait RpcApi: Sized {
     }
 
 
+    // -------------------------- Quorum -------------------------------
+
+    /// Returns a list of on-chain quorums
+    fn get_quorum_list(&self, count: Option<u8>) -> Result<json::QuorumListResult> {
+            let mut args = ["list".into(), opt_into_json(count)?];
+            self.call::<json::QuorumListResult>("quorum", handle_defaults(&mut args, &[1.into(), null()]))
+    }
+
+    /// Returns information about a specific quorum
+    fn get_quorum_info(&self, llmq_type: u8, quorum_hash: &str, include_sk_share: Option<bool>) -> Result<json::QuorumInfoResult> {
+            let mut args = ["info".into(), into_json(llmq_type)?, into_json(quorum_hash)?, opt_into_json(include_sk_share)?];
+            self.call::<json::QuorumInfoResult>("quorum", handle_defaults(&mut args, &[null()]))
+    }
+
+    /// Returns the status of the current DKG process
+    fn get_quorum_dkgstatus(&self, detail_level: Option<u8>) -> Result<json::QuorumDKGStatus> {
+           let mut args = ["dkgstatus".into(), opt_into_json(detail_level)?];
+           self.call::<json::QuorumDKGStatus>("quorum", handle_defaults(&mut args, &[0.into(), null()]))
+    }  
+
+    /// Requests threshold-signing for a message
+    fn get_quorum_sign(&self, llmq_type: u8, id: &str, msg_hash: &str, quorum_hash: Option<&str>, submit: Option<bool>) -> Result<json::QuorumSignResult> {
+            let mut args = ["sign".into(), into_json(llmq_type)?, into_json(id)?, into_json(msg_hash)?, opt_into_json(quorum_hash)?, opt_into_json(submit)?];
+            self.call::<json::QuorumSignResult>("quorum", handle_defaults(&mut args, &[null()]))
+    }
+
+    /// Returns the recovered signature for a previous threshold-signing message request
+    fn get_quorum_getrecsig(&self, llmq_type: u8, id: &str, msg_hash: &str) -> Result<json::QuorumSignature> {
+        let mut args = ["getrecsig".into(), into_json(llmq_type)?, into_json(id)?, into_json(msg_hash)?];
+        self.call::<json::QuorumSignature>("quorum", handle_defaults(&mut args, &[null()]))
+    }
+
+    /// Checks for a recovered signature for a previous threshold-signing message request
+    fn get_quorum_hasrecsig(&self, llmq_type: u8, id: &str, msg_hash: &str) -> Result<bool> {
+        let mut args = ["hasrecsig".into(), into_json(llmq_type)?, into_json(id)?, into_json(msg_hash)?];
+        self.call::<bool>("quorum", handle_defaults(&mut args, &[null()]))
+    }
+
+    /// Checks if there is a conflict for a threshold-signing message request
+    fn get_quorum_isconflicting(&self, llmq_type: u8, id: &str, msg_hash: &str) -> Result<bool> {
+        let mut args = ["isconflicting".into(), into_json(llmq_type)?, into_json(id)?, into_json(msg_hash)?];
+        self.call::<bool>("quorum", handle_defaults(&mut args, &[null()]))
+    }
+
+    /// Checks which quorums the given masternode is a member of
+    fn get_quorum_memberof(&self, pro_tx_hash: &str, scan_quorums_count: Option<u8>) -> Result<json::QuorumMemberOfResult> {
+        let mut args = ["memberof".into(), into_json(pro_tx_hash)?, opt_into_json(scan_quorums_count)?];
+        self.call::<json::QuorumMemberOfResult>("quorum", handle_defaults(&mut args, &[null()]))
+    }
+
+    /// Returns quorum rotation information
+    fn get_quorum_rotationinfo(&self, block_request_hash: &str, extra_share: Option<bool>, base_block_hash: Option<&str>) -> Result<json::QuorumRotationInfo> {
+        let mut args = ["rotationinfo".into(), into_json(block_request_hash)?, opt_into_json(extra_share)?, opt_into_json(base_block_hash)?];
+        self.call::<json::QuorumRotationInfo>("quorum", handle_defaults(&mut args, &[false.into(), "".into(), null()]))
+    }
+
+    /// Returns information about the quorum that would/should sign a request
+    fn get_quorum_selectquorum(&self, llmq_type: u8, id: &str) -> Result<json::SelectQuorumResult> {
+        let mut args = ["selectquorum".into(), into_json(llmq_type)?, into_json(id)?];
+        self.call::<json::SelectQuorumResult>("quorum", handle_defaults(&mut args, &[null()]))
+    }
+
+    /// Tests if a quorum signature is valid for a request id and a message hash
+    fn get_quorum_verify(&self, llmq_type: u8, id: &str, msg_hash: &str, signature: &str, quorum_hash: Option<&str>, sign_height: Option<u32>) -> Result<bool> {
+            let mut args = ["verify".into(), into_json(llmq_type)?, into_json(id)?, into_json(msg_hash)?, into_json(signature)?, opt_into_json(quorum_hash)?, opt_into_json(sign_height)?];
+            self.call::<bool>("quorum", handle_defaults(&mut args, &[null()]))
+    }
+
+
 }
 
 /// Client implements a JSON-RPC client for the Dash Core daemon or compatible APIs.
