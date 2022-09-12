@@ -1985,6 +1985,18 @@ impl<'a> serde::Serialize for PubKeyOrAddress<'a> {
 // --------------------------- Masternode -------------------------------
 
 #[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
+pub struct ProTxHash(
+    #[serde(with = "::serde_hex")]
+    pub Vec<u8>
+);
+
+#[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
+pub struct ProRegTxHash(
+    #[serde(with = "::serde_hex")]
+    pub Vec<u8>
+);
+
+#[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
 pub struct GetMasternodeCountResult {
     pub total: u32,
     pub enabled: u32,
@@ -1993,8 +2005,7 @@ pub struct GetMasternodeCountResult {
 #[serde_as]
 #[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
 pub struct Masternode {
-    #[serde(rename = "proTxHash", with = "::serde_hex")]
-    pub pro_tx_hash: Vec<u8>,
+    pub pro_tx_hash: ProTxHash,
     #[serde_as(as = "DisplayFromStr")]
     pub address: SocketAddr,
     #[serde_as(as = "Bytes")]
@@ -2029,8 +2040,7 @@ pub struct Payee {
 
 #[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
 pub struct MasternodePayment {
-    #[serde(rename = "proTxHash", with = "::serde_hex")]
-    pub pro_tx_hash: Vec<u8>,
+    pub pro_tx_hash: ProTxHash,
     pub amount: u32,
     pub payees: Vec<Payee>,
 }
@@ -2090,8 +2100,7 @@ pub struct MasternodeStatus {
     pub outpoint: dashcore::OutPoint,
     #[serde_as(as = "DisplayFromStr")]
     pub service: SocketAddr,
-    #[serde(rename = "proTxHash", with = "::serde_hex")]
-    pub pro_tx_hash: Vec<u8>,
+    pub pro_tx_hash: ProTxHash,
     #[serde(rename = "collateralHash", with = "::serde_hex")]
     pub collateral_hash: Vec<u8>,
     #[serde(rename = "collateralIndex")]
@@ -2133,8 +2142,7 @@ pub struct QuorumListResult {
 #[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct QuorumMember {
-    #[serde(with = "::serde_hex")]
-    pub pro_tx_hash: Vec<u8>,
+    pub pro_tx_hash: ProTxHash,
     #[serde_as(as = "Bytes")]
     pub pub_key_operator: Vec<u8>,
     pub valid: bool,
@@ -2164,8 +2172,7 @@ pub struct QuorumInfoResult {
 #[serde(rename_all = "camelCase")]
 pub struct QuorumSessionStatusMember {
     pub member_index: u32,
-    #[serde(default, with = "::serde_hex")]
-    pub pro_tx_hash: Vec<u8>,
+    pub pro_tx_hash: ProTxHash,
 }
 
 #[serde(untagged)]
@@ -2211,8 +2218,7 @@ pub struct QuorumSession {
 #[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct QuorumConnectionInfo {
-    #[serde(with = "::serde_hex")]
-    pub pro_tx_hash: Vec<u8>,
+    pub pro_tx_hash: ProTxHash,
     pub connected: bool,
     #[serde_as(as = "DisplayFromStr")]
     pub address: SocketAddr,
@@ -2387,6 +2393,55 @@ pub struct SelectQuorumResult {
 enum IntegerOrString<'a> {
     Integer(u32),
     String(&'a str),
+}
+
+// --------------------------- ProTx -------------------------------
+
+#[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct Wallet{
+    pub has_owner_key: bool,
+    pub has_operator_key: bool,
+    pub has_voting_key: bool,
+    pub owns_collateral: bool,
+    pub owns_payee_script: bool,
+    pub owns_operator_reward_script: bool
+}
+
+#[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct MetaInfo{
+    #[serde(rename = "lastDSQ")]
+    pub last_dsq: u32,
+    pub mixing_tx_count: u32,
+    pub last_outbound_attempt: u32,
+    pub last_outbound_attempt_elapsed: u32,
+    pub last_outbound_success: u32,
+    pub last_outbound_success_elapsed: u32
+}
+
+#[serde_as]
+#[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ProTxInfo {
+    pub pro_tx_hash: ProTxHash,
+    #[serde(with = "::serde_hex")]
+    pub collateral_hash: Vec<u8>,
+    pub collateral_index: u32,
+    #[serde_as(as = "Bytes")]
+    pub collateral_address: Vec<u8>,
+    pub operator_reward: u32,
+    pub state: DMNState,
+    pub confirmations: u32,
+    pub wallet: Wallet,
+    pub meta_info: MetaInfo
+}
+
+#[serde(untagged)]
+#[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
+pub enum ProTxList{
+    Hex(Vec<ProTxHash>),
+    Info(Vec<ProTxInfo>)
 }
 
 // Custom deserializer functions.
