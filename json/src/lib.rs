@@ -24,6 +24,8 @@ extern crate serde_json;
 extern crate serde_with;
 
 use std::collections::HashMap;
+use std::fmt;
+use std::net::{SocketAddr};
 
 use dashcore::consensus::encode;
 use dashcore::hashes::hex::{FromHex, ToHex};
@@ -33,8 +35,7 @@ use dashcore::{Address, Amount, PrivateKey, PublicKey, Script, SignedAmount, Tra
 use serde::de::Error as SerdeError;
 use serde::{Deserialize, Serialize};
 use serde_with::{serde_as, DisplayFromStr, Bytes};
-use std::fmt;
-use std::net::{SocketAddr};
+
 
 //TODO(stevenroose) consider using a Time type
 
@@ -1984,6 +1985,18 @@ impl<'a> serde::Serialize for PubKeyOrAddress<'a> {
 // --------------------------- Masternode -------------------------------
 
 #[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
+pub struct ProTxHash(
+    #[serde(with = "::serde_hex")]
+    pub Vec<u8>
+);
+
+#[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
+pub struct ProRegTxHash(
+    #[serde(with = "::serde_hex")]
+    pub Vec<u8>
+);
+
+#[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
 pub struct GetMasternodeCountResult {
     pub total: u32,
     pub enabled: u32,
@@ -1992,8 +2005,7 @@ pub struct GetMasternodeCountResult {
 #[serde_as]
 #[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
 pub struct Masternode {
-    #[serde(rename = "proTxHash", with = "::serde_hex")]
-    pub pro_tx_hash: Vec<u8>,
+    pub pro_tx_hash: ProTxHash,
     #[serde_as(as = "DisplayFromStr")]
     pub address: SocketAddr,
     #[serde_as(as = "Bytes")]
@@ -2028,8 +2040,7 @@ pub struct Payee {
 
 #[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
 pub struct MasternodePayment {
-    #[serde(rename = "proTxHash", with = "::serde_hex")]
-    pub pro_tx_hash: Vec<u8>,
+    pub pro_tx_hash: ProTxHash,
     pub amount: u32,
     pub payees: Vec<Payee>,
 }
@@ -2089,8 +2100,7 @@ pub struct MasternodeStatus {
     pub outpoint: dashcore::OutPoint,
     #[serde_as(as = "DisplayFromStr")]
     pub service: SocketAddr,
-    #[serde(rename = "proTxHash", with = "::serde_hex")]
-    pub pro_tx_hash: Vec<u8>,
+    pub pro_tx_hash: ProTxHash,
     #[serde(rename = "collateralHash", with = "::serde_hex")]
     pub collateral_hash: Vec<u8>,
     #[serde(rename = "collateralIndex")]
@@ -2111,6 +2121,337 @@ pub struct BLS {
     pub secret: Vec<u8>,
     #[serde_as(as = "Bytes")]
     pub public: Vec<u8>
+    
+// --------------------------- Quorum -------------------------------
+
+#[serde(untagged)]
+#[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
+pub enum QuorumType{
+    LLMQ_50_60,
+    LLMQ_400_60,
+    LLMQ_400_85,
+    LLMQ_100_67,
+    UNKNOWN,
+}
+
+#[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
+pub struct QuorumHash(
+    #[serde(with = "::serde_hex")]
+    pub Vec<u8>
+);
+
+#[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
+pub struct QuorumListResult {
+    pub llmq_50_60: Option<Vec<QuorumHash>>,
+    pub llmq_400_60: Option<Vec<QuorumHash>>,
+    pub llmq_400_85: Option<Vec<QuorumHash>>,
+    pub llmq_100_67: Option<Vec<QuorumHash>>,
+}
+
+#[serde_as]
+#[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct QuorumMember {
+    pub pro_tx_hash: ProTxHash,
+    #[serde_as(as = "Bytes")]
+    pub pub_key_operator: Vec<u8>,
+    pub valid: bool,
+    #[serde(default, with = "::serde_hex::opt")]
+    pub pub_key_share: Option<Vec<u8>>,
+}
+
+#[serde_as]
+#[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct QuorumInfoResult {
+    pub height: u32,
+    #[serde(rename = "type", deserialize_with = "deserialize_quorum_type")]
+    pub quorum_type: QuorumType,
+    pub quorum_hash: QuorumHash,
+    pub quorum_index: u32,
+    #[serde(with = "::serde_hex")]
+    pub mined_block: Vec<u8>,
+    pub members: Vec<QuorumMember>,
+    #[serde_as(as = "Bytes")]
+    pub quorum_public_key: Vec<u8>,
+    #[serde(default, with = "::serde_hex::opt")]
+    pub quorum_secret_share: Option<Vec<u8>>,
+}
+
+#[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct QuorumSessionStatusMember {
+    pub member_index: u32,
+    pub pro_tx_hash: ProTxHash,
+}
+
+#[serde(untagged)]
+#[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
+pub enum MemberDetail{
+    Level0(i32),
+    Level1(Vec<i32>),
+    Level2(Vec<QuorumSessionStatusMember>),
+}
+
+#[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct QuorumSessionStatus {
+    #[serde(deserialize_with = "deserialize_quorum_type")]
+    pub llmq_type: QuorumType,
+    pub quorum_hash: QuorumHash,
+    pub quorum_height: u32,
+    pub phase: u8,
+    pub sent_contributions: bool,
+    pub sent_complaint: bool,
+    pub sent_justification: bool,
+    pub sent_premature_commitment: bool,
+    pub aborted: bool,
+    pub bad_members: MemberDetail,
+    pub we_complain: MemberDetail,
+    pub received_contributions: MemberDetail,
+    pub received_complaints: MemberDetail,
+    pub received_justifications: MemberDetail,
+    pub received_premature_commitments: MemberDetail,
+    pub all_members: Option<Vec<QuorumHash>>,
+}
+
+#[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct QuorumSession {
+    #[serde(deserialize_with = "deserialize_quorum_type")]
+    pub llmq_type: QuorumType,
+    pub quorum_index: u32,
+    pub status: QuorumSessionStatus,
+}
+
+#[serde_as]
+#[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct QuorumConnectionInfo {
+    pub pro_tx_hash: ProTxHash,
+    pub connected: bool,
+    #[serde_as(as = "DisplayFromStr")]
+    pub address: SocketAddr,
+    pub outbound: bool,
+}
+
+#[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct QuorumConnection {
+    #[serde(deserialize_with = "deserialize_quorum_type")]
+    pub llmq_type: QuorumType,
+    pub quorum_index: u32,
+    pub p_quorum_base_block_index: u32,
+    pub quorum_hash: QuorumHash,
+    pub pindex_tip: u32,
+    pub quorum_connections: Vec<QuorumConnectionInfo>
+}
+
+#[serde_as]
+#[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct QuorumMinableCommitments {
+    pub version: u8,
+    #[serde(deserialize_with = "deserialize_quorum_type")]
+    pub llmq_type: QuorumType,
+    pub quorum_hash: QuorumHash,
+    pub quorum_index: u32,
+    pub signers_count: u32,
+    #[serde_as(as = "Bytes")]
+    pub signers: Vec<u8>,
+    pub valid_members_count: u32,
+    #[serde_as(as = "Bytes")]
+    pub valid_members: Vec<u8>,
+    #[serde_as(as = "Bytes")]
+    pub quorum_public_key: Vec<u8>,
+    #[serde_as(as = "Bytes")]
+    pub quorum_vvec_hash: Vec<u8>,
+    #[serde_as(as = "Bytes")]
+    pub quorum_sig: Vec<u8>,
+    #[serde_as(as = "Bytes")]
+    pub members_sig: Vec<u8>,
+}
+
+#[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct QuorumDKGStatus {
+    pub time: u64,
+    pub time_str: String,
+    pub session: Vec<QuorumSession>,
+    pub quorum_connections: Vec<QuorumConnection>,
+    pub minable_commitments: Vec<QuorumMinableCommitments>,
+}
+
+#[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct QuorumSignature {
+    #[serde(deserialize_with = "deserialize_quorum_type")]
+    pub llmq_type: QuorumType,
+    pub quorum_hash: QuorumHash,
+    pub quorum_member: Option<u8>,
+    #[serde(with = "::serde_hex")]
+    pub id: Vec<u8>,
+    #[serde(with = "::serde_hex")]
+    pub msg_hash: Vec<u8>,
+    #[serde(with = "::serde_hex")]
+    pub sign_hash: Vec<u8>,
+    #[serde(with = "::serde_hex")]
+    pub signature: Vec<u8>,
+}
+
+#[serde(untagged)]
+#[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
+pub enum QuorumSignResult{
+    QuorumSignStatus(bool),
+    QuorumSignSignatureShare(QuorumSignature),
+}
+
+#[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct QuorumMemberOf {
+    pub height: u32,
+    #[serde(rename = "type", deserialize_with = "deserialize_quorum_type")]
+    pub quorum_type: QuorumType,
+    pub quorum_hash: QuorumHash,
+    #[serde(with = "::serde_hex")]
+    pub mined_block: Vec<u8>,
+    #[serde(with = "::serde_hex")]
+    pub quorum_public_key: Vec<u8>,
+    pub is_valid_member: bool,
+    pub member_index: u32,
+}
+
+#[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
+pub struct QuorumMemberOfResult(
+    pub Vec<QuorumMemberOf>
+);
+
+#[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct QuorumSnapshot {
+    pub active_quorum_members: Vec<bool>,
+    pub mn_skip_list_mode: u8,
+    pub mn_skip_list: Vec<u8>,
+}
+
+#[serde_as]
+#[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct QuorumMasternodeListItem {
+    #[serde(with = "::serde_hex")]
+    pub pro_reg_tx_hash: Vec<u8>,
+    #[serde(with = "::serde_hex")]
+    pub confirmed_hash: Vec<u8>,
+    #[serde_as(as = "DisplayFromStr")]
+    pub service: SocketAddr,
+    #[serde_as(as = "Bytes")]
+    pub pub_key_operator: Vec<u8>,
+    #[serde_as(as = "Bytes")]
+    pub voting_address: Vec<u8>,
+    pub is_valid: bool,
+}
+
+#[serde_as]
+#[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct MasternodeListDiff {
+    pub base_block_hash: dashcore::BlockHash,
+    pub block_hash: dashcore::BlockHash,
+    #[serde_as(as = "Bytes")]
+    pub cb_tx_merkle_tree: Vec<u8>,
+    #[serde_as(as = "Bytes")]
+    pub cb_tx: Vec<u8>,
+    #[serde(rename = "deletedMNs")]
+    pub deleted_mns: Vec<QuorumMasternodeListItem>,
+    pub mn_list: Vec<QuorumMasternodeListItem>,
+    pub deleted_quorums: Vec<QuorumMinableCommitments>,
+    pub new_quorums: Vec<QuorumMinableCommitments>,
+    #[serde(rename = "merkleRootMNList", with = "::serde_hex")]
+    pub merkle_root_mn_list: Vec<u8>,
+    #[serde(rename = "merkleRootQuorums", with = "::serde_hex")]
+    pub merkle_root_quorums: Vec<u8>,
+}
+
+
+#[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct QuorumRotationInfo {
+    pub extra_share: bool,
+    pub quorum_snapshot_at_h_minus_c: QuorumSnapshot,
+    pub quorum_snapshot_at_h_minus_2c: QuorumSnapshot,
+    pub quorum_snapshot_at_h_minus_3c: QuorumSnapshot,
+    pub mn_list_diff_tip: MasternodeListDiff,
+    pub mn_list_diff_h: MasternodeListDiff,
+    pub mn_list_diff_at_h_minus_c: MasternodeListDiff,
+    pub mn_list_diff_at_h_minus_2c: MasternodeListDiff,
+    pub mn_list_diff_at_h_minus_3c: MasternodeListDiff,
+    pub block_hash_list: Vec<dashcore::BlockHash>,
+    pub quorum_snapshot_list: Vec<QuorumSnapshot>,
+    pub mn_list_diff_list: Vec<MasternodeListDiff>,
+}
+
+
+#[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct SelectQuorumResult {
+    pub quorum_hash: QuorumHash,
+    pub recovery_members: Vec<QuorumHash>
+}
+
+#[serde(untagged)]
+#[derive(Deserialize)]
+enum IntegerOrString<'a> {
+    Integer(u32),
+    String(&'a str),
+}
+
+// --------------------------- ProTx -------------------------------
+
+#[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct Wallet{
+    pub has_owner_key: bool,
+    pub has_operator_key: bool,
+    pub has_voting_key: bool,
+    pub owns_collateral: bool,
+    pub owns_payee_script: bool,
+    pub owns_operator_reward_script: bool
+}
+
+#[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct MetaInfo{
+    #[serde(rename = "lastDSQ")]
+    pub last_dsq: u32,
+    pub mixing_tx_count: u32,
+    pub last_outbound_attempt: u32,
+    pub last_outbound_attempt_elapsed: u32,
+    pub last_outbound_success: u32,
+    pub last_outbound_success_elapsed: u32
+}
+
+#[serde_as]
+#[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ProTxInfo {
+    pub pro_tx_hash: ProTxHash,
+    #[serde(with = "::serde_hex")]
+    pub collateral_hash: Vec<u8>,
+    pub collateral_index: u32,
+    #[serde_as(as = "Bytes")]
+    pub collateral_address: Vec<u8>,
+    pub operator_reward: u32,
+    pub state: DMNState,
+    pub confirmations: u32,
+    pub wallet: Wallet,
+    pub meta_info: MetaInfo
+}
+
+#[serde(untagged)]
+#[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
+pub enum ProTxList{
+    Hex(Vec<ProTxHash>),
+    Info(Vec<ProTxInfo>)
 }
 
 // Custom deserializer functions.
@@ -2174,4 +2515,35 @@ where
 )
 }
 
-
+/// deserialize_quorum_type deserializes a quorum type
+fn deserialize_quorum_type<'de, D>(deserializer: D) -> Result<QuorumType, D::Error>
+where
+    D: serde::Deserializer<'de>,
+{
+    let type_value = IntegerOrString::deserialize(deserializer)?;
+    
+    match type_value {
+        IntegerOrString::Integer(type_value) => {
+            Ok(
+                match type_value {
+                    1 => QuorumType::LLMQ_50_60,
+                    2 => QuorumType::LLMQ_400_60,
+                    3 => QuorumType::LLMQ_400_85,
+                    4 => QuorumType::LLMQ_100_67,
+                    _ => QuorumType::UNKNOWN
+                }
+            )
+        },
+        IntegerOrString::String(type_value) => {
+            Ok(
+                match type_value {
+                    "llmq_50_60" => QuorumType::LLMQ_50_60,
+                    "llmq_400_60" => QuorumType::LLMQ_400_60,
+                    "llmq_400_85" => QuorumType::LLMQ_400_85,
+                    "llmq_100_67" => QuorumType::LLMQ_100_67,
+                    _ => QuorumType::UNKNOWN
+                }
+            )
+        }
+    }
+}
