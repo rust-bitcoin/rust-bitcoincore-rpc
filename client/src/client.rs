@@ -294,6 +294,12 @@ pub trait RpcApi: Sized {
         self.call("listwallets", &[])
     }
 
+    fn list_wallet_dir(&self) -> Result<Vec<String>> {
+        let result: json::ListWalletDirResult = self.call("listwalletdir", &[])?;
+        let names = result.wallets.into_iter().map(|x| x.name).collect();
+        Ok(names)
+    }
+
     fn get_wallet_info(&self) -> Result<json::GetWalletInfoResult> {
         self.call("getwalletinfo", &[])
     }
