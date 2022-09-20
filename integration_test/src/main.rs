@@ -234,7 +234,7 @@ fn test_get_mining_info(cl: &Client) {
 
 fn test_get_blockchain_info(cl: &Client) {
     let info = cl.get_blockchain_info().unwrap();
-    assert_eq!(&info.chain, "regtest");
+    assert_eq!(info.chain, Network::Regtest);
 }
 
 fn test_get_new_address(cl: &Client) {
