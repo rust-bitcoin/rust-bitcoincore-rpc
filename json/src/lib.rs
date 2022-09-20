@@ -132,6 +132,16 @@ pub struct LoadWalletResult {
 }
 
 #[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
+pub struct ListWalletDirResult {
+    pub wallets: Vec<ListWalletDirItem>,
+}
+
+#[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
+pub struct ListWalletDirItem {
+    pub name: String,
+}
+
+#[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
 pub struct GetWalletInfoResult {
     #[serde(rename = "walletname")]
     pub wallet_name: String,

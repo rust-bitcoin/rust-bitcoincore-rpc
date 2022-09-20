@@ -1015,16 +1015,23 @@ fn test_create_wallet(cl: &Client) {
         );
     }
 
-    let mut wallet_list = cl.list_wallets().unwrap();
+    let mut loaded_wallet_list = cl.list_wallets().unwrap();
 
-    wallet_list.sort();
+    loaded_wallet_list.sort();
 
     // Main wallet created for tests
-    assert!(wallet_list.iter().any(|w| w == "testwallet"));
-    wallet_list.retain(|w| w != "testwallet" && w != "");
+    assert!(loaded_wallet_list.iter().any(|w| w == "testwallet"));
+    loaded_wallet_list.retain(|w| w != "testwallet" && w != "");
 
     // Created wallets
-    assert!(wallet_list.iter().zip(wallet_names).all(|(a, b)| a == b));
+    assert!(loaded_wallet_list.iter().zip(wallet_names).all(|(a, b)| a == b));
+
+    // get all wallets, including any that are not loaded
+    let wallet_list = cl.list_wallet_dir().unwrap();
+    // check that wallet_list is a superset of loaded_wallet_list
+    for ref wallet in loaded_wallet_list {
+        assert!(wallet_list.iter().any(|x| x == wallet));
+    }
 }
 
 fn test_get_tx_out_set_info(cl: &Client) {
