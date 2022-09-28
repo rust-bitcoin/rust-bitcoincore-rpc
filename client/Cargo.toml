@@ -22,8 +22,11 @@ path = "src/lib.rs"
 bitcoincore-rpc-json = { version = "0.16.0", path = "../json" }
 
 log = "0.4.5"
-jsonrpc = "0.13.0"
+jsonrpc = { git = "https://github.com/apoelstra/rust-jsonrpc", rev = "7c94adf8aad7d55afad8f890ab1fbc79ecb7abc7"}
 
 # Used for deserialization of JSON.
 serde = "1"
 serde_json = "1"
+
+[features]
+proxy = ["jsonrpc/proxy"]
