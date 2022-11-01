@@ -140,6 +140,8 @@ fn main() {
     test_generate(&cl);
     test_get_balance_generate_to_address(&cl);
     test_get_balances_generate_to_address(&cl);
+    test_generate_block_raw_tx(&cl);
+    test_generate_block_txid(&cl);
     test_get_best_block_hash(&cl);
     test_get_block_count(&cl);
     test_get_block_hash(&cl);
@@ -275,6 +277,106 @@ fn test_get_balances_generate_to_address(cl: &Client) {
         assert_eq!(blocks.len(), 500);
         assert_ne!(cl.get_balances().unwrap(), initial);
     }
+}
+
+fn test_generate_block_raw_tx(cl: &Client) {
+    let sk = PrivateKey {
+        network: Network::Regtest,
+        inner: secp256k1::SecretKey::new(&mut secp256k1::rand::thread_rng()),
+        compressed: true,
+    };
+    let addr = Address::p2wpkh(&sk.public_key(&SECP), Network::Regtest).unwrap();
+
+    let options = json::ListUnspentQueryOptions {
+        minimum_amount: Some(btc(2)),
+        ..Default::default()
+    };
+    let unspent = cl.list_unspent(Some(6), None, None, None, Some(options)).unwrap();
+    let unspent = unspent.into_iter().nth(0).unwrap();
+
+    let tx = Transaction {
+        version: 1,
+        lock_time: PackedLockTime::ZERO,
+        input: vec![TxIn {
+            previous_output: OutPoint {
+                txid: unspent.txid,
+                vout: unspent.vout,
+            },
+            sequence: Sequence::MAX,
+            script_sig: Script::new(),
+            witness: Witness::new(),
+        }],
+        output: vec![TxOut {
+            value: (unspent.amount - *FEE).to_sat(),
+            script_pubkey: addr.script_pubkey(),
+        }],
+    };
+
+    let input = json::SignRawTransactionInput {
+        txid: unspent.txid,
+        vout: unspent.vout,
+        script_pub_key: unspent.script_pub_key,
+        redeem_script: None,
+        amount: Some(unspent.amount),
+    };
+    let res = cl.sign_raw_transaction_with_wallet(&tx, Some(&[input]), None).unwrap();
+    assert!(res.complete);
+
+    let raw_tx = bitcoincore_rpc::MineableTx::RawTx(res.transaction().unwrap());
+    let result = cl.generate_block(&cl.get_new_address(None, None).unwrap(), &[raw_tx]).unwrap();
+    let tip = cl.get_best_block_hash().unwrap();
+    assert_eq!(result.hash, tip);
+}
+
+fn test_generate_block_txid(cl: &Client) {
+    let sk = PrivateKey {
+        network: Network::Regtest,
+        inner: secp256k1::SecretKey::new(&mut secp256k1::rand::thread_rng()),
+        compressed: true,
+    };
+    let addr = Address::p2wpkh(&sk.public_key(&SECP), Network::Regtest).unwrap();
+
+    let options = json::ListUnspentQueryOptions {
+        minimum_amount: Some(btc(2)),
+        ..Default::default()
+    };
+    let unspent = cl.list_unspent(Some(6), None, None, None, Some(options)).unwrap();
+    let unspent = unspent.into_iter().nth(0).unwrap();
+
+    let tx = Transaction {
+        version: 1,
+        lock_time: PackedLockTime::ZERO,
+        input: vec![TxIn {
+            previous_output: OutPoint {
+                txid: unspent.txid,
+                vout: unspent.vout,
+            },
+            sequence: Sequence::MAX,
+            script_sig: Script::new(),
+            witness: Witness::new(),
+        }],
+        output: vec![TxOut {
+            value: (unspent.amount - *FEE).to_sat(),
+            script_pubkey: addr.script_pubkey(),
+        }],
+    };
+
+    let input = json::SignRawTransactionInput {
+        txid: unspent.txid,
+        vout: unspent.vout,
+        script_pub_key: unspent.script_pub_key,
+        redeem_script: None,
+        amount: Some(unspent.amount),
+    };
+    let res = cl.sign_raw_transaction_with_wallet(&tx, Some(&[input]), None).unwrap();
+    assert!(res.complete);
+
+    let tx = res.transaction().unwrap();
+    let txid = bitcoincore_rpc::MineableTx::Txid(tx.txid());
+    cl.send_raw_transaction(&tx).unwrap();
+    let result = cl.generate_block(&cl.get_new_address(None, None).unwrap(), &[txid]).unwrap();
+    let tip = cl.get_best_block_hash().unwrap();
+    assert_eq!(result.hash, tip);
 }
 
 fn test_get_best_block_hash(cl: &Client) {

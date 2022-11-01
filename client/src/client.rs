@@ -22,7 +22,7 @@ use serde_json;
 use crate::bitcoin::hashes::hex::{FromHex, ToHex};
 use crate::bitcoin::secp256k1::ecdsa::Signature;
 use crate::bitcoin::{
-    Address, Amount, Block, BlockHeader, OutPoint, PrivateKey, PublicKey, Script, Transaction,
+    Address, Amount, Block, BlockHeader, OutPoint, PrivateKey, PublicKey, Script, Transaction, Txid,
 };
 use log::Level::{Debug, Trace, Warn};
 
@@ -184,6 +184,13 @@ impl RawTx for String {
     fn raw_hex(self) -> String {
         self
     }
+}
+
+/// The different ways to add a transaction to a block in generate block
+#[derive(Clone, Debug, Hash, Eq, PartialEq, Ord, PartialOrd)]
+pub enum MineableTx {
+    RawTx(Transaction),
+    Txid(Txid),
 }
 
 /// The different authentication methods for the client.
@@ -864,6 +871,23 @@ pub trait RpcApi: Sized {
     /// to an address in the wallet.
     fn generate(&self, block_num: u64, maxtries: Option<u64>) -> Result<Vec<bitcoin::BlockHash>> {
         self.call("generate", &[block_num.into(), opt_into_json(maxtries)?])
+    }
+
+    /// Mine a set of ordered transactions to a specified address
+    /// and return the block hash.
+    fn generate_block(
+        &self,
+        address: &Address,
+        txs: &[MineableTx],
+    ) -> Result<json::GenerateBlockResult> {
+        let tx_strs: Vec<_> = txs
+            .iter()
+            .map(|t| match t.to_owned() {
+                MineableTx::RawTx(tx) => tx.raw_hex(),
+                MineableTx::Txid(txid) => txid.to_hex(),
+            })
+            .collect();
+        self.call("generateblock", &[address.to_string().into(), tx_strs.into()])
     }
 
     /// Mark a block as invalid by `block_hash`
