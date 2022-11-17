@@ -25,7 +25,7 @@ extern crate serde_with;
 
 use std::collections::HashMap;
 use std::fmt;
-use std::net::{SocketAddr};
+use std::net::SocketAddr;
 
 use dashcore::consensus::encode;
 use dashcore::hashes::hex::{FromHex, ToHex};
@@ -34,8 +34,7 @@ use dashcore::util::{bip158, bip32};
 use dashcore::{Address, Amount, PrivateKey, PublicKey, Script, SignedAmount, Transaction};
 use serde::de::Error as SerdeError;
 use serde::{Deserialize, Serialize};
-use serde_with::{serde_as, DisplayFromStr, Bytes};
-
+use serde_with::{serde_as, Bytes, DisplayFromStr};
 
 //TODO(stevenroose) consider using a Time type
 
@@ -1981,20 +1980,13 @@ impl<'a> serde::Serialize for PubKeyOrAddress<'a> {
     }
 }
 
-
 // --------------------------- Masternode -------------------------------
 
 #[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
-pub struct ProTxHash(
-    #[serde(with = "::serde_hex")]
-    pub Vec<u8>
-);
+pub struct ProTxHash(#[serde(with = "::serde_hex")] pub Vec<u8>);
 
 #[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
-pub struct ProRegTxHash(
-    #[serde(with = "::serde_hex")]
-    pub Vec<u8>
-);
+pub struct ProRegTxHash(#[serde(with = "::serde_hex")] pub Vec<u8>);
 
 #[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
 pub struct GetMasternodeCountResult {
@@ -2081,7 +2073,7 @@ pub struct DMNState {
 
 #[serde(untagged)]
 #[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
-pub enum MasternodeState{
+pub enum MasternodeState {
     MASTERNODE_WAITING_FOR_PROTX,
     MASTERNODE_POSE_BANNED,
     MASTERNODE_REMOVED,
@@ -2089,7 +2081,7 @@ pub enum MasternodeState{
     MASTERNODE_PROTX_IP_CHANGED,
     MASTERNODE_READY,
     MASTERNODE_ERROR,
-    UNKNOWN,  
+    UNKNOWN,
     NONRECOGNISED,
 }
 
@@ -2120,13 +2112,14 @@ pub struct BLS {
     #[serde_as(as = "Bytes")]
     pub secret: Vec<u8>,
     #[serde_as(as = "Bytes")]
-    pub public: Vec<u8>
-    
+    pub public: Vec<u8>,
+}
+
 // --------------------------- Quorum -------------------------------
 
 #[serde(untagged)]
 #[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
-pub enum QuorumType{
+pub enum QuorumType {
     LLMQ_50_60,
     LLMQ_400_60,
     LLMQ_400_85,
@@ -2135,10 +2128,7 @@ pub enum QuorumType{
 }
 
 #[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
-pub struct QuorumHash(
-    #[serde(with = "::serde_hex")]
-    pub Vec<u8>
-);
+pub struct QuorumHash(#[serde(with = "::serde_hex")] pub Vec<u8>);
 
 #[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
 pub struct QuorumListResult {
@@ -2187,7 +2177,7 @@ pub struct QuorumSessionStatusMember {
 
 #[serde(untagged)]
 #[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
-pub enum MemberDetail{
+pub enum MemberDetail {
     Level0(i32),
     Level1(Vec<i32>),
     Level2(Vec<QuorumSessionStatusMember>),
@@ -2244,7 +2234,7 @@ pub struct QuorumConnection {
     pub p_quorum_base_block_index: u32,
     pub quorum_hash: QuorumHash,
     pub pindex_tip: u32,
-    pub quorum_connections: Vec<QuorumConnectionInfo>
+    pub quorum_connections: Vec<QuorumConnectionInfo>,
 }
 
 #[serde_as]
@@ -2301,7 +2291,7 @@ pub struct QuorumSignature {
 
 #[serde(untagged)]
 #[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
-pub enum QuorumSignResult{
+pub enum QuorumSignResult {
     QuorumSignStatus(bool),
     QuorumSignSignatureShare(QuorumSignature),
 }
@@ -2322,9 +2312,7 @@ pub struct QuorumMemberOf {
 }
 
 #[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
-pub struct QuorumMemberOfResult(
-    pub Vec<QuorumMemberOf>
-);
+pub struct QuorumMemberOfResult(pub Vec<QuorumMemberOf>);
 
 #[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -2372,7 +2360,6 @@ pub struct MasternodeListDiff {
     pub merkle_root_quorums: Vec<u8>,
 }
 
-
 #[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct QuorumRotationInfo {
@@ -2390,12 +2377,11 @@ pub struct QuorumRotationInfo {
     pub mn_list_diff_list: Vec<MasternodeListDiff>,
 }
 
-
 #[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct SelectQuorumResult {
     pub quorum_hash: QuorumHash,
-    pub recovery_members: Vec<QuorumHash>
+    pub recovery_members: Vec<QuorumHash>,
 }
 
 #[serde(untagged)]
@@ -2409,25 +2395,25 @@ enum IntegerOrString<'a> {
 
 #[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
-pub struct Wallet{
+pub struct Wallet {
     pub has_owner_key: bool,
     pub has_operator_key: bool,
     pub has_voting_key: bool,
     pub owns_collateral: bool,
     pub owns_payee_script: bool,
-    pub owns_operator_reward_script: bool
+    pub owns_operator_reward_script: bool,
 }
 
 #[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
-pub struct MetaInfo{
+pub struct MetaInfo {
     #[serde(rename = "lastDSQ")]
     pub last_dsq: u32,
     pub mixing_tx_count: u32,
     pub last_outbound_attempt: u32,
     pub last_outbound_attempt_elapsed: u32,
     pub last_outbound_success: u32,
-    pub last_outbound_success_elapsed: u32
+    pub last_outbound_success_elapsed: u32,
 }
 
 #[serde_as]
@@ -2444,14 +2430,14 @@ pub struct ProTxInfo {
     pub state: DMNState,
     pub confirmations: u32,
     pub wallet: Wallet,
-    pub meta_info: MetaInfo
+    pub meta_info: MetaInfo,
 }
 
 #[serde(untagged)]
 #[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
-pub enum ProTxList{
+pub enum ProTxList {
     Hex(Vec<ProTxHash>),
-    Info(Vec<ProTxInfo>)
+    Info(Vec<ProTxInfo>),
 }
 
 // Custom deserializer functions.
@@ -2478,15 +2464,12 @@ where
     D: serde::Deserializer<'de>,
 {
     let str_sequence = String::deserialize(deserializer)?;
-    let str_array: Vec<String> = str_sequence
-        .split('-')
-        .map(|item| item.to_owned())
-        .collect();
+    let str_array: Vec<String> = str_sequence.split('-').map(|item| item.to_owned()).collect();
 
     let txid: dashcore::Txid = dashcore::Txid::from_hex(&str_array[0]).unwrap();
     let vout: u32 = str_array[1].parse().unwrap();
 
-    let outpoint = dashcore::OutPoint{
+    let outpoint = dashcore::OutPoint {
         txid: txid,
         vout: vout,
     };
@@ -2499,9 +2482,8 @@ where
     D: serde::Deserializer<'de>,
 {
     let str_sequence = String::deserialize(deserializer)?;
-    
-    Ok(
-        match str_sequence.as_str() {
+
+    Ok(match str_sequence.as_str() {
         "WAITING_FOR_PROTX" => MasternodeState::MASTERNODE_WAITING_FOR_PROTX,
         "POSE_BANNED" => MasternodeState::MASTERNODE_POSE_BANNED,
         "REMOVED" => MasternodeState::MASTERNODE_REMOVED,
@@ -2511,8 +2493,7 @@ where
         "ERROR" => MasternodeState::MASTERNODE_ERROR,
         "UNKNOWN" => MasternodeState::UNKNOWN,
         _ => MasternodeState::NONRECOGNISED,
-    }
-)
+    })
 }
 
 /// deserialize_quorum_type deserializes a quorum type
@@ -2521,29 +2502,21 @@ where
     D: serde::Deserializer<'de>,
 {
     let type_value = IntegerOrString::deserialize(deserializer)?;
-    
+
     match type_value {
-        IntegerOrString::Integer(type_value) => {
-            Ok(
-                match type_value {
-                    1 => QuorumType::LLMQ_50_60,
-                    2 => QuorumType::LLMQ_400_60,
-                    3 => QuorumType::LLMQ_400_85,
-                    4 => QuorumType::LLMQ_100_67,
-                    _ => QuorumType::UNKNOWN
-                }
-            )
-        },
-        IntegerOrString::String(type_value) => {
-            Ok(
-                match type_value {
-                    "llmq_50_60" => QuorumType::LLMQ_50_60,
-                    "llmq_400_60" => QuorumType::LLMQ_400_60,
-                    "llmq_400_85" => QuorumType::LLMQ_400_85,
-                    "llmq_100_67" => QuorumType::LLMQ_100_67,
-                    _ => QuorumType::UNKNOWN
-                }
-            )
-        }
+        IntegerOrString::Integer(type_value) => Ok(match type_value {
+            1 => QuorumType::LLMQ_50_60,
+            2 => QuorumType::LLMQ_400_60,
+            3 => QuorumType::LLMQ_400_85,
+            4 => QuorumType::LLMQ_100_67,
+            _ => QuorumType::UNKNOWN,
+        }),
+        IntegerOrString::String(type_value) => Ok(match type_value {
+            "llmq_50_60" => QuorumType::LLMQ_50_60,
+            "llmq_400_60" => QuorumType::LLMQ_400_60,
+            "llmq_400_85" => QuorumType::LLMQ_400_85,
+            "llmq_100_67" => QuorumType::LLMQ_100_67,
+            _ => QuorumType::UNKNOWN,
+        }),
     }
 }
