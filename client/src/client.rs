@@ -1103,6 +1103,10 @@ pub trait RpcApi: Sized {
         self.call("getdescriptorinfo", &[desc.to_string().into()])
     }
 
+    fn join_psbt(&self, psbts: &[String]) -> Result<String> {
+        self.call("joinpsbts", &[into_json(psbts)?])
+    }
+
     fn combine_psbt(&self, psbts: &[String]) -> Result<String> {
         self.call("combinepsbt", &[into_json(psbts)?])
     }
