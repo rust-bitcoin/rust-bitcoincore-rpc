@@ -17,7 +17,7 @@ use std::{fmt, result};
 use dashcore;
 use jsonrpc;
 use serde;
-use serde_json;
+use serde_json::{self, Value};
 
 use dashcore::hashes::hex::{FromHex, ToHex};
 use dashcore::secp256k1::ecdsa::Signature;
@@ -323,6 +323,10 @@ pub trait RpcApi: Sized {
         let hex: String = self.call("getblock", &[into_json(hash)?, 0.into()])?;
         let bytes: Vec<u8> = FromHex::from_hex(&hex)?;
         Ok(dashcore::consensus::encode::deserialize(&bytes)?)
+    }
+
+    fn get_block_json(&self, hash: &dashcore::BlockHash) -> Result<Value> {
+        Ok(self.call::<Value>("getblock", &[into_json(hash)?, 0.into()])?)
     }
 
     fn get_block_hex(&self, hash: &dashcore::BlockHash) -> Result<String> {
@@ -1169,40 +1173,60 @@ pub trait RpcApi: Sized {
         self.call("masternode", &["count".into()])
     }
 
-
     /// Returns a list of known masternodes
-     fn get_masternode_list(&self, mode: Option<&str>, filter: Option<&str>) -> Result<HashMap<String, json::Masternode>>{ 
+    fn get_masternode_list(
+        &self,
+        mode: Option<&str>,
+        filter: Option<&str>,
+    ) -> Result<HashMap<String, json::Masternode>> {
         let mut args = ["list".into(), into_json(mode)?, opt_into_json(filter)?];
-        self.call::<HashMap<String, json::Masternode>>("masternode", handle_defaults(&mut args, &["json".into(), null()])) 
+        self.call::<HashMap<String, json::Masternode>>(
+            "masternode",
+            handle_defaults(&mut args, &["json".into(), null()]),
+        )
     }
 
     /// Returns masternode compatible outputs
-    fn get_masternode_outputs(&self) -> Result<HashMap<String, String>>{ 
-            let mut args = ["outputs".into()];
-            self.call::<HashMap<String, String>>("masternode", handle_defaults(&mut args, &[null()])) 
+    fn get_masternode_outputs(&self) -> Result<HashMap<String, String>> {
+        let mut args = ["outputs".into()];
+        self.call::<HashMap<String, String>>("masternode", handle_defaults(&mut args, &[null()]))
     }
 
     /// Returns an array of deterministic masternodes and their payments for the specified block
-    fn get_masternode_payments(&self, block_hash: Option<&str>, count: Option<&str>) -> Result<Vec<json::GetMasternodePaymentsResult>>{ 
-            let mut args = ["payments".into(), opt_into_json(block_hash)?, opt_into_json(count)?];
-            self.call::<Vec<json::GetMasternodePaymentsResult>>("masternode", handle_defaults(&mut args, &[null(), null()])) 
+    fn get_masternode_payments(
+        &self,
+        block_hash: Option<&str>,
+        count: Option<&str>,
+    ) -> Result<Vec<json::GetMasternodePaymentsResult>> {
+        let mut args = ["payments".into(), opt_into_json(block_hash)?, opt_into_json(count)?];
+        self.call::<Vec<json::GetMasternodePaymentsResult>>(
+            "masternode",
+            handle_defaults(&mut args, &[null(), null()]),
+        )
     }
 
     /// Returns masternode status information
     fn get_masternode_status(&self) -> Result<json::MasternodeStatus> {
-            self.call("masternode", &["status".into()])
+        self.call("masternode", &["status".into()])
     }
 
     /// Returns the list of masternode winners
-    fn get_masternode_winners(&self, count: Option<&str>, filter: Option<&str>) -> Result<HashMap<String, String>> {
-            let mut args = ["winners".into(), opt_into_json(count)?, opt_into_json(filter)?];
-            self.call::<HashMap<String, String>>("masternode", handle_defaults(&mut args, &["10".into(), null()])) 
+    fn get_masternode_winners(
+        &self,
+        count: Option<&str>,
+        filter: Option<&str>,
+    ) -> Result<HashMap<String, String>> {
+        let mut args = ["winners".into(), opt_into_json(count)?, opt_into_json(filter)?];
+        self.call::<HashMap<String, String>>(
+            "masternode",
+            handle_defaults(&mut args, &["10".into(), null()]),
+        )
     }
 
     // -------------------------- BLS -------------------------------
 
     /// Parses a BLS secret key and returns the secret/public key pair
-     fn get_bls_fromsecret(&self, secret: &str) -> Result<json::BLS> {
+    fn get_bls_fromsecret(&self, secret: &str) -> Result<json::BLS> {
         let mut args = ["fromsecret".into(), into_json(secret)?];
         self.call::<json::BLS>("bls", handle_defaults(&mut args, &[null()]))
     }
@@ -1216,56 +1240,112 @@ pub trait RpcApi: Sized {
 
     /// Returns a list of on-chain quorums
     fn get_quorum_list(&self, count: Option<u8>) -> Result<json::QuorumListResult> {
-            let mut args = ["list".into(), opt_into_json(count)?];
-            self.call::<json::QuorumListResult>("quorum", handle_defaults(&mut args, &[1.into(), null()]))
+        let mut args = ["list".into(), opt_into_json(count)?];
+        self.call::<json::QuorumListResult>(
+            "quorum",
+            handle_defaults(&mut args, &[1.into(), null()]),
+        )
     }
 
     /// Returns information about a specific quorum
-    fn get_quorum_info(&self, llmq_type: u8, quorum_hash: &str, include_sk_share: Option<bool>) -> Result<json::QuorumInfoResult> {
-            let mut args = ["info".into(), into_json(llmq_type)?, into_json(quorum_hash)?, opt_into_json(include_sk_share)?];
-            self.call::<json::QuorumInfoResult>("quorum", handle_defaults(&mut args, &[null()]))
+    fn get_quorum_info(
+        &self,
+        llmq_type: u8,
+        quorum_hash: &str,
+        include_sk_share: Option<bool>,
+    ) -> Result<json::QuorumInfoResult> {
+        let mut args = [
+            "info".into(),
+            into_json(llmq_type)?,
+            into_json(quorum_hash)?,
+            opt_into_json(include_sk_share)?,
+        ];
+        self.call::<json::QuorumInfoResult>("quorum", handle_defaults(&mut args, &[null()]))
     }
 
     /// Returns the status of the current DKG process
     fn get_quorum_dkgstatus(&self, detail_level: Option<u8>) -> Result<json::QuorumDKGStatus> {
-           let mut args = ["dkgstatus".into(), opt_into_json(detail_level)?];
-           self.call::<json::QuorumDKGStatus>("quorum", handle_defaults(&mut args, &[0.into(), null()]))
-    }  
+        let mut args = ["dkgstatus".into(), opt_into_json(detail_level)?];
+        self.call::<json::QuorumDKGStatus>(
+            "quorum",
+            handle_defaults(&mut args, &[0.into(), null()]),
+        )
+    }
 
     /// Requests threshold-signing for a message
-    fn get_quorum_sign(&self, llmq_type: u8, id: &str, msg_hash: &str, quorum_hash: Option<&str>, submit: Option<bool>) -> Result<json::QuorumSignResult> {
-            let mut args = ["sign".into(), into_json(llmq_type)?, into_json(id)?, into_json(msg_hash)?, opt_into_json(quorum_hash)?, opt_into_json(submit)?];
-            self.call::<json::QuorumSignResult>("quorum", handle_defaults(&mut args, &[null()]))
+    fn get_quorum_sign(
+        &self,
+        llmq_type: u8,
+        id: &str,
+        msg_hash: &str,
+        quorum_hash: Option<&str>,
+        submit: Option<bool>,
+    ) -> Result<json::QuorumSignResult> {
+        let mut args = [
+            "sign".into(),
+            into_json(llmq_type)?,
+            into_json(id)?,
+            into_json(msg_hash)?,
+            opt_into_json(quorum_hash)?,
+            opt_into_json(submit)?,
+        ];
+        self.call::<json::QuorumSignResult>("quorum", handle_defaults(&mut args, &[null()]))
     }
 
     /// Returns the recovered signature for a previous threshold-signing message request
-    fn get_quorum_getrecsig(&self, llmq_type: u8, id: &str, msg_hash: &str) -> Result<json::QuorumSignature> {
-        let mut args = ["getrecsig".into(), into_json(llmq_type)?, into_json(id)?, into_json(msg_hash)?];
+    fn get_quorum_getrecsig(
+        &self,
+        llmq_type: u8,
+        id: &str,
+        msg_hash: &str,
+    ) -> Result<json::QuorumSignature> {
+        let mut args =
+            ["getrecsig".into(), into_json(llmq_type)?, into_json(id)?, into_json(msg_hash)?];
         self.call::<json::QuorumSignature>("quorum", handle_defaults(&mut args, &[null()]))
     }
 
     /// Checks for a recovered signature for a previous threshold-signing message request
     fn get_quorum_hasrecsig(&self, llmq_type: u8, id: &str, msg_hash: &str) -> Result<bool> {
-        let mut args = ["hasrecsig".into(), into_json(llmq_type)?, into_json(id)?, into_json(msg_hash)?];
+        let mut args =
+            ["hasrecsig".into(), into_json(llmq_type)?, into_json(id)?, into_json(msg_hash)?];
         self.call::<bool>("quorum", handle_defaults(&mut args, &[null()]))
     }
 
     /// Checks if there is a conflict for a threshold-signing message request
     fn get_quorum_isconflicting(&self, llmq_type: u8, id: &str, msg_hash: &str) -> Result<bool> {
-        let mut args = ["isconflicting".into(), into_json(llmq_type)?, into_json(id)?, into_json(msg_hash)?];
+        let mut args =
+            ["isconflicting".into(), into_json(llmq_type)?, into_json(id)?, into_json(msg_hash)?];
         self.call::<bool>("quorum", handle_defaults(&mut args, &[null()]))
     }
 
     /// Checks which quorums the given masternode is a member of
-    fn get_quorum_memberof(&self, pro_tx_hash: &str, scan_quorums_count: Option<u8>) -> Result<json::QuorumMemberOfResult> {
-        let mut args = ["memberof".into(), into_json(pro_tx_hash)?, opt_into_json(scan_quorums_count)?];
+    fn get_quorum_memberof(
+        &self,
+        pro_tx_hash: &str,
+        scan_quorums_count: Option<u8>,
+    ) -> Result<json::QuorumMemberOfResult> {
+        let mut args =
+            ["memberof".into(), into_json(pro_tx_hash)?, opt_into_json(scan_quorums_count)?];
         self.call::<json::QuorumMemberOfResult>("quorum", handle_defaults(&mut args, &[null()]))
     }
 
     /// Returns quorum rotation information
-    fn get_quorum_rotationinfo(&self, block_request_hash: &str, extra_share: Option<bool>, base_block_hash: Option<&str>) -> Result<json::QuorumRotationInfo> {
-        let mut args = ["rotationinfo".into(), into_json(block_request_hash)?, opt_into_json(extra_share)?, opt_into_json(base_block_hash)?];
-        self.call::<json::QuorumRotationInfo>("quorum", handle_defaults(&mut args, &[false.into(), "".into(), null()]))
+    fn get_quorum_rotationinfo(
+        &self,
+        block_request_hash: &str,
+        extra_share: Option<bool>,
+        base_block_hash: Option<&str>,
+    ) -> Result<json::QuorumRotationInfo> {
+        let mut args = [
+            "rotationinfo".into(),
+            into_json(block_request_hash)?,
+            opt_into_json(extra_share)?,
+            opt_into_json(base_block_hash)?,
+        ];
+        self.call::<json::QuorumRotationInfo>(
+            "quorum",
+            handle_defaults(&mut args, &[false.into(), "".into(), null()]),
+        )
     }
 
     /// Returns information about the quorum that would/should sign a request
@@ -1275,14 +1355,29 @@ pub trait RpcApi: Sized {
     }
 
     /// Tests if a quorum signature is valid for a request id and a message hash
-    fn get_quorum_verify(&self, llmq_type: u8, id: &str, msg_hash: &str, signature: &str, quorum_hash: Option<&str>, sign_height: Option<u32>) -> Result<bool> {
-            let mut args = ["verify".into(), into_json(llmq_type)?, into_json(id)?, into_json(msg_hash)?, into_json(signature)?, opt_into_json(quorum_hash)?, opt_into_json(sign_height)?];
-            self.call::<bool>("quorum", handle_defaults(&mut args, &[null()]))
+    fn get_quorum_verify(
+        &self,
+        llmq_type: u8,
+        id: &str,
+        msg_hash: &str,
+        signature: &str,
+        quorum_hash: Option<&str>,
+        sign_height: Option<u32>,
+    ) -> Result<bool> {
+        let mut args = [
+            "verify".into(),
+            into_json(llmq_type)?,
+            into_json(id)?,
+            into_json(msg_hash)?,
+            into_json(signature)?,
+            opt_into_json(quorum_hash)?,
+            opt_into_json(sign_height)?,
+        ];
+        self.call::<bool>("quorum", handle_defaults(&mut args, &[null()]))
     }
 
-    
     // --------------------------- ProTx -------------------------------
-   
+
     /// Returns a diff and a proof between two masternode list
     fn get_protx_diff(&self, base_block: u32, block: u32) -> Result<json::MasternodeListDiff> {
         let mut args = ["diff".into(), into_json(base_block)?, into_json(block)?];
@@ -1296,23 +1391,78 @@ pub trait RpcApi: Sized {
     }
 
     /// Returns a list of provider transactions
-    fn get_protx_list(&self, protx_type: Option<&str>, detailed: Option<bool>, height: Option<u32>) -> Result<json::ProTxList> {
-            let mut args = ["list".into(), opt_into_json(protx_type)?, opt_into_json(detailed)?, opt_into_json(height)?];
-            self.call::<json::ProTxList>("protx", handle_defaults(&mut args, &[null()]))
+    fn get_protx_list(
+        &self,
+        protx_type: Option<&str>,
+        detailed: Option<bool>,
+        height: Option<u32>,
+    ) -> Result<json::ProTxList> {
+        let mut args = [
+            "list".into(),
+            opt_into_json(protx_type)?,
+            opt_into_json(detailed)?,
+            opt_into_json(height)?,
+        ];
+        self.call::<json::ProTxList>("protx", handle_defaults(&mut args, &[null()]))
     }
 
     /// Creates a ProRegTx referencing an existing collateral and and sends it to the network
-    fn get_protx_register(&self, collateral_hash: &str, collateral_index: u32, ip_and_port: &str, owner_address: &str, operator_pub_key: &str, voting_address: &str, operator_reward: u32, payout_address: &str, fee_source_address: Option<&str>, submit: Option<bool>) -> Result<json::ProRegTxHash> {
-        let mut args = ["register".into(), into_json(collateral_hash)?, into_json(collateral_index)?, into_json(ip_and_port)?, into_json(owner_address)?, into_json(operator_pub_key)?, into_json(voting_address)?, into_json(operator_reward)?, into_json(payout_address)?, opt_into_json(fee_source_address)?, opt_into_json(submit)?];
+    fn get_protx_register(
+        &self,
+        collateral_hash: &str,
+        collateral_index: u32,
+        ip_and_port: &str,
+        owner_address: &str,
+        operator_pub_key: &str,
+        voting_address: &str,
+        operator_reward: u32,
+        payout_address: &str,
+        fee_source_address: Option<&str>,
+        submit: Option<bool>,
+    ) -> Result<json::ProRegTxHash> {
+        let mut args = [
+            "register".into(),
+            into_json(collateral_hash)?,
+            into_json(collateral_index)?,
+            into_json(ip_and_port)?,
+            into_json(owner_address)?,
+            into_json(operator_pub_key)?,
+            into_json(voting_address)?,
+            into_json(operator_reward)?,
+            into_json(payout_address)?,
+            opt_into_json(fee_source_address)?,
+            opt_into_json(submit)?,
+        ];
         self.call::<json::ProRegTxHash>("protx", handle_defaults(&mut args, &[null()]))
     }
 
     /// Creates and funds a ProRegTx with the 1,000 DASH necessary for a masternode and then sends it to the network
-    fn get_protx_register_fund(&self, collateral_address: &str, ip_and_port: &str, owner_address: &str, operator_pub_key: &str, voting_address: &str, operator_reward: u32, payout_address: &str, fund_address: Option<&str>, submit: Option<bool>) -> Result<json::ProRegTxHash> {
-        let mut args = ["register_fund".into(), into_json(collateral_address)?, into_json(ip_and_port)?, into_json(owner_address)?, into_json(operator_pub_key)?, into_json(voting_address)?, into_json(operator_reward)?, into_json(payout_address)?, opt_into_json(fund_address)?, opt_into_json(submit)?];
+    fn get_protx_register_fund(
+        &self,
+        collateral_address: &str,
+        ip_and_port: &str,
+        owner_address: &str,
+        operator_pub_key: &str,
+        voting_address: &str,
+        operator_reward: u32,
+        payout_address: &str,
+        fund_address: Option<&str>,
+        submit: Option<bool>,
+    ) -> Result<json::ProRegTxHash> {
+        let mut args = [
+            "register_fund".into(),
+            into_json(collateral_address)?,
+            into_json(ip_and_port)?,
+            into_json(owner_address)?,
+            into_json(operator_pub_key)?,
+            into_json(voting_address)?,
+            into_json(operator_reward)?,
+            into_json(payout_address)?,
+            opt_into_json(fund_address)?,
+            opt_into_json(submit)?,
+        ];
         self.call::<json::ProRegTxHash>("protx", handle_defaults(&mut args, &[null()]))
     }
-
 }
 
 /// Client implements a JSON-RPC client for the Dash Core daemon or compatible APIs.
