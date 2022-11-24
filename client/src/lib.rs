@@ -42,7 +42,9 @@ fn deserialize_hex<T: Decodable>(hex: &str) -> Result<T> {
     let mut reader = HexIterator::new(&hex)?;
     let object = Decodable::consensus_decode(&mut reader)?;
     if reader.read_u8().is_ok() {
-        Err(Error::BitcoinSerialization(bitcoin::consensus::encode::Error::ParseFailed("data not consumed entirely when explicitly deserializing")))
+        Err(Error::BitcoinSerialization(bitcoin::consensus::encode::Error::ParseFailed(
+            "data not consumed entirely when explicitly deserializing",
+        )))
     } else {
         Ok(object)
     }
