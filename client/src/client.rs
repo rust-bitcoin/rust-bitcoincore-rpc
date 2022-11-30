@@ -12,10 +12,11 @@ use std::collections::HashMap;
 use std::fs::File;
 use std::iter::FromIterator;
 use std::path::PathBuf;
+use std::str::FromStr;
+use std::sync::atomic;
 use std::{fmt, result};
 
 use crate::{bitcoin, deserialize_hex};
-use jsonrpc;
 use serde;
 use serde_json;
 
@@ -1195,12 +1196,14 @@ pub trait RpcApi: Sized {
 
 /// Client implements a JSON-RPC client for the Bitcoin Core daemon or compatible APIs.
 pub struct Client {
-    client: jsonrpc::client::Client,
+    url: String,
+    auth: Auth,
+    nonce: atomic::AtomicUsize,
 }
 
 impl fmt::Debug for Client {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "bitcoincore_rpc::Client({:?})", self.client)
+        write!(f, "bitcoincore_rpc::Client()")
     }
 }
 
@@ -1209,25 +1212,20 @@ impl Client {
     ///
     /// Can only return [Err] when using cookie authentication.
     pub fn new(url: &str, auth: Auth) -> Result<Self> {
-        let (user, pass) = auth.get_user_pass()?;
-        jsonrpc::client::Client::simple_http(url, user, pass)
-            .map(|client| Client {
-                client,
-            })
-            .map_err(|e| super::error::Error::JsonRpc(e.into()))
+        Ok(Self{
+            auth: auth,
+            url: String::from_str(url).unwrap(),
+            nonce: atomic::AtomicUsize::new(1),
+        })
     }
+}
 
-    /// Create a new Client using the given [jsonrpc::Client].
-    pub fn from_jsonrpc(client: jsonrpc::client::Client) -> Client {
-        Client {
-            client,
-        }
-    }
-
-    /// Get the underlying JSONRPC client.
-    pub fn get_jsonrpc_client(&self) -> &jsonrpc::client::Client {
-        &self.client
-    }
+fn auth_token(user: &String, password: &String) -> String {
+    let mut auth = String::new();
+    auth.push_str(user);
+    auth.push(':');
+    auth.push_str(password);
+    base64::encode(auth.as_bytes())
 }
 
 impl RpcApi for Client {
@@ -1245,14 +1243,44 @@ impl RpcApi for Client {
             })
             .map(|a| a.map_err(|e| Error::Json(e)))
             .collect::<Result<Vec<_>>>()?;
-        let req = self.client.build_request(&cmd, &raw_args);
-        if log_enabled!(Debug) {
-            debug!(target: "bitcoincore_rpc", "JSON-RPC request: {} {}", cmd, serde_json::Value::from(args));
+
+        let nonce = self.nonce.fetch_add(1, atomic::Ordering::Relaxed);
+        let body = jsonrpc::Request{
+            method: cmd,
+            params: raw_args.as_slice(),
+            id: serde_json::Value::from(nonce),
+            jsonrpc: Some("2.0"),
+        };
+        let id = body.id.clone();
+
+        let mut request = minreq::post(self.url.as_str())
+            .with_body(serde_json::to_vec(&body)?);
+
+        request = match &self.auth {
+            Auth::UserPass(user, pass) => request.with_header("Authorization", format!("Basic {}", auth_token(user, pass))),
+            Auth::CookieFile(_)=> {
+                let (user, pass) = self.auth.clone().get_user_pass()?;
+                request.with_header("Authorization", format!("Basic {}", auth_token(user.as_ref().unwrap(), pass.as_ref().unwrap())))
+            }
+            Auth::None => request,
+        };
+
+        let response = request.send();
+        let response = response.map_err(|e| Error::Http(e))?;
+
+        let buffer = response.as_bytes();
+        let jsonrpc_response_maybe: Result<jsonrpc::Response> = serde_json::from_slice(&buffer).map_err(|e| Error::Json(e));
+        log_response(cmd, &jsonrpc_response_maybe);
+        let jsonrpc_response = jsonrpc_response_maybe?;
+
+        if jsonrpc_response.jsonrpc.is_some() && jsonrpc_response.jsonrpc != Some(From::from("2.0")) {
+            return Err(Error::JsonRpc(jsonrpc::error::Error::VersionMismatch));
+        }
+        if jsonrpc_response.id != id {
+            return Err(Error::JsonRpc(jsonrpc::error::Error::NonceMismatch));
         }
 
-        let resp = self.client.send_request(req).map_err(Error::from);
-        log_response(cmd, &resp);
-        Ok(resp?.result()?)
+        jsonrpc_response.result().map_err(Error::JsonRpc)
     }
 }
 
