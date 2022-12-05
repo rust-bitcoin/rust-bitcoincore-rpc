@@ -561,7 +561,12 @@ pub struct GetRawTransactionResultVoutScriptPubKey {
     pub req_sigs: Option<usize>,
     #[serde(rename = "type")]
     pub type_: Option<ScriptPubkeyType>,
-    pub addresses: Option<Vec<Address>>,
+    // Deprecated in Bitcoin Core 22
+    #[serde(default)]
+    pub addresses: Vec<Address>,
+    // Added in Bitcoin Core 22
+    #[serde(default)]
+    pub address: Option<Address>,
 }
 
 impl GetRawTransactionResultVoutScriptPubKey {
