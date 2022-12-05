@@ -170,6 +170,7 @@ fn main() {
     test_key_pool_refill(&cl);
     test_create_raw_transaction(&cl);
     test_fund_raw_transaction(&cl);
+    test_bump_fee(&cl);
     test_test_mempool_accept(&cl);
     test_wallet_create_funded_psbt(&cl);
     test_wallet_process_psbt(&cl);
@@ -682,6 +683,27 @@ fn test_fund_raw_transaction(cl: &Client) {
     let tx = cl.create_raw_transaction_hex(&[], &output, Some(500_000), Some(true)).unwrap();
     let funded = cl.fund_raw_transaction(tx, Some(&options), Some(false)).unwrap();
     let _ = funded.transaction().unwrap();
+}
+
+fn test_bump_fee(cl: &Client) {
+    let addr = cl.get_new_address(None, None).unwrap();
+    let txid = cl.send_to_address(&addr, btc(1), None, None, None, Some(true), None, None).unwrap();
+
+    // bump without explicit fee rate
+    let bump_fee_result_1 = cl.bump_fee(&txid, None).unwrap();
+    assert!(bump_fee_result_1.origfee < bump_fee_result_1.fee);
+
+    // bump with explicit fee rate
+    let amount_per_vbyte = Amount::from_sat(500);
+    let new_fee_rate = json::FeeRate::per_vbyte(amount_per_vbyte);
+    let options = json::BumpFeeOptions {
+        fee_rate: Some(new_fee_rate),
+        replaceable: Some(true),
+        ..Default::default()
+    };
+    let bump_fee_result_2 = cl.bump_fee(&bump_fee_result_1.txid.unwrap(), Some(&options)).unwrap();
+    let vbytes = cl.get_mempool_entry(&bump_fee_result_2.txid.unwrap()).unwrap().vsize;
+    assert_eq!(bump_fee_result_2.fee, amount_per_vbyte * vbytes);
 }
 
 fn test_test_mempool_accept(cl: &Client) {

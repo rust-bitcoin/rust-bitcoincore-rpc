@@ -35,6 +35,37 @@ use std::fmt;
 
 //TODO(stevenroose) consider using a Time type
 
+/// A representation of a fee rate. Bitcoin Core uses different units in different
+/// versions. To avoid burdening the user with using the correct unit, this struct
+/// provides an umambiguous way to represent the fee rate, and the lib will perform
+/// the necessary conversions.
+#[derive(Copy, Clone, PartialEq, Eq, Debug, Default)]
+pub struct FeeRate(Amount);
+
+impl FeeRate {
+    /// Construct FeeRate from the amount per vbyte
+    pub fn per_vbyte(amount_per_vbyte: Amount) -> Self {
+        // internal representation is amount per vbyte
+        Self(amount_per_vbyte)
+    }
+
+    /// Construct FeeRate from the amount per kilo-vbyte
+    pub fn per_kvbyte(amount_per_kvbyte: Amount) -> Self {
+        // internal representation is amount per vbyte, so divide by 1000
+        Self::per_vbyte(amount_per_kvbyte / 1000)
+    }
+
+    pub fn to_sat_per_vbyte(&self) -> f64 {
+        // multiply by the number of decimals to get sat
+        self.0.as_sat() as f64
+    }
+
+    pub fn to_btc_per_kvbyte(&self) -> f64 {
+        // divide by 10^8 to get btc/vbyte, then multiply by 10^3 to get btc/kbyte
+        self.0.as_sat() as f64 / 100_000.0
+    }
+}
+
 /// A module used for serde serialization of bytes in hexadecimal format.
 ///
 /// The module is compatible with the serde attribute.
@@ -1827,6 +1858,69 @@ pub struct FundRawTransactionResult {
     pub change_position: i32,
 }
 
+#[derive(Clone, PartialEq, Eq, Debug, Default)]
+pub struct BumpFeeOptions {
+    /// Confirmation target in blocks.
+    pub conf_target: Option<u16>,
+    /// Specify a fee rate instead of relying on the built-in fee estimator.
+    pub fee_rate: Option<FeeRate>,
+    /// Whether this transaction could be replaced due to BIP125 (replace-by-fee)
+    pub replaceable: Option<bool>,
+    /// The fee estimate mode
+    pub estimate_mode: Option<EstimateMode>,
+}
+
+impl BumpFeeOptions {
+    pub fn to_serializable(&self, version: usize) -> SerializableBumpFeeOptions {
+        let fee_rate = self.fee_rate.map(|x| {
+            if version < 210000 {
+                x.to_btc_per_kvbyte()
+            } else {
+                x.to_sat_per_vbyte()
+            }
+        });
+
+        SerializableBumpFeeOptions {
+            fee_rate,
+            conf_target: self.conf_target,
+            replaceable: self.replaceable,
+            estimate_mode: self.estimate_mode,
+        }
+    }
+}
+
+#[derive(Serialize, Clone, PartialEq, Debug, Default)]
+#[serde(rename_all = "camelCase")]
+pub struct SerializableBumpFeeOptions {
+    #[serde(rename = "conf_target", skip_serializing_if = "Option::is_none")]
+    /// Confirmation target in blocks.
+    pub conf_target: Option<u16>,
+    /// Specify a fee rate instead of relying on the built-in fee estimator.
+    #[serde(rename = "fee_rate")]
+    pub fee_rate: Option<f64>,
+    /// Whether this transaction could be replaced due to BIP125 (replace-by-fee)
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub replaceable: Option<bool>,
+    /// The fee estimate mode
+    #[serde(rename = "estimate_mode", skip_serializing_if = "Option::is_none")]
+    pub estimate_mode: Option<EstimateMode>,
+}
+
+#[derive(Deserialize, Clone, PartialEq, Eq, Debug)]
+#[serde(rename_all = "camelCase")]
+pub struct BumpFeeResult {
+    /// The base64-encoded unsigned PSBT of the new transaction. Only returned when wallet private keys are disabled.
+    pub psbt: Option<String>,
+    /// The id of the new transaction. Only returned when wallet private keys are enabled.
+    pub txid: Option<bitcoin::Txid>,
+    #[serde(with = "bitcoin::util::amount::serde::as_btc")]
+    pub origfee: Amount,
+    #[serde(with = "bitcoin::util::amount::serde::as_btc")]
+    pub fee: Amount,
+    /// Errors encountered during processing.
+    pub errors: Vec<String>,
+}
+
 #[derive(Deserialize, Clone, PartialEq, Eq, Debug)]
 pub struct GetBalancesResultEntry {
     #[serde(with = "bitcoin::util::amount::serde::as_btc")]
@@ -2077,4 +2171,20 @@ where
         res.push(FromHex::from_hex(&h).map_err(D::Error::custom)?);
     }
     Ok(Some(res))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_fee_rate_conversion() {
+        let rate_1 = FeeRate::per_kvbyte(Amount::from_sat(10_000));
+        let rate_2 = FeeRate::per_vbyte(Amount::from_sat(10));
+        assert_eq!(rate_1, rate_2);
+
+        assert_eq!(rate_1.to_sat_per_vbyte(), 10.0);
+        // multiply 10.0 by 1e3 to get sat/kvbyte, then divide by 1e8 to get btc/kvbyte
+        assert_eq!(rate_1.to_btc_per_kvbyte(), 0.0001);
+    }
 }
