@@ -659,7 +659,7 @@ pub enum GetTransactionResultDetailCategory {
     Orphan,
 }
 
-#[derive(Clone, PartialEq, Eq, Debug, Deserialize)]
+#[derive(Clone, PartialEq, Eq, Debug, Serialize, Deserialize)]
 pub struct GetTransactionResultDetail {
     pub address: Option<Address>,
     pub category: GetTransactionResultDetailCategory,
@@ -672,7 +672,7 @@ pub struct GetTransactionResultDetail {
     pub abandoned: Option<bool>,
 }
 
-#[derive(Clone, PartialEq, Eq, Debug, Deserialize)]
+#[derive(Clone, PartialEq, Eq, Debug, Serialize, Deserialize)]
 pub struct WalletTxInfo {
     pub confirmations: i32,
     pub blockhash: Option<bitcoin::BlockHash>,
@@ -708,7 +708,7 @@ impl GetTransactionResult {
     }
 }
 
-#[derive(Clone, PartialEq, Eq, Debug, Deserialize)]
+#[derive(Clone, PartialEq, Eq, Debug, Serialize, Deserialize)]
 pub struct ListTransactionResult {
     #[serde(flatten)]
     pub info: WalletTxInfo,
