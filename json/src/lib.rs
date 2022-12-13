@@ -2084,7 +2084,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn list_transaction_result_round_trip() {
+    fn list_transaction_result_round_trip_error() {
         let value = ListTransactionResult {
             info: WalletTxInfo {
                 confirmations: 0,
@@ -2116,5 +2116,22 @@ mod tests {
         let json = serde_json::to_string(&value).unwrap();
 
         serde_json::from_str::<ListTransactionResult>(&json).unwrap();
+    }
+
+    #[test]
+    fn get_transaction_result_detail_ok() {
+        let value = GetTransactionResultDetail {
+            address: None,
+            category: GetTransactionResultDetailCategory::Immature,
+            amount: SignedAmount::from_sat(0),
+            label: None,
+            vout: 0,
+            fee: None,
+            abandoned: None,
+        };
+
+        let json = serde_json::to_string(&value).unwrap();
+
+        serde_json::from_str::<GetTransactionResultDetail>(&json).unwrap();
     }
 }
