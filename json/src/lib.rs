@@ -2078,3 +2078,43 @@ where
     }
     Ok(Some(res))
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn list_transaction_result_round_trip() {
+        let value = ListTransactionResult {
+            info: WalletTxInfo {
+                confirmations: 0,
+                blockhash: None,
+                blockindex: None,
+                blocktime: None,
+                blockheight: None,
+                txid: "0000000000000000000000000000000000000000000000000000000000000000"
+                    .parse()
+                    .unwrap(),
+                time: 0,
+                timereceived: 0,
+                bip125_replaceable: Bip125Replaceable::Unknown,
+                wallet_conflicts: Vec::new(),
+            },
+            detail: GetTransactionResultDetail {
+                address: None,
+                category: GetTransactionResultDetailCategory::Immature,
+                amount: SignedAmount::from_sat(0),
+                label: None,
+                vout: 0,
+                fee: None,
+                abandoned: None,
+            },
+            trusted: None,
+            comment: None,
+        };
+
+        let json = serde_json::to_string(&value).unwrap();
+
+        serde_json::from_str::<ListTransactionResult>(&json).unwrap();
+    }
+}
