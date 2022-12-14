@@ -24,5 +24,5 @@ log = "0.4.5"
 jsonrpc = "0.12.0"
 
 # Used for deserialization of JSON.
-serde = "1"
-serde_json = "1"
+serde = { version = "1.0.132", features = ["derive"] }
+serde_json = { version="1.0", features=["preserve_order"] }
