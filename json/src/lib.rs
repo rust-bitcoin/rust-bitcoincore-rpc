@@ -1823,8 +1823,8 @@ pub struct DecodePsbtResult {
     pub tx: DecodePsbtResultTransaction,
     #[serde(default)]
     pub global_xpubs: Vec<DecodePsbtResultGlobalXpubs>,
-    pub psbt_version: u32,
-    pub proprietary: Vec<DecodePsbtResultProprietary>,
+    pub psbt_version: Option<u32>,
+    pub proprietary: Option<Vec<DecodePsbtResultProprietary>>,
     pub unknown: HashMap<String, String>,
     pub inputs: Vec<DecodePsbtResultInput>,
     pub outputs: Vec<DecodePsbtResultOutput>,
