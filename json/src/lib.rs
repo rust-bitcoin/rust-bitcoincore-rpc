@@ -878,6 +878,8 @@ pub struct Bip9SoftforkInfo {
 pub enum SoftforkType {
     Buried,
     Bip9,
+    #[serde(other)]
+    Other,
 }
 
 /// Status of a softfork
@@ -2077,4 +2079,19 @@ where
         res.push(FromHex::from_hex(&h).map_err(D::Error::custom)?);
     }
     Ok(Some(res))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_softfork_type() {
+        let buried: SoftforkType = serde_json::from_str("\"buried\"").unwrap();
+        assert_eq!(buried, SoftforkType::Buried);
+        let bip9: SoftforkType = serde_json::from_str("\"bip9\"").unwrap();
+        assert_eq!(bip9, SoftforkType::Bip9);
+        let other: SoftforkType = serde_json::from_str("\"bip8\"").unwrap();
+        assert_eq!(other, SoftforkType::Other);
+    }
 }
