@@ -1699,6 +1699,20 @@ pub struct FinalizePsbtResult {
     pub complete: bool,
 }
 
+/// Model for decode transaction
+#[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
+pub struct DecodeRawTransactionResult {
+    pub txid: bitcoin::Txid,
+    pub hash: bitcoin::Wtxid,
+    pub size: u32,
+    pub vsize: u32,
+    pub weight: u32,
+    pub version: u32,
+    pub locktime: u32,
+    pub vin: Vec<GetRawTransactionResultVin>,
+    pub vout: Vec<GetRawTransactionResultVout>,
+}
+
 /// Models the result of "getchaintips"
 pub type GetChainTipsResult = Vec<GetChainTipsResultTip>;
 
