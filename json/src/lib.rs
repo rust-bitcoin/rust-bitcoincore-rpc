@@ -1783,9 +1783,45 @@ pub struct DecodePsbtResultInput {
     pub sha256_preimages: Option<HashMap<String, String>>,
     pub hash160_preimages: Option<HashMap<String, String>>,
     pub hash256_preimages: Option<HashMap<String, String>>,
+    pub taproot_key_path_sig: Option<Vec<u8>>,
+    pub taproot_script_path_sigs: Option<Vec<DecodePsbtResultTaprootScriptPathSig>>,
+    pub taproot_scripts: Option<Vec<DecodePsbtResultTaprootScript>>,
+    pub taproot_bip32_derivs: Option<DecodePsbtResultTaprootBip32Derivs>,
+    pub taproot_internal_key: Option<String>,
+    pub taproot_merkle_root: Option<String>,
     pub unknown: Option<HashMap<String, Vec<u8>>>,
     #[serde(default)]
     pub proprietary: Vec<DecodePsbtResultProprietary>,
+}
+
+#[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
+pub struct DecodePsbtResultTaprootScriptPathSig {
+    pub pubkey: String,
+    pub leaf_hash: String,
+    pub sig: String,
+}
+
+#[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
+pub struct DecodePsbtResultTaprootScript {
+    #[serde(with = "crate::serde_hex")]
+    pub script: Vec<u8>,
+    pub leaf_ver: u32,
+    pub control_blocks: Vec<Vec<u8>>,
+}
+
+#[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
+pub struct DecodePsbtResultTaprootTree {
+    pub depth: u32,
+    pub leaf_ver: u32,
+    pub script: String,
+}
+
+#[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
+pub struct DecodePsbtResultTaprootBip32Derivs {
+    pub pubkey: String,
+    pub master_fingerprint: String,
+    pub path: String,
+    pub leaf_hashes: Vec<String>,
 }
 
 #[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
@@ -1793,6 +1829,9 @@ pub struct DecodePsbtResultOutput {
     pub redeem_script: Option<DecodePsbtResultScript>,
     pub witness_script: Option<DecodePsbtResultScript>,
     pub bip32_derivs: Option<Vec<DecodePsbtResultBip32Derivs>>,
+    pub taproot_internal_key: Option<Vec<u8>>,
+    pub taproot_tree: Option<Vec<DecodePsbtResultTaprootTree>>,
+    pub taproot_bip32_derivs: Option<DecodePsbtResultTaprootBip32Derivs>,
     pub unknown: Option<HashMap<String, Vec<u8>>>,
     #[serde(default)]
     pub proprietary: Vec<DecodePsbtResultProprietary>,
