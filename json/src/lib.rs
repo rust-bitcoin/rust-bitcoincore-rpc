@@ -1132,7 +1132,7 @@ impl<'a> serde::Serialize for ImportMultiRequestScriptPubkey<'a> {
 /// Note: unlike in bitcoind, `timestamp` defaults to 0.
 #[derive(Clone, PartialEq, Eq, Debug, Default, Serialize)]
 pub struct ImportMultiRequest<'a> {
-    pub timestamp: ImportMultiRescanSince,
+    pub timestamp: Timestamp,
     /// If using descriptor, do not also provide address/scriptPubKey, scripts, or pubkeys.
     #[serde(rename = "desc", skip_serializing_if = "Option::is_none")]
     pub descriptor: Option<&'a str>,
@@ -1165,24 +1165,24 @@ pub struct ImportMultiOptions {
 }
 
 #[derive(Clone, PartialEq, Eq, Copy, Debug)]
-pub enum ImportMultiRescanSince {
+pub enum Timestamp {
     Now,
-    Timestamp(u64),
+    Time(u64),
 }
 
-impl serde::Serialize for ImportMultiRescanSince {
+impl serde::Serialize for Timestamp {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: serde::Serializer,
     {
         match *self {
-            ImportMultiRescanSince::Now => serializer.serialize_str("now"),
-            ImportMultiRescanSince::Timestamp(timestamp) => serializer.serialize_u64(timestamp),
+            Timestamp::Now => serializer.serialize_str("now"),
+            Timestamp::Time(timestamp) => serializer.serialize_u64(timestamp),
         }
     }
 }
 
-impl<'de> serde::Deserialize<'de> for ImportMultiRescanSince {
+impl<'de> serde::Deserialize<'de> for Timestamp {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where
         D: serde::Deserializer<'de>,
@@ -1190,7 +1190,7 @@ impl<'de> serde::Deserialize<'de> for ImportMultiRescanSince {
         use serde::de;
         struct Visitor;
         impl<'de> de::Visitor<'de> for Visitor {
-            type Value = ImportMultiRescanSince;
+            type Value = Timestamp;
 
             fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
                 write!(formatter, "unix timestamp or 'now'")
@@ -1200,7 +1200,7 @@ impl<'de> serde::Deserialize<'de> for ImportMultiRescanSince {
             where
                 E: de::Error,
             {
-                Ok(ImportMultiRescanSince::Timestamp(value))
+                Ok(Timestamp::Time(value))
             }
 
             fn visit_str<E>(self, value: &str) -> Result<Self::Value, E>
@@ -1208,7 +1208,7 @@ impl<'de> serde::Deserialize<'de> for ImportMultiRescanSince {
                 E: de::Error,
             {
                 if value == "now" {
-                    Ok(ImportMultiRescanSince::Now)
+                    Ok(Timestamp::Now)
                 } else {
                     Err(de::Error::custom(format!(
                         "invalid str '{}', expecting 'now' or unix timestamp",
@@ -1221,21 +1221,21 @@ impl<'de> serde::Deserialize<'de> for ImportMultiRescanSince {
     }
 }
 
-impl Default for ImportMultiRescanSince {
+impl Default for Timestamp {
     fn default() -> Self {
-        ImportMultiRescanSince::Timestamp(0)
+        Timestamp::Time(0)
     }
 }
 
-impl From<u64> for ImportMultiRescanSince {
-    fn from(timestamp: u64) -> Self {
-        ImportMultiRescanSince::Timestamp(timestamp)
+impl From<u64> for Timestamp {
+    fn from(t: u64) -> Self {
+        Timestamp::Time(t)
     }
 }
 
-impl From<Option<u64>> for ImportMultiRescanSince {
+impl From<Option<u64>> for Timestamp {
     fn from(timestamp: Option<u64>) -> Self {
-        timestamp.map_or(ImportMultiRescanSince::Now, ImportMultiRescanSince::Timestamp)
+        timestamp.map_or(Timestamp::Now, Timestamp::Time)
     }
 }
 
@@ -1251,6 +1251,24 @@ pub struct ImportMultiResult {
     #[serde(default)]
     pub warnings: Vec<String>,
     pub error: Option<ImportMultiResultError>,
+}
+
+/// A import request for importdescriptors.
+#[derive(Clone, PartialEq, Eq, Debug, Default, Serialize)]
+pub struct ImportDescriptors<'a> {
+    #[serde(rename = "desc")]
+    pub descriptor: &'a str,
+    pub timestamp: Timestamp,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub active: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub range: Option<(usize, usize)>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub next_index: Option<usize>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub internal: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub label: Option<&'a str>,
 }
 
 /// Progress toward rejecting pre-softfork blocks
