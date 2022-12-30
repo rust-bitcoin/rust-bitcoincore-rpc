@@ -785,6 +785,16 @@ pub trait RpcApi: Sized {
         deserialize_hex(&hex)
     }
 
+    fn decode_raw_transaction<R: RawTx>(
+        &self,
+        tx: R,
+        is_witness: Option<bool>,
+    ) -> Result<json::DecodeRawTransactionResult> {
+        let mut args = [tx.raw_hex().into(), opt_into_json(is_witness)?];
+        let defaults = [null()];
+        self.call("decoderawtransaction", handle_defaults(&mut args, &defaults))
+    }
+
     fn fund_raw_transaction<R: RawTx>(
         &self,
         tx: R,

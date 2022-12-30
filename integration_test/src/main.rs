@@ -169,6 +169,7 @@ fn main() {
     test_invalidate_block_reconsider_block(&cl);
     test_key_pool_refill(&cl);
     test_create_raw_transaction(&cl);
+    test_decode_raw_transaction(&cl);
     test_fund_raw_transaction(&cl);
     test_test_mempool_accept(&cl);
     test_wallet_create_funded_psbt(&cl);
@@ -644,6 +645,35 @@ fn test_create_raw_transaction(cl: &Client) {
     let hex = cl.create_raw_transaction_hex(&[input], &output, Some(500_000), Some(true)).unwrap();
     assert_eq!(tx, deserialize(&Vec::<u8>::from_hex(&hex).unwrap()).unwrap());
     assert_eq!(hex, serialize(&tx).to_hex());
+}
+
+fn test_decode_raw_transaction(cl: &Client) {
+    let options = json::ListUnspentQueryOptions {
+        minimum_amount: Some(btc(2)),
+        ..Default::default()
+    };
+    let unspent = cl.list_unspent(Some(6), None, None, None, Some(options)).unwrap();
+    let unspent = unspent.into_iter().nth(0).unwrap();
+
+    let input = json::CreateRawTransactionInput {
+        txid: unspent.txid,
+        vout: unspent.vout,
+        sequence: None,
+    };
+    let mut output = HashMap::new();
+    output.insert(RANDOM_ADDRESS.to_string(), btc(1));
+
+    let tx =
+        cl.create_raw_transaction(&[input.clone()], &output, Some(500_000), Some(true)).unwrap();
+    let hex = cl.create_raw_transaction_hex(&[input], &output, Some(500_000), Some(true)).unwrap();
+
+    let decoded_transaction = cl.decode_raw_transaction(hex, None).unwrap();
+
+    assert_eq!(tx.txid(), decoded_transaction.txid);
+    assert_eq!(500_000, decoded_transaction.locktime);
+
+    assert_eq!(decoded_transaction.vin[0].txid.unwrap(), unspent.txid);
+    assert_eq!(decoded_transaction.vout[0].clone().value, btc(1));
 }
 
 fn test_fund_raw_transaction(cl: &Client) {
