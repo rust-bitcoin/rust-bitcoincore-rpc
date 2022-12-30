@@ -1139,6 +1139,10 @@ pub trait RpcApi: Sized {
         self.call("combinepsbt", &[into_json(psbts)?])
     }
 
+    fn combine_raw_transaction(&self, hex_strings: &[String]) -> Result<String> {
+        self.call("combinerawtransaction", &[into_json(hex_strings)?])
+    }
+
     fn finalize_psbt(&self, psbt: &str, extract: Option<bool>) -> Result<json::FinalizePsbtResult> {
         let mut args = [into_json(psbt)?, opt_into_json(extract)?];
         self.call("finalizepsbt", handle_defaults(&mut args, &[true.into()]))
