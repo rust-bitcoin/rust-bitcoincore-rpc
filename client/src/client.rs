@@ -34,8 +34,10 @@ use crate::queryable;
 /// crate-specific Error type;
 pub type Result<T> = result::Result<T, Error>;
 
+/// Outpoint that serializes and deserializes as a map, instead of a string,
+/// for use as RPC arguments
 #[derive(Clone, Debug, Serialize, Deserialize)]
-struct JsonOutPoint {
+pub struct JsonOutPoint {
     pub txid: bitcoin::Txid,
     pub vout: u32,
 }
