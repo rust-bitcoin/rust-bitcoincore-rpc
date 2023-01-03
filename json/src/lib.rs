@@ -1255,9 +1255,9 @@ pub struct ImportMultiResult {
 
 /// A import request for importdescriptors.
 #[derive(Clone, PartialEq, Eq, Debug, Default, Deserialize, Serialize)]
-pub struct ImportDescriptors<'a> {
+pub struct ImportDescriptors {
     #[serde(rename = "desc")]
-    pub descriptor: &'a str,
+    pub descriptor: String,
     pub timestamp: Timestamp,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub active: Option<bool>,
@@ -1268,7 +1268,7 @@ pub struct ImportDescriptors<'a> {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub internal: Option<bool>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub label: Option<&'a str>,
+    pub label: Option<String>,
 }
 
 /// Progress toward rejecting pre-softfork blocks
