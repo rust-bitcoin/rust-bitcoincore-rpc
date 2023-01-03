@@ -1254,7 +1254,7 @@ pub struct ImportMultiResult {
 }
 
 /// A import request for importdescriptors.
-#[derive(Clone, PartialEq, Eq, Debug, Default, Serialize)]
+#[derive(Clone, PartialEq, Eq, Debug, Default, Deserialize, Serialize)]
 pub struct ImportDescriptors<'a> {
     #[serde(rename = "desc")]
     pub descriptor: &'a str,
