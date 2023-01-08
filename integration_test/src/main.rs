@@ -27,8 +27,8 @@ use dashcore::hashes::hex::{FromHex, ToHex};
 use dashcore::hashes::Hash;
 use dashcore::secp256k1;
 use dashcore::{
-    Address, Amount, Network, OutPoint, PrivateKey, Script, EcdsaSighashType, SignedAmount, Transaction,
-    TxIn, TxOut, Txid, Witness,
+    Address, Amount, EcdsaSighashType, Network, OutPoint, PrivateKey, Script, SignedAmount,
+    Transaction, TxIn, TxOut, Txid, Witness,
 };
 use dashcore_rpc::dashcore_rpc_json::{
     GetBlockTemplateModes, GetBlockTemplateRules, ScanTxOutRequest,
@@ -237,6 +237,13 @@ fn main() {
     test_get_protx_list(&cl);
     test_get_protx_register(&cl);
     test_get_protx_register_fund(&cl);
+    test_get_protx_register_prepare(&cl);
+    test_get_protx_register_submit(&cl);
+    test_get_protx_revoke(&cl);
+    test_get_protx_update_registrar(&cl);
+    test_get_protx_update_service(&cl);
+    test_get_verifychainlock(&cl);
+    test_get_verifyislock(&cl);
 }
 
 fn test_get_network_info(cl: &Client) {
@@ -620,8 +627,9 @@ fn test_sign_raw_transaction_with_send_raw_transaction(cl: &Client) {
         }],
     };
 
-    let res =
-        cl.sign_raw_transaction_with_key(&tx, &[sk], None, Some(EcdsaSighashType::All.into())).unwrap();
+    let res = cl
+        .sign_raw_transaction_with_key(&tx, &[sk], None, Some(EcdsaSighashType::All.into()))
+        .unwrap();
     assert!(res.complete);
     let _ = cl.send_raw_transaction(&res.transaction().unwrap()).unwrap();
 }
@@ -1105,11 +1113,7 @@ fn test_add_ban(cl: &Client) {
     let res = cl.list_banned().unwrap();
     assert_eq!(res.len(), 0);
 
-    assert_error_message!(
-        cl.add_ban("INVALID_STRING", 0, false),
-        -30,
-        "Error: Invalid IP/Subnet"
-    );
+    assert_error_message!(cl.add_ban("INVALID_STRING", 0, false), -30, "Error: Invalid IP/Subnet");
 }
 
 fn test_set_network_active(cl: &Client) {
@@ -1161,7 +1165,6 @@ fn test_stop(cl: Client) {
     println!("Stopping: '{}'", cl.stop().unwrap());
 }
 
-
 // ---------------------- Masternode RPC tests---------------------
 
 fn test_get_masternode_count(cl: &Client) {
@@ -1186,7 +1189,10 @@ fn test_get_masternode_payments(cl: &Client) {
     assert!(masternode_payments[0].masternodes[0].amount > 0);
     assert!(masternode_payments[0].masternodes[0].payees[0].amount > 0);
     assert_eq!(masternode_payments[0].amount, masternode_payments[0].masternodes[0].amount);
-    assert_eq!(masternode_payments[0].amount, masternode_payments[0].masternodes[0].payees[0].amount);
+    assert_eq!(
+        masternode_payments[0].amount,
+        masternode_payments[0].masternodes[0].payees[0].amount
+    );
 }
 
 fn test_get_masternode_status(cl: &Client) {
@@ -1197,7 +1203,6 @@ fn test_get_masternode_winners(cl: &Client) {
     let masternode_winners = rpc.get_masternode_winners(None, None).unwrap();
 }
 
-
 // ---------------------- Quorum RPC tests---------------------
 
 fn test_get_quorum_list(cl: &Client) {
@@ -1205,7 +1210,13 @@ fn test_get_quorum_list(cl: &Client) {
 }
 
 fn test_get_quorum_info(cl: &Client) {
-    let quorum_info = rpc.get_quorum_info("1", "000000000c9eddd5d2a707281b7e30d5aac974dac600ff10f01937e1ca36066f", None).unwrap();
+    let quorum_info = rpc
+        .get_quorum_info(
+            "1",
+            "000000000c9eddd5d2a707281b7e30d5aac974dac600ff10f01937e1ca36066f",
+            None,
+        )
+        .unwrap();
     assert!(quorum_info.height > 0);
     assert!(quorum_info.quorum_index >= 0);
     assert!(quorum_info.members.len() >= 0);
@@ -1220,32 +1231,74 @@ fn test_get_quorum_dkgstatus(cl: &Client) {
 }
 
 fn test_get_quorum_sign(cl: &Client) {
-    let quorum_dkgstatus = rpc.get_quorum_sign(1, "abcd1234abcd1234abcd1234abcd1234abcd1234abcd1234abcd1234abcd1234", "51c11d287dfa85aef3eebb5420834c8e443e01d15c0b0a8e397d67e2e51aa239", None, None).unwrap();
+    let quorum_dkgstatus = rpc
+        .get_quorum_sign(
+            1,
+            "abcd1234abcd1234abcd1234abcd1234abcd1234abcd1234abcd1234abcd1234",
+            "51c11d287dfa85aef3eebb5420834c8e443e01d15c0b0a8e397d67e2e51aa239",
+            None,
+            None,
+        )
+        .unwrap();
 }
 
 fn test_get_quorum_getrecsig(cl: &Client) {
-    let quorum_getrecsig = rpc.get_quorum_getrecsig(1, "abcd1234abcd1234abcd1234abcd1234abcd1234abcd1234abcd1234abcd1234", "51c11d287dfa85aef3eebb5420834c8e443e01d15c0b0a8e397d67e2e51aa239").unwrap();
+    let quorum_getrecsig = rpc
+        .get_quorum_getrecsig(
+            1,
+            "abcd1234abcd1234abcd1234abcd1234abcd1234abcd1234abcd1234abcd1234",
+            "51c11d287dfa85aef3eebb5420834c8e443e01d15c0b0a8e397d67e2e51aa239",
+        )
+        .unwrap();
 }
 
 fn test_get_quorum_hasrecsig(cl: &Client) {
-    let quorum_hasrecsig = rpc.get_quorum_hasrecsig(1, "abcd1234abcd1234abcd1234abcd1234abcd1234abcd1234abcd1234abcd1234", "51c11d287dfa85aef3eebb5420834c8e443e01d15c0b0a8e397d67e2e51aa239").unwrap();
+    let quorum_hasrecsig = rpc
+        .get_quorum_hasrecsig(
+            1,
+            "abcd1234abcd1234abcd1234abcd1234abcd1234abcd1234abcd1234abcd1234",
+            "51c11d287dfa85aef3eebb5420834c8e443e01d15c0b0a8e397d67e2e51aa239",
+        )
+        .unwrap();
 }
 
 fn test_get_quorum_isconflicting(cl: &Client) {
-    let quorum_isconflicting = rpc.get_quorum_isconflicting(1, "abcd1234abcd1234abcd1234abcd1234abcd1234abcd1234abcd1234abcd1234", "51c11d287dfa85aef3eebb5420834c8e443e01d15c0b0a8e397d67e2e51aa239").unwrap();
+    let quorum_isconflicting = rpc
+        .get_quorum_isconflicting(
+            1,
+            "abcd1234abcd1234abcd1234abcd1234abcd1234abcd1234abcd1234abcd1234",
+            "51c11d287dfa85aef3eebb5420834c8e443e01d15c0b0a8e397d67e2e51aa239",
+        )
+        .unwrap();
 }
 
 fn test_get_quorum_memberof(cl: &Client) {
-    let quorum_memberof = rpc.get_quorum_memberof("39c07d2c9c6d0ead56f52726b63c15e295cb5c3ecf7fe1fefcfb23b2e3cfed1f", Some(1)).unwrap();
+    let quorum_memberof = rpc
+        .get_quorum_memberof(
+            "39c07d2c9c6d0ead56f52726b63c15e295cb5c3ecf7fe1fefcfb23b2e3cfed1f",
+            Some(1),
+        )
+        .unwrap();
     assert!(quorum_memberof[0].height > 0);
 }
 
 fn test_get_quorum_rotationinfo(cl: &Client) {
-    let quorum_rotationinfo = rpc.get_quorum_rotationinfo("0000012197b7ca6360af3756c6a49c217dbbdf8b595fd55e0fcef7ffcd546044", None, None).unwrap();
+    let quorum_rotationinfo = rpc
+        .get_quorum_rotationinfo(
+            "0000012197b7ca6360af3756c6a49c217dbbdf8b595fd55e0fcef7ffcd546044",
+            None,
+            None,
+        )
+        .unwrap();
 }
 
 fn test_get_quorum_selectquorum(cl: &Client) {
-    let quorum_selectquorum = rpc.get_quorum_selectquorum(1, "b95205c3bba72e9edfbe7380ec91fe5a97e16a189e28f39b03c6822757ad1a34").unwrap();
+    let quorum_selectquorum = rpc
+        .get_quorum_selectquorum(
+            1,
+            "b95205c3bba72e9edfbe7380ec91fe5a97e16a189e28f39b03c6822757ad1a34",
+        )
+        .unwrap();
 }
 
 fn test_get_quorum_verify(cl: &Client) {
@@ -1271,7 +1324,9 @@ fn test_get_protx_diff(cl: &Client) {
 }
 
 fn test_get_protx_info(cl: &Client) {
-    let protx_info = rpc.get_protx_info("000000000c9eddd5d2a707281b7e30d5aac974dac600ff10f01937e1ca36066f").unwrap();
+    let protx_info = rpc
+        .get_protx_info("000000000c9eddd5d2a707281b7e30d5aac974dac600ff10f01937e1ca36066f")
+        .unwrap();
     assert!(protx_info.collateralIndex >= 0);
     assert!(protx_info.operatorReward >= 0);
 }
@@ -1286,4 +1341,47 @@ fn test_get_protx_register(cl: &Client) {
 
 fn test_get_protx_register_fund(cl: &Client) {
     let protx_register_fund = rpc.get_protx_register_fund("yakx4mMRptKhgfjedNzX5FGQq7kSSBF2e7", "3.4.5.6:3456", "yURczr3qY31xkQZfFu8eZvKz19eAEPQxsd", "0e02146e9c34cfbcb3f3037574a1abb35525e2ca0c3c6901dbf82ac591e30218d1711223b7ca956edf39f3d984d06d51", "yURczr3qY31xkQZfFu8eZvKz19eAEPQxsd", 5, "yUYTxqjpCfAAK4vgxXtBPywRBtZqsxN7Vy", Some("yRMFHxcJ2aS2vfo5whhE2Gg73dfQVm8LAF"), Some(false)).unwrap();
+}
+
+fn test_get_protx_register_prepare(cl: &Client) {
+    let protx_register_prepare = rpc.get_protx_register_prepare("df41e398bb245e973340d434d386f431dbd69735a575721b0b6833856e7d31ec", 1, "9.8.7.6:9876", "yemjhGQ99V5ayJMjoyGGPtxteahii6G1Jz", "06849865d01e4f73a6d5a025117e48f50b897e14235800501c8bfb8a6365cc8dbf5ddb67a3635d0f1dcc7d46a7ee280c", "yemjhGQ99V5ayJMjoyGGPtxteahii6G1Jz", 1.2, "yjJJLkYDUN6X8gWjXbCoKEXoiLeKxxMMRt", None).unwrap();
+}
+
+fn test_get_protx_register_submit(cl: &Client) {
+    let protx_register_submit = rpc.get_protx_register_submit("03000100012d988526d5d1efd32320023c92eff09c2963dcb021b0de9761", "H90IvqVtFjZkwLJb08yMEgGixs0/FpcdvwImBcir4cYLJhD3pdX+lKD2GsPl6KNxghVXNk5/HpOdBoWAHo9u++Y=").unwrap();
+}
+
+fn test_get_protx_revoke(cl: &Client) {
+    let protx_revoke = rpc
+        .get_protx_revoke(
+            "ba1b3330e16a0876b7a186e7ceb689f03ec646e611e91d7139de021bbf13afdd",
+            "4da7e1ea30fb9e55c73ad23df0b9d3d34342acb24facf4b19420e1a26ae272d1",
+            1,
+            None,
+        )
+        .unwrap();
+}
+
+fn test_get_protx_update_registrar(cl: &Client) {
+    let protx_update_registrar = rpc.get_protx_update_registrar("ba1b3330e16a0876b7a186e7ceb689f03ec646e611e91d7139de021bbf13afdd", "0e02146e9c34cfbcb3f3037574a1abb35525e2ca0c3c6901dbf82ac591e30218d1711223b7ca956edf39f3d984d06d51", "yX2cDS4kcJ4LK4uq9Hd4TG7kURV3sGLZrw", "yakx4mMRptKhgfjedNzX5FGQq7kSSBF2e7", None).unwrap();
+}
+
+fn test_get_protx_update_service(cl: &Client) {
+    let protx_update_service = rpc
+        .get_protx_update_service(
+            "ba1b3330e16a0876b7a186e7ceb689f03ec646e611e91d7139de021bbf13afdd",
+            "4.3.2.1:4321",
+            "4da7e1ea30fb9e55c73ad23df0b9d3d34342acb24facf4b19420e1a26ae272d1",
+            None,
+            None,
+        )
+        .unwrap();
+}
+
+fn test_get_verifychainlock(cl: &Client) {
+    let verifychainlock = rpc.get_verifychainlock( "00000036d5c520be6e9a32d3829efc983a7b5e88052bf138f80a2b3988689a24", "97ec34efd1615b84af62495e54024880752f57790cf450ae974b80002440963592d96826e24f109e6c149411b70bb9a0035443752368590adae60365cf4251464e0423c1263e9c56a33eae9be9e9c79a117151b2173bcee93497008cace8d793", None).unwrap();
+}
+
+fn test_get_verifyislock(cl: &Client) {
+    let verifychainlock = rpc.get_verifyislock("d0b1a9c70fdfff6bf7f6cbe3d1fe33a4ca44ceb17059b6381a4ac25d9c9b6495", "8b5174d0e95b5642ebec23c3fe8f0bbf8f6993502f4210322871bba0e818ff3b",  "97ec34efd1615b84af62495e54024880752f57790cf450ae974b80002440963592d96826e24f109e6c149411b70bb9a0035443752368590adae60365cf4251464e0423c1263e9c56a33eae9be9e9c79a117151b2173bcee93497008cace8d793", None).unwrap();
 }

@@ -1302,16 +1302,60 @@ pub trait RpcApi: Sized {
     }
 
     /// Creates a ProRegTx referencing an existing collateral and and sends it to the network
-    fn get_protx_register(&self, collateral_hash: &str, collateral_index: u32, ip_and_port: &str, owner_address: &str, operator_pub_key: &str, voting_address: &str, operator_reward: u32, payout_address: &str, fee_source_address: Option<&str>, submit: Option<bool>) -> Result<json::ProRegTxHash> {
+    fn get_protx_register(&self, collateral_hash: &str, collateral_index: u32, ip_and_port: &str, owner_address: dashcore::Address, operator_pub_key: &str, voting_address: dashcore::Address, operator_reward: u32, payout_address: dashcore::Address, fee_source_address: Option<dashcore::Address>, submit: Option<bool>) -> Result<json::ProRegTxHash> {
         let mut args = ["register".into(), into_json(collateral_hash)?, into_json(collateral_index)?, into_json(ip_and_port)?, into_json(owner_address)?, into_json(operator_pub_key)?, into_json(voting_address)?, into_json(operator_reward)?, into_json(payout_address)?, opt_into_json(fee_source_address)?, opt_into_json(submit)?];
         self.call::<json::ProRegTxHash>("protx", handle_defaults(&mut args, &[null()]))
     }
 
     /// Creates and funds a ProRegTx with the 1,000 DASH necessary for a masternode and then sends it to the network
-    fn get_protx_register_fund(&self, collateral_address: &str, ip_and_port: &str, owner_address: &str, operator_pub_key: &str, voting_address: &str, operator_reward: u32, payout_address: &str, fund_address: Option<&str>, submit: Option<bool>) -> Result<json::ProRegTxHash> {
+    fn get_protx_register_fund(&self, collateral_address: dashcore::Address, ip_and_port: &str, owner_address: dashcore::Address, operator_pub_key: &str, voting_address: dashcore::Address, operator_reward: u32, payout_address: dashcore::Address, fund_address: Option<dashcore::Address>, submit: Option<bool>) -> Result<json::ProRegTxHash> {
         let mut args = ["register_fund".into(), into_json(collateral_address)?, into_json(ip_and_port)?, into_json(owner_address)?, into_json(operator_pub_key)?, into_json(voting_address)?, into_json(operator_reward)?, into_json(payout_address)?, opt_into_json(fund_address)?, opt_into_json(submit)?];
         self.call::<json::ProRegTxHash>("protx", handle_defaults(&mut args, &[null()]))
     }
+
+    /// Creates an unsigned ProTx and a message that must be signed externally
+    fn get_protx_register_prepare(&self, collateral_hash: &str, collateral_index: u32, ip_and_port: &str, owner_address: dashcore::Address, operator_pub_key: &str, voting_address: dashcore::Address, operator_reward: u32, payout_address: dashcore::Address, fee_source_address: Option<dashcore::Address>) -> Result<json::ProTxRegPrepare> {
+        let mut args = ["register_prepare".into(), into_json(collateral_address)?, into_json(collateral_index)?, into_json(ip_and_port)?, into_json(owner_address)?, into_json(operator_pub_key)?, into_json(voting_address)?, into_json(operator_reward)?, into_json(payout_address)?, opt_into_json(fee_source_address)?];
+        self.call::<json::ProTxRegPrepare>("protx", handle_defaults(&mut args, &[null()]))
+    }
+
+    /// Combines the unsigned ProTx and a signature of the signMessage, signs all inputs which were added to 
+    /// cover fees and submits the resulting transaction to the network
+    fn get_protx_register_submit(&self, tx: &str, sig: &str) -> Result<json::ProRegTxHash> {
+        let mut args = ["register_submit".into(), into_json(tx)?, into_json(sig)?];
+        self.call::<json::ProRegTxHash>("protx", handle_defaults(&mut args, &[null()]))
+    }
+
+    /// Creates and sends a ProUpRevTx to the network
+    fn get_protx_revoke(&self, pro_tx_hash: &str, operator_pub_key: &str, reason: json::ProTxRevokeReason, fee_source_address: Option<dashcore::Address>) -> Result<json::ProRegTxHash> {
+        let mut args = ["revoke".into(), into_json(pro_tx_hash)?, into_json(operator_pub_key)?, into_json(reason)?, opt_into_json(fee_source_address)?];
+        self.call::<json::ProRegTxHash>("protx", handle_defaults(&mut args, &[null()]))
+    }
+
+    /// Creates and sends a ProUpRegTx to the network
+    fn get_protx_update_registrar(&self, pro_tx_hash: &str, operator_pub_key: &str, voting_address: dashcore::Address, payout_address: Option<dashcore::Address>, fee_source_address: Option<dashcore::Address>) -> Result<json::ProRegTxHash> {
+        let mut args = ["update_registrar".into(), into_json(pro_tx_hash)?, into_json(operator_pub_key)?, into_json(voting_address)?, opt_into_json(payout_address)?, opt_into_json(fee_source_address)?];
+        self.call::<json::ProRegTxHash>("protx", handle_defaults(&mut args, &[null()]))
+    }
+
+    /// Creates and sends a ProUpServTx to the network
+    fn get_protx_update_service(&self, pro_tx_hash: &str, ip_and_port: &str, operator_key: &str, operator_payout_address: Option<dashcore::Address>, fee_source_address: Option<dashcore::Address>) -> Result<json::ProRegTxHash> {
+        let mut args = ["update_service".into(), into_json(pro_tx_hash)?, into_json(ip_and_port)?, into_json(operator_key)?, opt_into_json(payout_address)?, opt_into_json(fee_source_address)?];
+        self.call::<json::ProRegTxHash>("protx", handle_defaults(&mut args, &[null()]))
+    }
+
+    /// Tests if a quorum signature is valid for a ChainLock
+    fn get_verifychainlock(&self, block_hash: &str, signature: &str, block_height: Option<u32>) -> Result<bool> {
+        let mut args = [into_json(block_hash)?, into_json(signature)?, opt_into_json(block_height)?];
+        self.call::<bool>("verifychainlock", handle_defaults(&mut args, &[null()]))
+    }
+
+    /// Tests  if a quorum signature is valid for an InstantSend Lock
+    fn get_verifyislock(&self, id: &str, tx_id: &str, signature: &str, max_height: Option<u32>) -> Result<bool> {
+        let mut args = [into_json(id)?, into_json(tx_id)?, into_json(signature)?, opt_into_json(max_height)?];
+        self.call::<bool>("verifyislock", handle_defaults(&mut args, &[null()]))
+    }
+
 
 }
 

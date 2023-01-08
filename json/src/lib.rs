@@ -2120,7 +2120,8 @@ pub struct BLS {
     #[serde_as(as = "Bytes")]
     pub secret: Vec<u8>,
     #[serde_as(as = "Bytes")]
-    pub public: Vec<u8>
+    pub public: Vec<u8>,
+}
     
 // --------------------------- Quorum -------------------------------
 
@@ -2454,6 +2455,36 @@ pub enum ProTxList{
     Info(Vec<ProTxInfo>)
 }
 
+#[serde_as]
+#[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ProTxRegPrepare {
+    pub tx: ProRegTxHash,
+    #[serde_as(as = "Bytes")]
+    pub collateral_address: Vec<u8>,
+    #[serde_as(as = "Bytes")]
+    pub sign_message: Vec<u8>
+}
+
+#[serde(untagged)]
+#[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
+pub enum ProTxRevokeReason {
+    #[serde(deserialize_with = "deserialize_protx_revoke_reason")]
+    NOT_SPECIFIED,
+    
+    #[serde(deserialize_with = "deserialize_protx_revoke_reason")]
+    TERMINATION_OF_SERVICE,
+
+    #[serde(deserialize_with = "deserialize_protx_revoke_reason")]
+    COMPROMISED_KEYS,
+
+    #[serde(deserialize_with = "deserialize_protx_revoke_reason")]
+    CHANGE_OF_KEYS,
+
+    #[serde(deserialize_with = "deserialize_protx_revoke_reason")]
+    NOT_RECOGNISED,
+}
+
 // Custom deserializer functions.
 
 /// deserialize_hex_array_opt deserializes a vector of hex-encoded byte arrays.
@@ -2546,4 +2577,25 @@ where
             )
         }
     }
+}
+
+
+
+/// deserialize_protx_revoke_reason deserializes a ProTx revoke reason
+fn deserialize_protx_revoke_reason<'de, D>(deserializer: D) -> Result<u8, D::Error>
+where
+    D: serde::Deserializer<'de>,
+{
+    let input_value = IntegerOrString::deserialize(deserializer)?;
+    let value: u8 = IntegerOrString::Integer(input_value);
+    
+    Ok(
+        match value {
+        0 => ProTxRevokeReason::NOT_SPECIFIED,
+        1 => ProTxRevokeReason::TERMINATION_OF_SERVICE,
+        2 => ProTxRevokeReason::COMPROMISED_KEYS,
+        3 => ProTxRevokeReason::CHANGE_OF_KEYS,
+        _ => ProTxRevokeReason::NOT_RECOGNISED,
+    }
+)
 }
