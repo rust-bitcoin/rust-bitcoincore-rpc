@@ -2033,6 +2033,7 @@ pub enum AddressType {
     Legacy,
     P2shSegwit,
     Bech32,
+    Bech32m,
 }
 
 /// Used to represent arguments that can either be an address or a public key.
