@@ -917,6 +917,11 @@ pub trait RpcApi: Sized {
         self.call("reconsiderblock", &[into_json(block_hash)?])
     }
 
+    /// Returns details on the active state of the TX memory pool
+    fn get_mempool_info(&self) -> Result<json::GetMempoolInfoResult> {
+        self.call("getmempoolinfo", &[])
+    }
+
     /// Get txids of all transactions in a memory pool
     fn get_raw_mempool(&self) -> Result<Vec<bitcoin::Txid>> {
         self.call("getrawmempool", &[])
