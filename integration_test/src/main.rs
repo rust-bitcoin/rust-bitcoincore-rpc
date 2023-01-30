@@ -136,6 +136,7 @@ fn main() {
     test_get_mining_info(&cl);
     test_get_blockchain_info(&cl);
     test_get_new_address(&cl);
+    test_get_raw_change_address(&cl);
     test_dump_private_key(&cl);
     test_generate(&cl);
     test_get_balance_generate_to_address(&cl);
@@ -238,6 +239,17 @@ fn test_get_new_address(cl: &Client) {
     assert_eq!(addr.address_type(), Some(bitcoin::AddressType::P2wpkh));
 
     let addr = cl.get_new_address(None, Some(json::AddressType::P2shSegwit)).unwrap();
+    assert_eq!(addr.address_type(), Some(bitcoin::AddressType::P2sh));
+}
+
+fn test_get_raw_change_address(cl: &Client) {
+    let addr = cl.get_raw_change_address(Some(json::AddressType::Legacy)).unwrap();
+    assert_eq!(addr.address_type(), Some(bitcoin::AddressType::P2pkh));
+
+    let addr = cl.get_raw_change_address(Some(json::AddressType::Bech32)).unwrap();
+    assert_eq!(addr.address_type(), Some(bitcoin::AddressType::P2wpkh));
+
+    let addr = cl.get_raw_change_address(Some(json::AddressType::P2shSegwit)).unwrap();
     assert_eq!(addr.address_type(), Some(bitcoin::AddressType::P2sh));
 }
 

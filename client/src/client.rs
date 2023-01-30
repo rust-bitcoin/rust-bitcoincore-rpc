@@ -886,6 +886,11 @@ pub trait RpcApi: Sized {
         self.call("getnewaddress", &[opt_into_json(label)?, opt_into_json(address_type)?])
     }
 
+    /// Generate new address for receiving change
+    fn get_raw_change_address(&self, address_type: Option<json::AddressType>) -> Result<Address> {
+        self.call("getrawchangeaddress", &[opt_into_json(address_type)?])
+    }
+
     fn get_address_info(&self, address: &Address) -> Result<json::GetAddressInfoResult> {
         self.call("getaddressinfo", &[address.to_string().into()])
     }
