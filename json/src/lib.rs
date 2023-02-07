@@ -1764,6 +1764,150 @@ pub struct DecodeRawTransactionResult {
     pub vout: Vec<GetRawTransactionResultVout>,
 }
 
+#[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
+pub struct DecodePsbtResultTransaction {
+    pub txid: bitcoin::Txid,
+    pub hash: bitcoin::Wtxid,
+    pub version: u32,
+    pub size: u32,
+    pub vsize: u32,
+    pub weight: u32,
+    pub locktime: u32,
+    pub vin: Vec<GetRawTransactionResultVin>,
+    pub vout: Vec<GetRawTransactionResultVout>,
+}
+
+#[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct DecodePsbtResultInputWitnessUtxo {
+    #[serde(with = "bitcoin::util::amount::serde::as_btc")]
+    pub amount: Amount,
+    pub script_pub_key: GetRawTransactionResultVoutScriptPubKey,
+}
+
+#[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
+pub struct DecodePsbtResultScript {
+    pub asm: String,
+    #[serde(with = "crate::serde_hex")]
+    pub hex: Vec<u8>,
+    #[serde(rename = "type")]
+    pub type_: String,
+}
+
+#[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
+pub struct DecodePsbtResultBip32Derivs {
+    pub master_fingerprint: String,
+    pub path: String,
+    pub pubkey: String,
+}
+
+#[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
+pub struct DecodePsbtResultInput {
+    pub non_witness_utxo: Option<DecodePsbtResultTransaction>,
+    pub witness_utxo: Option<DecodePsbtResultInputWitnessUtxo>,
+    pub partial_signatures: Option<HashMap<String, String>>,
+    pub sighash: Option<String>,
+    pub redeem_script: Option<DecodePsbtResultScript>,
+    pub witness_script: Option<DecodePsbtResultScript>,
+    pub bip32_derivs: Option<Vec<DecodePsbtResultBip32Derivs>>,
+    pub final_scriptsig: Option<GetRawTransactionResultVinScriptSig>,
+    pub final_scriptwitness: Option<Vec<String>>,
+    pub ripemd160_preimages: Option<HashMap<String, String>>,
+    pub sha256_preimages: Option<HashMap<String, String>>,
+    pub hash160_preimages: Option<HashMap<String, String>>,
+    pub hash256_preimages: Option<HashMap<String, String>>,
+    pub taproot_key_path_sig: Option<Vec<u8>>,
+    pub taproot_script_path_sigs: Option<Vec<DecodePsbtResultTaprootScriptPathSig>>,
+    pub taproot_scripts: Option<Vec<DecodePsbtResultTaprootScript>>,
+    pub taproot_bip32_derivs: Option<DecodePsbtResultTaprootBip32Derivs>,
+    pub taproot_internal_key: Option<String>,
+    pub taproot_merkle_root: Option<String>,
+    pub unknown: Option<HashMap<String, Vec<u8>>>,
+    #[serde(default)]
+    pub proprietary: Vec<DecodePsbtResultProprietary>,
+}
+
+#[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
+pub struct DecodePsbtResultTaprootScriptPathSig {
+    pub pubkey: String,
+    pub leaf_hash: String,
+    pub sig: String,
+}
+
+#[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
+pub struct DecodePsbtResultTaprootScript {
+    #[serde(with = "crate::serde_hex")]
+    pub script: Vec<u8>,
+    pub leaf_ver: u32,
+    pub control_blocks: Vec<Vec<u8>>,
+}
+
+#[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
+pub struct DecodePsbtResultTaprootTree {
+    pub depth: u32,
+    pub leaf_ver: u32,
+    pub script: String,
+}
+
+#[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
+pub struct DecodePsbtResultTaprootBip32Derivs {
+    pub pubkey: String,
+    pub master_fingerprint: String,
+    pub path: String,
+    pub leaf_hashes: Vec<String>,
+}
+
+#[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
+pub struct DecodePsbtResultOutput {
+    pub redeem_script: Option<DecodePsbtResultScript>,
+    pub witness_script: Option<DecodePsbtResultScript>,
+    pub bip32_derivs: Option<Vec<DecodePsbtResultBip32Derivs>>,
+    pub taproot_internal_key: Option<Vec<u8>>,
+    pub taproot_tree: Option<Vec<DecodePsbtResultTaprootTree>>,
+    pub taproot_bip32_derivs: Option<DecodePsbtResultTaprootBip32Derivs>,
+    pub unknown: Option<HashMap<String, Vec<u8>>>,
+    #[serde(default)]
+    pub proprietary: Vec<DecodePsbtResultProprietary>,
+}
+
+#[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
+pub struct DecodePsbtResultGlobalXpubs {
+    pub xpub: String,
+    #[serde(with = "crate::serde_hex")]
+    pub master_fingerprint: Vec<u8>,
+    pub path: String,
+}
+
+#[derive(Clone, PartialEq, Eq, Debug, Default, Deserialize, Serialize)]
+pub struct DecodePsbtResultProprietary {
+    #[serde(with = "crate::serde_hex")]
+    pub identifier: Vec<u8>,
+    subtype: u32,
+    #[serde(with = "crate::serde_hex")]
+    key: Vec<u8>,
+    #[serde(with = "crate::serde_hex")]
+    value: Vec<u8>,
+}
+
+/// Models the result of "decodepsbt"
+#[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
+pub struct DecodePsbtResult {
+    pub tx: DecodePsbtResultTransaction,
+    #[serde(default)]
+    pub global_xpubs: Vec<DecodePsbtResultGlobalXpubs>,
+    pub psbt_version: Option<u32>,
+    pub proprietary: Option<Vec<DecodePsbtResultProprietary>>,
+    pub unknown: HashMap<String, String>,
+    pub inputs: Vec<DecodePsbtResultInput>,
+    pub outputs: Vec<DecodePsbtResultOutput>,
+    #[serde(
+        default,
+        with = "bitcoin::util::amount::serde::as_btc::opt",
+        skip_serializing_if = "Option::is_none"
+    )]
+    pub fee: Option<Amount>,
+}
+
 /// Models the result of "getchaintips"
 pub type GetChainTipsResult = Vec<GetChainTipsResultTip>;
 

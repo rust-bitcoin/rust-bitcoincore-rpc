@@ -1178,6 +1178,10 @@ pub trait RpcApi: Sized {
         self.call("finalizepsbt", handle_defaults(&mut args, &[true.into()]))
     }
 
+    fn decode_psbt(&self, psbt: &str) -> Result<json::DecodePsbtResult> {
+        self.call("decodepsbt", &[into_json(psbt)?])
+    }
+
     fn derive_addresses(&self, descriptor: &str, range: Option<[u32; 2]>) -> Result<Vec<Address>> {
         let mut args = [into_json(descriptor)?, opt_into_json(range)?];
         self.call("deriveaddresses", handle_defaults(&mut args, &[null()]))
