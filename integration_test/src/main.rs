@@ -140,7 +140,7 @@ fn main() {
     unsafe { VERSION = cl.version().unwrap() };
     println!("Version: {}", version());
 
-    cl.create_wallet("testwallet", None, None, None, None).unwrap();
+    cl.create_wallet("testwallet", None, None, None, None, None).unwrap();
 
     test_get_mining_info(&cl);
     test_get_blockchain_info(&cl);
@@ -1074,6 +1074,7 @@ fn test_create_wallet(cl: &Client) {
         blank: Option<bool>,
         passphrase: Option<&'a str>,
         avoid_reuse: Option<bool>,
+        descriptor: Option<bool>,
     }
 
     let mut wallet_params = vec![
@@ -1083,6 +1084,7 @@ fn test_create_wallet(cl: &Client) {
             blank: None,
             passphrase: None,
             avoid_reuse: None,
+            descriptor: None,
         },
         WalletParams {
             name: wallet_names[1],
@@ -1090,6 +1092,7 @@ fn test_create_wallet(cl: &Client) {
             blank: None,
             passphrase: None,
             avoid_reuse: None,
+            descriptor: None,
         },
         WalletParams {
             name: wallet_names[2],
@@ -1097,6 +1100,7 @@ fn test_create_wallet(cl: &Client) {
             blank: Some(true),
             passphrase: None,
             avoid_reuse: None,
+            descriptor: None,
         },
     ];
 
@@ -1107,6 +1111,7 @@ fn test_create_wallet(cl: &Client) {
             blank: None,
             passphrase: Some("pass"),
             avoid_reuse: None,
+            descriptor: None,
         });
         wallet_params.push(WalletParams {
             name: wallet_names[4],
@@ -1114,6 +1119,7 @@ fn test_create_wallet(cl: &Client) {
             blank: None,
             passphrase: None,
             avoid_reuse: Some(true),
+            descriptor: Some(false),
         });
     }
 
@@ -1125,6 +1131,7 @@ fn test_create_wallet(cl: &Client) {
                 wallet_param.blank,
                 wallet_param.passphrase,
                 wallet_param.avoid_reuse,
+                wallet_param.descriptor,
             )
             .unwrap();
 

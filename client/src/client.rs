@@ -284,18 +284,54 @@ pub trait RpcApi: Sized {
         blank: Option<bool>,
         passphrase: Option<&str>,
         avoid_reuse: Option<bool>,
+        descriptors: Option<bool>,
     ) -> Result<json::LoadWalletResult> {
-        let mut args = [
-            wallet.into(),
-            opt_into_json(disable_private_keys)?,
-            opt_into_json(blank)?,
-            opt_into_json(passphrase)?,
-            opt_into_json(avoid_reuse)?,
-        ];
-        self.call(
-            "createwallet",
-            handle_defaults(&mut args, &[false.into(), false.into(), into_json("")?, false.into()]),
-        )
+        // the descriptors argument was added in version 21
+        if self.version()? < 210000 {
+            // note: we allow Some(false) since it's the default behavior
+            if let Some(true) = descriptors {
+                return Err(Error::Unsupported);
+            }
+            // no descriptors argument yet
+            let mut args = [
+                wallet.into(),
+                opt_into_json(disable_private_keys)?,
+                opt_into_json(blank)?,
+                opt_into_json(passphrase)?,
+                opt_into_json(avoid_reuse)?,
+            ];
+            self.call(
+                "createwallet",
+                handle_defaults(
+                    &mut args,
+                    &[false.into(), false.into(), into_json("")?, false.into()],
+                ),
+            )
+        } else {
+            let mut args = [
+                wallet.into(),
+                opt_into_json(disable_private_keys)?,
+                opt_into_json(blank)?,
+                opt_into_json(passphrase)?,
+                opt_into_json(avoid_reuse)?,
+                opt_into_json(descriptors)?,
+            ];
+            // from 23 on, the default value of the descriptors argument is true
+            let default_descriptors = self.version()? >= 230000;
+            self.call(
+                "createwallet",
+                handle_defaults(
+                    &mut args,
+                    &[
+                        false.into(),
+                        false.into(),
+                        into_json("")?,
+                        false.into(),
+                        default_descriptors.into(),
+                    ],
+                ),
+            )
+        }
     }
 
     fn list_wallets(&self) -> Result<Vec<String>> {
