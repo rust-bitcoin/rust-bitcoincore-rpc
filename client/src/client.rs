@@ -290,7 +290,7 @@ pub trait RpcApi: Sized {
         if self.version()? < 210000 {
             // note: we allow Some(false) since it's the default behavior
             if let Some(true) = descriptors {
-                return Err(Error::Unsupported);
+                return Err(Error::UnsupportedArgument("createwallet", "descriptors"));
             }
             // no descriptors argument yet
             let mut args = [
