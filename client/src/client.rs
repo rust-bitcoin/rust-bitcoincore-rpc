@@ -237,6 +237,10 @@ pub trait RpcApi: Sized {
         self.call("getnetworkinfo", &[])
     }
 
+    fn get_index_info(&self) -> Result<json::GetIndexInfoResult> {
+        self.call("getindexinfo", &[])
+    }
+
     fn version(&self) -> Result<usize> {
         #[derive(Deserialize)]
         struct Response {
