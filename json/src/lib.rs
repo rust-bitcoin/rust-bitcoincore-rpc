@@ -2117,6 +2117,20 @@ pub struct Utxo {
     pub height: u64,
 }
 
+#[derive(Serialize, Deserialize, Clone, PartialEq, Eq, Debug)]
+pub struct IndexStatus {
+    pub synced: bool,
+    pub best_block_height: u32,
+}
+
+#[derive(Serialize, Deserialize, Clone, PartialEq, Eq, Debug)]
+pub struct GetIndexInfoResult {
+    pub txindex: IndexStatus,
+    pub coinstatsindex: IndexStatus,
+    #[serde(rename = "basic block filter index")]
+    pub basic_block_filter_index: IndexStatus,
+}
+
 impl<'a> serde::Serialize for PubKeyOrAddress<'a> {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
