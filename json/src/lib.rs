@@ -2125,10 +2125,10 @@ pub struct IndexStatus {
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, Eq, Debug)]
 pub struct GetIndexInfoResult {
-    pub txindex: IndexStatus,
-    pub coinstatsindex: IndexStatus,
+    pub txindex: Option<IndexStatus>,
+    pub coinstatsindex: Option<IndexStatus>,
     #[serde(rename = "basic block filter index")]
-    pub basic_block_filter_index: IndexStatus,
+    pub basic_block_filter_index: Option<IndexStatus>,
 }
 
 impl<'a> serde::Serialize for PubKeyOrAddress<'a> {
