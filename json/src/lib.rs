@@ -2451,22 +2451,12 @@ pub struct ProTxRegPrepare {
     pub sign_message: Vec<u8>
 }
 
-#[serde(untagged)]
-#[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
+#[derive(Clone, PartialEq, Eq, Debug)]
 pub enum ProTxRevokeReason {
-    #[serde(deserialize_with = "deserialize_protx_revoke_reason")]
     NOT_SPECIFIED,
-    
-    #[serde(deserialize_with = "deserialize_protx_revoke_reason")]
     TERMINATION_OF_SERVICE,
-
-    #[serde(deserialize_with = "deserialize_protx_revoke_reason")]
     COMPROMISED_KEYS,
-
-    #[serde(deserialize_with = "deserialize_protx_revoke_reason")]
     CHANGE_OF_KEYS,
-
-    #[serde(deserialize_with = "deserialize_protx_revoke_reason")]
     NOT_RECOGNISED,
 }
 
