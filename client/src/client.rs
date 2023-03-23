@@ -60,16 +60,16 @@ impl Into<OutPoint> for JsonOutPoint {
 
 /// Shorthand for converting a variable into a serde_json::Value.
 fn into_json<T>(val: T) -> Result<serde_json::Value>
-where
-    T: serde::ser::Serialize,
+    where
+        T: serde::ser::Serialize,
 {
     Ok(serde_json::to_value(val)?)
 }
 
 /// Shorthand for converting an Option into an Option<serde_json::Value>.
 fn opt_into_json<T>(opt: Option<T>) -> Result<serde_json::Value>
-where
-    T: serde::ser::Serialize,
+    where
+        T: serde::ser::Serialize,
 {
     match opt {
         Some(val) => Ok(into_json(val)?),
@@ -1465,8 +1465,19 @@ pub trait RpcApi: Sized {
     }
 
     /// Creates an unsigned ProTx and a message that must be signed externally
-    fn get_protx_register_prepare(&self, collateral_hash: &str, collateral_index: u32, ip_and_port: &str, owner_address: dashcore::Address, operator_pub_key: &str, voting_address: dashcore::Address, operator_reward: u32, payout_address: dashcore::Address, fee_source_address: Option<dashcore::Address>) -> Result<json::ProTxRegPrepare> {
-        let mut args = ["register_prepare".into(), into_json(collateral_address)?, into_json(collateral_index)?, into_json(ip_and_port)?, into_json(owner_address)?, into_json(operator_pub_key)?, into_json(voting_address)?, into_json(operator_reward)?, into_json(payout_address)?, opt_into_json(fee_source_address)?];
+    fn get_protx_register_prepare(
+        &self,
+        collateral_hash: &str,
+        collateral_index: u32,
+        ip_and_port: &str,
+        owner_address: dashcore::Address,
+        operator_pub_key: &str,
+        voting_address: dashcore::Address,
+        operator_reward: u32,
+        payout_address: dashcore::Address,
+        fee_source_address: Option<dashcore::Address>,
+    ) -> Result<json::ProTxRegPrepare> {
+        let mut args = ["register_prepare".into(), into_json(collateral_hash)?, into_json(collateral_index)?, into_json(ip_and_port)?, into_json(owner_address)?, into_json(operator_pub_key)?, into_json(voting_address)?, into_json(operator_reward)?, into_json(payout_address)?, opt_into_json(fee_source_address)?];
         self.call::<json::ProTxRegPrepare>("protx", handle_defaults(&mut args, &[null()]))
     }
 
@@ -1479,19 +1490,32 @@ pub trait RpcApi: Sized {
 
     /// Creates and sends a ProUpRevTx to the network
     fn get_protx_revoke(&self, pro_tx_hash: &str, operator_pub_key: &str, reason: json::ProTxRevokeReason, fee_source_address: Option<dashcore::Address>) -> Result<json::ProRegTxHash> {
-        let mut args = ["revoke".into(), into_json(pro_tx_hash)?, into_json(operator_pub_key)?, into_json(reason)?, opt_into_json(fee_source_address)?];
+        let mut args = ["revoke".into(), into_json(pro_tx_hash)?, into_json(operator_pub_key)?, into_json(reason as u8)?, opt_into_json(fee_source_address)?];
         self.call::<json::ProRegTxHash>("protx", handle_defaults(&mut args, &[null()]))
     }
 
     /// Creates and sends a ProUpRegTx to the network
-    fn get_protx_update_registrar(&self, pro_tx_hash: &str, operator_pub_key: &str, voting_address: dashcore::Address, payout_address: Option<dashcore::Address>, fee_source_address: Option<dashcore::Address>) -> Result<json::ProRegTxHash> {
-        let mut args = ["update_registrar".into(), into_json(pro_tx_hash)?, into_json(operator_pub_key)?, into_json(voting_address)?, opt_into_json(payout_address)?, opt_into_json(fee_source_address)?];
+    fn get_protx_update_registrar(
+        &self,
+        pro_tx_hash: &str,
+        operator_pub_key: &str,
+        voting_address: dashcore::Address,
+        payout_address: dashcore::Address,
+        fee_source_address: Option<dashcore::Address>,
+    ) -> Result<json::ProRegTxHash> {
+        let mut args = ["update_registrar".into(), into_json(pro_tx_hash)?, into_json(operator_pub_key)?, into_json(voting_address)?, into_json(payout_address)?, opt_into_json(fee_source_address)?];
         self.call::<json::ProRegTxHash>("protx", handle_defaults(&mut args, &[null()]))
     }
 
     /// Creates and sends a ProUpServTx to the network
-    fn get_protx_update_service(&self, pro_tx_hash: &str, ip_and_port: &str, operator_key: &str, operator_payout_address: Option<dashcore::Address>, fee_source_address: Option<dashcore::Address>) -> Result<json::ProRegTxHash> {
-        let mut args = ["update_service".into(), into_json(pro_tx_hash)?, into_json(ip_and_port)?, into_json(operator_key)?, opt_into_json(payout_address)?, opt_into_json(fee_source_address)?];
+    fn get_protx_update_service(
+        &self, pro_tx_hash: &str,
+        ip_and_port: &str,
+        operator_key: &str,
+        operator_payout_address: Option<dashcore::Address>,
+        fee_source_address: Option<dashcore::Address>,
+    ) -> Result<json::ProRegTxHash> {
+        let mut args = ["update_service".into(), into_json(pro_tx_hash)?, into_json(ip_and_port)?, into_json(operator_key)?, opt_into_json(operator_payout_address)?, opt_into_json(fee_source_address)?];
         self.call::<json::ProRegTxHash>("protx", handle_defaults(&mut args, &[null()]))
     }
 
@@ -1506,8 +1530,6 @@ pub trait RpcApi: Sized {
         let mut args = [into_json(id)?, into_json(tx_id)?, into_json(signature)?, opt_into_json(max_height)?];
         self.call::<bool>("verifyislock", handle_defaults(&mut args, &[null()]))
     }
-
-
 }
 
 /// Client implements a JSON-RPC client for the Dash Core daemon or compatible APIs.
@@ -1591,7 +1613,7 @@ fn log_response(cmd: &str, resp: &Result<jsonrpc::Response>) {
                     let def = serde_json::value::RawValue::from_string(
                         serde_json::Value::Null.to_string(),
                     )
-                    .unwrap();
+                        .unwrap();
                     let result = resp.result.as_ref().unwrap_or(&def);
                     trace!(target: "dashcore_rpc", "JSON-RPC response for {}: {}", cmd, result);
                 }

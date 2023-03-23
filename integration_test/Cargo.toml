@@ -5,6 +5,5 @@ authors = ["Steven Roose <steven@stevenroose.org>"]
 
 [dependencies]
 dashcore-rpc = { path = "../client" }
-dashcore = { git = "https://github.com/dashevo/rust-dashcore", branch = "master", features = [ "use-serde", "rand" ] }
 lazy_static = "1.4.0"
 log = "0.4"

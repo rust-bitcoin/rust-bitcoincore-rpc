@@ -2453,11 +2453,11 @@ pub struct ProTxRegPrepare {
 
 #[derive(Clone, PartialEq, Eq, Debug)]
 pub enum ProTxRevokeReason {
-    NOT_SPECIFIED,
-    TERMINATION_OF_SERVICE,
-    COMPROMISED_KEYS,
-    CHANGE_OF_KEYS,
-    NOT_RECOGNISED,
+    NotSpecified = 0,
+    TerminationOfService = 1,
+    CompromisedKeys = 2,
+    ChangeOfKeys = 3,
+    NotRecognised = 4,
 }
 
 // Custom deserializer functions.
