@@ -19,12 +19,12 @@ PID1=$!
 sleep 3
 
 BLOCKFILTERARG=""
-if bitcoind -version | grep -q "v0\.\(19\|2\)"; then
+if bitcoind -version | grep -q "v0.\\(19\|20\|21\)"; then
     BLOCKFILTERARG="-blockfilterindex=1"
 fi
 
 FALLBACKFEEARG=""
-if bitcoind -version | grep -q "v0\.2"; then
+if bitcoind -version | grep -q "v0.\\(20\|21\\)"; then
     FALLBACKFEEARG="-fallbackfee=0.00001000"
 fi
 
