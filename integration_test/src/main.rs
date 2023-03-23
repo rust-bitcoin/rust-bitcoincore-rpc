@@ -237,6 +237,13 @@ fn main() {
     test_get_protx_list(&cl);
     test_get_protx_register(&cl);
     test_get_protx_register_fund(&cl);
+    test_get_protx_register_prepare(&cl);
+    test_get_protx_register_submit(&cl);
+    test_get_protx_revoke(&cl);
+    test_get_protx_update_registrar(&cl);
+    test_get_protx_update_service(&cl);
+    test_get_verifychainlock(&cl);
+    test_get_verifyislock(&cl);
 }
 
 fn test_get_network_info(cl: &Client) {
@@ -1353,4 +1360,47 @@ fn test_get_protx_register(cl: &Client) {
 
 fn test_get_protx_register_fund(cl: &Client) {
     let _protx_register_fund = cl.get_protx_register_fund("yakx4mMRptKhgfjedNzX5FGQq7kSSBF2e7", "3.4.5.6:3456", "yURczr3qY31xkQZfFu8eZvKz19eAEPQxsd", "0e02146e9c34cfbcb3f3037574a1abb35525e2ca0c3c6901dbf82ac591e30218d1711223b7ca956edf39f3d984d06d51", "yURczr3qY31xkQZfFu8eZvKz19eAEPQxsd", 5, "yUYTxqjpCfAAK4vgxXtBPywRBtZqsxN7Vy", Some("yRMFHxcJ2aS2vfo5whhE2Gg73dfQVm8LAF"), Some(false)).unwrap();
+}
+
+fn test_get_protx_register_prepare(cl: &Client) {
+    let protx_register_prepare = rpc.get_protx_register_prepare("df41e398bb245e973340d434d386f431dbd69735a575721b0b6833856e7d31ec", 1, "9.8.7.6:9876", "yemjhGQ99V5ayJMjoyGGPtxteahii6G1Jz", "06849865d01e4f73a6d5a025117e48f50b897e14235800501c8bfb8a6365cc8dbf5ddb67a3635d0f1dcc7d46a7ee280c", "yemjhGQ99V5ayJMjoyGGPtxteahii6G1Jz", 1.2, "yjJJLkYDUN6X8gWjXbCoKEXoiLeKxxMMRt", None).unwrap();
+}
+
+fn test_get_protx_register_submit(cl: &Client) {
+    let protx_register_submit = rpc.get_protx_register_submit("03000100012d988526d5d1efd32320023c92eff09c2963dcb021b0de9761", "H90IvqVtFjZkwLJb08yMEgGixs0/FpcdvwImBcir4cYLJhD3pdX+lKD2GsPl6KNxghVXNk5/HpOdBoWAHo9u++Y=").unwrap();
+}
+
+fn test_get_protx_revoke(cl: &Client) {
+    let protx_revoke = rpc
+        .get_protx_revoke(
+            "ba1b3330e16a0876b7a186e7ceb689f03ec646e611e91d7139de021bbf13afdd",
+            "4da7e1ea30fb9e55c73ad23df0b9d3d34342acb24facf4b19420e1a26ae272d1",
+            1,
+            None,
+        )
+        .unwrap();
+}
+
+fn test_get_protx_update_registrar(cl: &Client) {
+    let protx_update_registrar = rpc.get_protx_update_registrar("ba1b3330e16a0876b7a186e7ceb689f03ec646e611e91d7139de021bbf13afdd", "0e02146e9c34cfbcb3f3037574a1abb35525e2ca0c3c6901dbf82ac591e30218d1711223b7ca956edf39f3d984d06d51", "yX2cDS4kcJ4LK4uq9Hd4TG7kURV3sGLZrw", "yakx4mMRptKhgfjedNzX5FGQq7kSSBF2e7", None).unwrap();
+}
+
+fn test_get_protx_update_service(cl: &Client) {
+    let protx_update_service = rpc
+        .get_protx_update_service(
+            "ba1b3330e16a0876b7a186e7ceb689f03ec646e611e91d7139de021bbf13afdd",
+            "4.3.2.1:4321",
+            "4da7e1ea30fb9e55c73ad23df0b9d3d34342acb24facf4b19420e1a26ae272d1",
+            None,
+            None,
+        )
+        .unwrap();
+}
+
+fn test_get_verifychainlock(cl: &Client) {
+    let verifychainlock = rpc.get_verifychainlock( "00000036d5c520be6e9a32d3829efc983a7b5e88052bf138f80a2b3988689a24", "97ec34efd1615b84af62495e54024880752f57790cf450ae974b80002440963592d96826e24f109e6c149411b70bb9a0035443752368590adae60365cf4251464e0423c1263e9c56a33eae9be9e9c79a117151b2173bcee93497008cace8d793", None).unwrap();
+}
+
+fn test_get_verifyislock(cl: &Client) {
+    let verifychainlock = rpc.get_verifyislock("d0b1a9c70fdfff6bf7f6cbe3d1fe33a4ca44ceb17059b6381a4ac25d9c9b6495", "8b5174d0e95b5642ebec23c3fe8f0bbf8f6993502f4210322871bba0e818ff3b",  "97ec34efd1615b84af62495e54024880752f57790cf450ae974b80002440963592d96826e24f109e6c149411b70bb9a0035443752368590adae60365cf4251464e0423c1263e9c56a33eae9be9e9c79a117151b2173bcee93497008cace8d793", None).unwrap();
 }

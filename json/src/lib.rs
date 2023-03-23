@@ -2440,6 +2440,36 @@ pub enum ProTxList {
     Info(Vec<ProTxInfo>),
 }
 
+#[serde_as]
+#[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ProTxRegPrepare {
+    pub tx: ProRegTxHash,
+    #[serde_as(as = "Bytes")]
+    pub collateral_address: Vec<u8>,
+    #[serde_as(as = "Bytes")]
+    pub sign_message: Vec<u8>
+}
+
+#[serde(untagged)]
+#[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
+pub enum ProTxRevokeReason {
+    #[serde(deserialize_with = "deserialize_protx_revoke_reason")]
+    NOT_SPECIFIED,
+    
+    #[serde(deserialize_with = "deserialize_protx_revoke_reason")]
+    TERMINATION_OF_SERVICE,
+
+    #[serde(deserialize_with = "deserialize_protx_revoke_reason")]
+    COMPROMISED_KEYS,
+
+    #[serde(deserialize_with = "deserialize_protx_revoke_reason")]
+    CHANGE_OF_KEYS,
+
+    #[serde(deserialize_with = "deserialize_protx_revoke_reason")]
+    NOT_RECOGNISED,
+}
+
 // Custom deserializer functions.
 
 /// deserialize_hex_array_opt deserializes a vector of hex-encoded byte arrays.
