@@ -16,22 +16,19 @@ use std::collections::HashMap;
 
 use dashcore_rpc::json;
 use dashcore_rpc::jsonrpc::error::Error as JsonRpcError;
-use dashcore_rpc::{Auth, Client, Error, RpcApi, dashcore};
-
-use dashcore::consensus::encode::{deserialize, serialize};
-use dashcore::hashes::hex::{FromHex, ToHex};
-use dashcore::hashes::Hash;
-use dashcore::secp256k1;
-use dashcore::{
-    Address, Amount, EcdsaSighashType, Network, OutPoint, PrivateKey, Script, SignedAmount,
-    Transaction, TxIn, TxOut, Txid, Witness,
+use dashcore_rpc::{
+    dashcore::{
+        consensus::encode::{deserialize, serialize},
+        hashes::hex::{FromHex, ToHex},
+        hashes::Hash,
+        secp256k1, Address, AddressType, Amount, EcdsaSighashType, Network, OutPoint, PrivateKey,
+        Script, SignedAmount, Transaction, TxIn, TxOut, Txid, Witness,
+    },
+    Auth, Client, Error, RpcApi,
 };
+
 use dashcore_rpc::dashcore_rpc_json::{
-    GetBlockTemplateModes,
-    GetBlockTemplateRules,
-    ProTxInfo,
-    ProTxRevokeReason,
-    ScanTxOutRequest,
+    GetBlockTemplateModes, GetBlockTemplateRules, ProTxInfo, ProTxRevokeReason, ScanTxOutRequest,
 };
 use json::BlockStatsFields as BsFields;
 
@@ -39,7 +36,7 @@ lazy_static! {
     static ref SECP: secp256k1::Secp256k1<secp256k1::All> = secp256k1::Secp256k1::new();
     static ref NET: Network = Network::Regtest;
     /// A random address not owned by the node.
-    static ref RANDOM_ADDRESS: dashcore_rpc::dashcore::Address = "mgR9fN5UzZ64mSUUtk6NwxxS6kwVfoEtPG".parse().unwrap();
+    static ref RANDOM_ADDRESS: Address = "mgR9fN5UzZ64mSUUtk6NwxxS6kwVfoEtPG".parse().unwrap();
     /// The default fee amount to use when needed.
     static ref FEE: Amount = Amount::from_btc(0.001).unwrap();
 }
@@ -263,13 +260,13 @@ fn test_get_blockchain_info(cl: &Client) {
 
 fn test_get_new_address(cl: &Client) {
     let addr = cl.get_new_address(None, Some(json::AddressType::Legacy)).unwrap();
-    assert_eq!(addr.address_type(), Some(dashcore::AddressType::P2pkh));
+    assert_eq!(addr.address_type(), Some(AddressType::P2pkh));
 
     let addr = cl.get_new_address(None, Some(json::AddressType::Bech32)).unwrap();
-    assert_eq!(addr.address_type(), Some(dashcore::AddressType::P2wpkh));
+    assert_eq!(addr.address_type(), Some(AddressType::P2wpkh));
 
     let addr = cl.get_new_address(None, Some(json::AddressType::P2shSegwit)).unwrap();
-    assert_eq!(addr.address_type(), Some(dashcore::AddressType::P2sh));
+    assert_eq!(addr.address_type(), Some(AddressType::P2sh));
 }
 
 fn test_dump_private_key(cl: &Client) {
