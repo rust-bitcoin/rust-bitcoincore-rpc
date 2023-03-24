@@ -461,6 +461,11 @@ pub trait RpcApi: Sized {
         self.call("getbestblockhash", &[])
     }
 
+    /// Returns information about the best chainlock.
+    fn get_best_chain_lock(&self) -> Result<dashcore::BlockHash> {
+        self.call("getbestchainlock", &[])
+    }
+
     /// Get block hash at a given height
     fn get_block_hash(&self, height: u64) -> Result<dashcore::BlockHash> {
         self.call("getblockhash", &[height.into()])
@@ -1244,6 +1249,15 @@ pub trait RpcApi: Sized {
         self.call::<json::QuorumListResult>(
             "quorum",
             handle_defaults(&mut args, &[1.into(), null()]),
+        )
+    }
+
+    /// Returns an extended list of on-chain quorums
+    fn get_quorum_listextended(&self, height: Option<i64>) -> Result<json::QuorumListResult> {
+        let mut args = ["listextended".into(), opt_into_json(height)?];
+        self.call::<json::QuorumListResult>(
+            "quorum",
+            handle_defaults(&mut args, &[]),
         )
     }
 
