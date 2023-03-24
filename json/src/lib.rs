@@ -995,6 +995,13 @@ pub struct GetAddressInfoResult {
     pub label: Option<String>,
 }
 
+/// Models the result of "generateblock"
+#[derive(Clone, Debug, Deserialize, Serialize)]
+pub struct GenerateBlockResult {
+    /// Hash of the block generated
+    pub hash: bitcoin::BlockHash,
+}
+
 /// Models the result of "getblockchaininfo"
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct GetBlockchainInfoResult {
