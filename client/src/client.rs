@@ -672,6 +672,11 @@ pub trait RpcApi: Sized {
         self.call("importdescriptors", handle_defaults(&mut [json_request.into()], &[null()]))
     }
 
+    fn list_descriptors(&self, private: Option<bool>) -> Result<json::ListDescriptorsResult> {
+        let mut args = [opt_into_json(private)?];
+        self.call("listdescriptors", handle_defaults(&mut args, &[null()]))
+    }
+
     fn set_label(&self, address: &Address, label: &str) -> Result<()> {
         self.call("setlabel", &[address.to_string().into(), label.into()])
     }

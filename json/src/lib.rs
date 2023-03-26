@@ -132,6 +132,22 @@ pub struct LoadWalletResult {
 }
 
 #[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
+pub struct Descriptor {
+    pub desc: String,
+    pub timestamp: Timestamp,
+    pub active: bool,
+    pub internal: Option<bool>,
+    pub range: Option<(u64, u64)>,
+    pub next: Option<u64>,
+}
+
+#[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
+pub struct ListDescriptorsResult {
+    pub wallet_name: String,
+    pub descriptors: Vec<Descriptor>,
+}
+
+#[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
 pub struct ListWalletDirResult {
     pub wallets: Vec<ListWalletDirItem>,
 }
