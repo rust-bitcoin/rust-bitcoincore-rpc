@@ -215,6 +215,7 @@ fn main() {
     test_disconnect_node(&cl);
     test_add_ban(&cl);
     test_set_network_active(&cl);
+    test_get_index_info(&cl);
     test_stop(cl);
 }
 
@@ -1260,6 +1261,15 @@ fn test_getblocktemplate(cl: &Client) {
 
     // cleanup mempool transaction
     cl.generate_to_address(2, &RANDOM_ADDRESS).unwrap();
+}
+
+fn test_get_index_info(cl: &Client) {
+    if version() >= 210000 {
+        let gii = cl.get_index_info().unwrap();
+        assert!(gii.txindex.is_some());
+        assert!(gii.coinstatsindex.is_none());
+        assert!(gii.basic_block_filter_index.is_some());
+    }
 }
 
 fn test_stop(cl: Client) {
