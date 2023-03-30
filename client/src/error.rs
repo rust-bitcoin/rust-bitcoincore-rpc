@@ -10,7 +10,7 @@
 
 use std::{error, fmt, io};
 
-use dashcore;
+use crate::dashcore;
 use dashcore::hashes::hex;
 use dashcore::secp256k1;
 use jsonrpc;

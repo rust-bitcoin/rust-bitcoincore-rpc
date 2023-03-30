@@ -14,7 +14,7 @@ use std::iter::FromIterator;
 use std::path::PathBuf;
 use std::{fmt, result};
 
-use dashcore;
+use crate::dashcore;
 use jsonrpc;
 use serde;
 use serde_json::{self, Value};
@@ -25,10 +25,12 @@ use dashcore::{
     Address, Amount, Block, BlockHeader, OutPoint, PrivateKey, PublicKey, Script, Transaction,
 };
 use log::Level::{Debug, Trace, Warn};
+use dashcore_rpc_json::{ProTxHash, ProTxInfo, ProTxListType, QuorumHash, QuorumType};
+use dashcore_rpc_json::dashcore::BlockHash;
 
-use error::*;
-use json;
-use queryable;
+use crate::error::*;
+use crate::json;
+use crate::queryable;
 
 /// Crate-specific Result type, shorthand for `std::result::Result` with our
 /// crate-specific Error type;
@@ -59,7 +61,7 @@ impl Into<OutPoint> for JsonOutPoint {
 }
 
 /// Shorthand for converting a variable into a serde_json::Value.
-fn into_json<T>(val: T) -> Result<serde_json::Value>
+fn into_json<T>(val: T) -> Result<Value>
     where
         T: serde::ser::Serialize,
 {
@@ -67,29 +69,29 @@ fn into_json<T>(val: T) -> Result<serde_json::Value>
 }
 
 /// Shorthand for converting an Option into an Option<serde_json::Value>.
-fn opt_into_json<T>(opt: Option<T>) -> Result<serde_json::Value>
+fn opt_into_json<T>(opt: Option<T>) -> Result<Value>
     where
         T: serde::ser::Serialize,
 {
     match opt {
         Some(val) => Ok(into_json(val)?),
-        None => Ok(serde_json::Value::Null),
+        None => Ok(Value::Null),
     }
 }
 
 /// Shorthand for `serde_json::Value::Null`.
-fn null() -> serde_json::Value {
-    serde_json::Value::Null
+fn null() -> Value {
+    Value::Null
 }
 
 /// Shorthand for an empty serde_json::Value array.
-fn empty_arr() -> serde_json::Value {
-    serde_json::Value::Array(vec![])
+fn empty_arr() -> Value {
+    Value::Array(vec![])
 }
 
 /// Shorthand for an empty serde_json object.
-fn empty_obj() -> serde_json::Value {
-    serde_json::Value::Object(Default::default())
+fn empty_obj() -> Value {
+    Value::Object(Default::default())
 }
 
 /// Handle default values in the argument list
@@ -108,9 +110,9 @@ fn empty_obj() -> serde_json::Value {
 /// Elements of `args` without corresponding `defaults` value, won't
 /// be substituted, because they are required.
 fn handle_defaults<'a, 'b>(
-    args: &'a mut [serde_json::Value],
-    defaults: &'b [serde_json::Value],
-) -> &'a [serde_json::Value] {
+    args: &'a mut [Value],
+    defaults: &'b [Value],
+) -> &'a [Value] {
     assert!(args.len() >= defaults.len());
 
     // Pass over the optional arguments in backwards order, filling in defaults after the first
@@ -142,9 +144,9 @@ fn handle_defaults<'a, 'b>(
 
 /// Convert a possible-null result into an Option.
 fn opt_result<T: for<'a> serde::de::Deserialize<'a>>(
-    result: serde_json::Value,
+    result: Value,
 ) -> Result<Option<T>> {
-    if result == serde_json::Value::Null {
+    if result == Value::Null {
         Ok(None)
     } else {
         Ok(serde_json::from_value(result)?)
@@ -220,7 +222,7 @@ pub trait RpcApi: Sized {
     fn call<T: for<'a> serde::de::Deserialize<'a>>(
         &self,
         cmd: &str,
-        args: &[serde_json::Value],
+        args: &[Value],
     ) -> Result<T>;
 
     /// Query an object implementing `Querable` type
@@ -319,35 +321,32 @@ pub trait RpcApi: Sized {
         self.call("getconnectioncount", &[])
     }
 
-    fn get_block(&self, hash: &dashcore::BlockHash) -> Result<Block> {
+    fn get_block(&self, hash: &BlockHash) -> Result<Block> {
         let hex: String = self.call("getblock", &[into_json(hash)?, 0.into()])?;
         let bytes: Vec<u8> = FromHex::from_hex(&hex)?;
         Ok(dashcore::consensus::encode::deserialize(&bytes)?)
     }
 
-    fn get_block_json(&self, hash: &dashcore::BlockHash) -> Result<Value> {
+    fn get_block_json(&self, hash: &BlockHash) -> Result<Value> {
         Ok(self.call::<Value>("getblock", &[into_json(hash)?, 0.into()])?)
     }
 
-    fn get_block_hex(&self, hash: &dashcore::BlockHash) -> Result<String> {
+    fn get_block_hex(&self, hash: &BlockHash) -> Result<String> {
         self.call("getblock", &[into_json(hash)?, 0.into()])
     }
 
-    fn get_block_info(&self, hash: &dashcore::BlockHash) -> Result<json::GetBlockResult> {
+    fn get_block_info(&self, hash: &BlockHash) -> Result<json::GetBlockResult> {
         self.call("getblock", &[into_json(hash)?, 1.into()])
     }
     //TODO(stevenroose) add getblock_txs
 
-    fn get_block_header(&self, hash: &dashcore::BlockHash) -> Result<BlockHeader> {
+    fn get_block_header(&self, hash: &BlockHash) -> Result<BlockHeader> {
         let hex: String = self.call("getblockheader", &[into_json(hash)?, false.into()])?;
         let bytes: Vec<u8> = FromHex::from_hex(&hex)?;
         Ok(dashcore::consensus::encode::deserialize(&bytes)?)
     }
 
-    fn get_block_header_info(
-        &self,
-        hash: &dashcore::BlockHash,
-    ) -> Result<json::GetBlockHeaderResult> {
+    fn get_block_header_info(&self, hash: &BlockHash) -> Result<json::GetBlockHeaderResult> {
         self.call("getblockheader", &[into_json(hash)?, true.into()])
     }
 
@@ -381,7 +380,7 @@ pub trait RpcApi: Sized {
     /// Returns a data structure containing various state info regarding
     /// blockchain processing.
     fn get_blockchain_info(&self) -> Result<json::GetBlockchainInfoResult> {
-        let mut raw: serde_json::Value = self.call("getblockchaininfo", &[])?;
+        let mut raw: Value = self.call("getblockchaininfo", &[])?;
         // The softfork fields are not backwards compatible:
         // - 0.18.x returns a "softforks" array and a "bip9_softforks" map.
         // - 0.19.x returns a "softforks" map.
@@ -452,12 +451,12 @@ pub trait RpcApi: Sized {
     }
 
     /// Returns the numbers of block in the longest chain.
-    fn get_block_count(&self) -> Result<u64> {
+    fn get_block_count(&self) -> Result<u32> {
         self.call("getblockcount", &[])
     }
 
     /// Returns the hash of the best (tip) block in the longest blockchain.
-    fn get_best_block_hash(&self) -> Result<dashcore::BlockHash> {
+    fn get_best_block_hash(&self) -> Result<BlockHash> {
         self.call("getbestblockhash", &[])
     }
 
@@ -467,11 +466,11 @@ pub trait RpcApi: Sized {
     }
 
     /// Get block hash at a given height
-    fn get_block_hash(&self, height: u64) -> Result<dashcore::BlockHash> {
+    fn get_block_hash(&self, height: u32) -> Result<BlockHash> {
         self.call("getblockhash", &[height.into()])
     }
 
-    fn get_block_stats(&self, height: u64) -> Result<json::GetBlockStatsResult> {
+    fn get_block_stats(&self, height: u32) -> Result<json::GetBlockStatsResult> {
         self.call("getblockstats", &[height.into()])
     }
 
@@ -486,7 +485,7 @@ pub trait RpcApi: Sized {
     fn get_raw_transaction(
         &self,
         txid: &dashcore::Txid,
-        block_hash: Option<&dashcore::BlockHash>,
+        block_hash: Option<&BlockHash>,
     ) -> Result<Transaction> {
         let mut args = [into_json(txid)?, into_json(false)?, opt_into_json(block_hash)?];
         let hex: String = self.call("getrawtransaction", handle_defaults(&mut args, &[null()]))?;
@@ -497,7 +496,7 @@ pub trait RpcApi: Sized {
     fn get_raw_transaction_hex(
         &self,
         txid: &dashcore::Txid,
-        block_hash: Option<&dashcore::BlockHash>,
+        block_hash: Option<&BlockHash>,
     ) -> Result<String> {
         let mut args = [into_json(txid)?, into_json(false)?, opt_into_json(block_hash)?];
         self.call("getrawtransaction", handle_defaults(&mut args, &[null()]))
@@ -506,7 +505,7 @@ pub trait RpcApi: Sized {
     fn get_raw_transaction_info(
         &self,
         txid: &dashcore::Txid,
-        block_hash: Option<&dashcore::BlockHash>,
+        block_hash: Option<&BlockHash>,
     ) -> Result<json::GetRawTransactionResult> {
         let mut args = [into_json(txid)?, into_json(true)?, opt_into_json(block_hash)?];
         self.call("getrawtransaction", handle_defaults(&mut args, &[null()]))
@@ -514,7 +513,7 @@ pub trait RpcApi: Sized {
 
     fn get_block_filter(
         &self,
-        block_hash: &dashcore::BlockHash,
+        block_hash: &BlockHash,
     ) -> Result<json::GetBlockFilterResult> {
         self.call("getblockfilter", &[into_json(block_hash)?])
     }
@@ -568,7 +567,7 @@ pub trait RpcApi: Sized {
 
     fn list_since_block(
         &self,
-        blockhash: Option<&dashcore::BlockHash>,
+        blockhash: Option<&BlockHash>,
         target_confirmations: Option<usize>,
         include_watchonly: Option<bool>,
         include_removed: Option<bool>,
@@ -595,7 +594,7 @@ pub trait RpcApi: Sized {
     fn get_tx_out_proof(
         &self,
         txids: &[dashcore::Txid],
-        block_hash: Option<&dashcore::BlockHash>,
+        block_hash: Option<&BlockHash>,
     ) -> Result<Vec<u8>> {
         let mut args = [into_json(txids)?, opt_into_json(block_hash)?];
         let hex: String = self.call("gettxoutproof", handle_defaults(&mut args, &[null()]))?;
@@ -774,24 +773,6 @@ pub trait RpcApi: Sized {
         self.call("fundrawtransaction", handle_defaults(&mut args, &defaults))
     }
 
-    #[deprecated]
-    fn sign_raw_transaction<R: RawTx>(
-        &self,
-        tx: R,
-        utxos: Option<&[json::SignRawTransactionInput]>,
-        private_keys: Option<&[PrivateKey]>,
-        sighash_type: Option<json::SigHashType>,
-    ) -> Result<json::SignRawTransactionResult> {
-        let mut args = [
-            tx.raw_hex().into(),
-            opt_into_json(utxos)?,
-            opt_into_json(private_keys)?,
-            opt_into_json(sighash_type)?,
-        ];
-        let defaults = [empty_arr(), empty_arr(), null()];
-        self.call("signrawtransaction", handle_defaults(&mut args, &defaults))
-    }
-
     fn sign_raw_transaction_with_wallet<R: RawTx>(
         &self,
         tx: R,
@@ -824,8 +805,7 @@ pub trait RpcApi: Sized {
         &self,
         rawtxs: &[R],
     ) -> Result<Vec<json::TestMempoolAcceptResult>> {
-        let hexes: Vec<serde_json::Value> =
-            rawtxs.to_vec().into_iter().map(|r| r.raw_hex().into()).collect();
+        let hexes: Vec<Value> = rawtxs.to_vec().into_iter().map(|r| r.raw_hex().into()).collect();
         self.call("testmempoolaccept", &[hexes.into()])
     }
 
@@ -863,23 +843,23 @@ pub trait RpcApi: Sized {
         &self,
         block_num: u64,
         address: &Address,
-    ) -> Result<Vec<dashcore::BlockHash>> {
+    ) -> Result<Vec<BlockHash>> {
         self.call("generatetoaddress", &[block_num.into(), address.to_string().into()])
     }
 
     /// Mine up to block_num blocks immediately (before the RPC call returns)
     /// to an address in the wallet.
-    fn generate(&self, block_num: u64, maxtries: Option<u64>) -> Result<Vec<dashcore::BlockHash>> {
+    fn generate(&self, block_num: u64, maxtries: Option<u64>) -> Result<Vec<BlockHash>> {
         self.call("generate", &[block_num.into(), opt_into_json(maxtries)?])
     }
 
     /// Mark a block as invalid by `block_hash`
-    fn invalidate_block(&self, block_hash: &dashcore::BlockHash) -> Result<()> {
+    fn invalidate_block(&self, block_hash: &BlockHash) -> Result<()> {
         self.call("invalidateblock", &[into_json(block_hash)?])
     }
 
     /// Mark a block as valid by `block_hash`
-    fn reconsider_block(&self, block_hash: &dashcore::BlockHash) -> Result<()> {
+    fn reconsider_block(&self, block_hash: &BlockHash) -> Result<()> {
         self.call("reconsiderblock", &[into_json(block_hash)?])
     }
 
@@ -1194,7 +1174,7 @@ pub trait RpcApi: Sized {
     /// Returns masternode compatible outputs
     fn get_masternode_outputs(&self) -> Result<HashMap<String, String>> {
         let mut args = ["outputs".into()];
-        self.call::<HashMap<String, String>>("masternode", handle_defaults(&mut args, &[null()]))
+        self.call::<HashMap<String, String>>("masternode", handle_defaults(&mut args, &[]))
     }
 
     /// Returns an array of deterministic masternodes and their payments for the specified block
@@ -1264,13 +1244,13 @@ pub trait RpcApi: Sized {
     /// Returns information about a specific quorum
     fn get_quorum_info(
         &self,
-        llmq_type: u8,
-        quorum_hash: &str,
+        llmq_type: QuorumType,
+        quorum_hash: &QuorumHash,
         include_sk_share: Option<bool>,
     ) -> Result<json::QuorumInfoResult> {
         let mut args = [
             "info".into(),
-            into_json(llmq_type)?,
+            into_json(llmq_type as u8)?,
             into_json(quorum_hash)?,
             opt_into_json(include_sk_share)?,
         ];
@@ -1289,7 +1269,7 @@ pub trait RpcApi: Sized {
     /// Requests threshold-signing for a message
     fn get_quorum_sign(
         &self,
-        llmq_type: u8,
+        llmq_type: QuorumType,
         id: &str,
         msg_hash: &str,
         quorum_hash: Option<&str>,
@@ -1309,7 +1289,7 @@ pub trait RpcApi: Sized {
     /// Returns the recovered signature for a previous threshold-signing message request
     fn get_quorum_getrecsig(
         &self,
-        llmq_type: u8,
+        llmq_type: QuorumType,
         id: &str,
         msg_hash: &str,
     ) -> Result<json::QuorumSignature> {
@@ -1319,14 +1299,14 @@ pub trait RpcApi: Sized {
     }
 
     /// Checks for a recovered signature for a previous threshold-signing message request
-    fn get_quorum_hasrecsig(&self, llmq_type: u8, id: &str, msg_hash: &str) -> Result<bool> {
+    fn get_quorum_hasrecsig(&self, llmq_type: QuorumType, id: &str, msg_hash: &str) -> Result<bool> {
         let mut args =
             ["hasrecsig".into(), into_json(llmq_type)?, into_json(id)?, into_json(msg_hash)?];
         self.call::<bool>("quorum", handle_defaults(&mut args, &[null()]))
     }
 
     /// Checks if there is a conflict for a threshold-signing message request
-    fn get_quorum_isconflicting(&self, llmq_type: u8, id: &str, msg_hash: &str) -> Result<bool> {
+    fn get_quorum_isconflicting(&self, llmq_type: QuorumType, id: &str, msg_hash: &str) -> Result<bool> {
         let mut args =
             ["isconflicting".into(), into_json(llmq_type)?, into_json(id)?, into_json(msg_hash)?];
         self.call::<bool>("quorum", handle_defaults(&mut args, &[null()]))
@@ -1335,7 +1315,7 @@ pub trait RpcApi: Sized {
     /// Checks which quorums the given masternode is a member of
     fn get_quorum_memberof(
         &self,
-        pro_tx_hash: &str,
+        pro_tx_hash: &ProTxHash,
         scan_quorums_count: Option<u8>,
     ) -> Result<json::QuorumMemberOfResult> {
         let mut args =
@@ -1346,7 +1326,7 @@ pub trait RpcApi: Sized {
     /// Returns quorum rotation information
     fn get_quorum_rotationinfo(
         &self,
-        block_request_hash: &str,
+        block_request_hash: BlockHash,
         extra_share: Option<bool>,
         base_block_hash: Option<&str>,
     ) -> Result<json::QuorumRotationInfo> {
@@ -1363,7 +1343,7 @@ pub trait RpcApi: Sized {
     }
 
     /// Returns information about the quorum that would/should sign a request
-    fn get_quorum_selectquorum(&self, llmq_type: u8, id: &str) -> Result<json::SelectQuorumResult> {
+    fn get_quorum_selectquorum(&self, llmq_type: QuorumType, id: &str) -> Result<json::SelectQuorumResult> {
         let mut args = ["selectquorum".into(), into_json(llmq_type)?, into_json(id)?];
         self.call::<json::SelectQuorumResult>("quorum", handle_defaults(&mut args, &[null()]))
     }
@@ -1371,11 +1351,11 @@ pub trait RpcApi: Sized {
     /// Tests if a quorum signature is valid for a request id and a message hash
     fn get_quorum_verify(
         &self,
-        llmq_type: u8,
+        llmq_type: QuorumType,
         id: &str,
         msg_hash: &str,
         signature: &str,
-        quorum_hash: Option<&str>,
+        quorum_hash: Option<QuorumHash>,
         sign_height: Option<u32>,
     ) -> Result<bool> {
         let mut args = [
@@ -1399,15 +1379,15 @@ pub trait RpcApi: Sized {
     }
 
     /// Returns a returns detailed information about a deterministic masternode
-    fn get_protx_info(&self, protx_hash: &str) -> Result<json::ProTxInfo> {
+    fn get_protx_info(&self, protx_hash: &ProTxHash) -> Result<ProTxInfo> {
         let mut args = ["info".into(), into_json(protx_hash)?];
-        self.call::<json::ProTxInfo>("protx", handle_defaults(&mut args, &[null()]))
+        self.call::<ProTxInfo>("protx", handle_defaults(&mut args, &[null()]))
     }
 
     /// Returns a list of provider transactions
     fn get_protx_list(
         &self,
-        protx_type: Option<&str>,
+        protx_type: Option<ProTxListType>,
         detailed: Option<bool>,
         height: Option<u32>,
     ) -> Result<json::ProTxList> {
@@ -1588,7 +1568,7 @@ impl RpcApi for Client {
     fn call<T: for<'a> serde::de::Deserialize<'a>>(
         &self,
         cmd: &str,
-        args: &[serde_json::Value],
+        args: &[Value],
     ) -> Result<T> {
         let raw_args: Vec<_> = args
             .iter()
@@ -1639,14 +1619,13 @@ fn log_response(cmd: &str, resp: &Result<jsonrpc::Response>) {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use dashcore;
     use serde_json;
 
     #[test]
     fn test_raw_tx() {
         use dashcore::consensus::encode;
         let client = Client::new("http://localhost/".into(), Auth::None).unwrap();
-        let tx: dashcore::Transaction = encode::deserialize(&Vec::<u8>::from_hex("0200000001586bd02815cf5faabfec986a4e50d25dbee089bd2758621e61c5fab06c334af0000000006b483045022100e85425f6d7c589972ee061413bcf08dc8c8e589ce37b217535a42af924f0e4d602205c9ba9cb14ef15513c9d946fa1c4b797883e748e8c32171bdf6166583946e35c012103dae30a4d7870cd87b45dd53e6012f71318fdd059c1c2623b8cc73f8af287bb2dfeffffff021dc4260c010000001976a914f602e88b2b5901d8aab15ebe4a97cf92ec6e03b388ac00e1f505000000001976a914687ffeffe8cf4e4c038da46a9b1d37db385a472d88acfd211500").unwrap()).unwrap();
+        let tx: Transaction = encode::deserialize(&Vec::<u8>::from_hex("0200000001586bd02815cf5faabfec986a4e50d25dbee089bd2758621e61c5fab06c334af0000000006b483045022100e85425f6d7c589972ee061413bcf08dc8c8e589ce37b217535a42af924f0e4d602205c9ba9cb14ef15513c9d946fa1c4b797883e748e8c32171bdf6166583946e35c012103dae30a4d7870cd87b45dd53e6012f71318fdd059c1c2623b8cc73f8af287bb2dfeffffff021dc4260c010000001976a914f602e88b2b5901d8aab15ebe4a97cf92ec6e03b388ac00e1f505000000001976a914687ffeffe8cf4e4c038da46a9b1d37db385a472d88acfd211500").unwrap()).unwrap();
 
         assert!(client.send_raw_transaction(&tx).is_err());
         assert!(client.send_raw_transaction(&encode::serialize(&tx)).is_err());
