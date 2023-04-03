@@ -14,10 +14,10 @@ use std::iter::FromIterator;
 use std::path::PathBuf;
 use std::{fmt, result};
 
-use dashcore;
+use crate::dashcore;
 use jsonrpc;
 use serde;
-use serde_json;
+use serde_json::{self, Value};
 
 use dashcore::hashes::hex::{FromHex, ToHex};
 use dashcore::secp256k1::ecdsa::Signature;
@@ -25,10 +25,12 @@ use dashcore::{
     Address, Amount, Block, BlockHeader, OutPoint, PrivateKey, PublicKey, Script, Transaction,
 };
 use log::Level::{Debug, Trace, Warn};
+use dashcore_rpc_json::{ExtendedQuorumDetails, ProTxHash, ProTxInfo, ProTxListType, QuorumHash, QuorumType};
+use dashcore_rpc_json::dashcore::BlockHash;
 
-use error::*;
-use json;
-use queryable;
+use crate::error::*;
+use crate::json;
+use crate::queryable;
 
 /// Crate-specific Result type, shorthand for `std::result::Result` with our
 /// crate-specific Error type;
@@ -59,37 +61,37 @@ impl Into<OutPoint> for JsonOutPoint {
 }
 
 /// Shorthand for converting a variable into a serde_json::Value.
-fn into_json<T>(val: T) -> Result<serde_json::Value>
-where
-    T: serde::ser::Serialize,
+fn into_json<T>(val: T) -> Result<Value>
+    where
+        T: serde::ser::Serialize,
 {
     Ok(serde_json::to_value(val)?)
 }
 
 /// Shorthand for converting an Option into an Option<serde_json::Value>.
-fn opt_into_json<T>(opt: Option<T>) -> Result<serde_json::Value>
-where
-    T: serde::ser::Serialize,
+fn opt_into_json<T>(opt: Option<T>) -> Result<Value>
+    where
+        T: serde::ser::Serialize,
 {
     match opt {
         Some(val) => Ok(into_json(val)?),
-        None => Ok(serde_json::Value::Null),
+        None => Ok(Value::Null),
     }
 }
 
 /// Shorthand for `serde_json::Value::Null`.
-fn null() -> serde_json::Value {
-    serde_json::Value::Null
+fn null() -> Value {
+    Value::Null
 }
 
 /// Shorthand for an empty serde_json::Value array.
-fn empty_arr() -> serde_json::Value {
-    serde_json::Value::Array(vec![])
+fn empty_arr() -> Value {
+    Value::Array(vec![])
 }
 
 /// Shorthand for an empty serde_json object.
-fn empty_obj() -> serde_json::Value {
-    serde_json::Value::Object(Default::default())
+fn empty_obj() -> Value {
+    Value::Object(Default::default())
 }
 
 /// Handle default values in the argument list
@@ -108,9 +110,9 @@ fn empty_obj() -> serde_json::Value {
 /// Elements of `args` without corresponding `defaults` value, won't
 /// be substituted, because they are required.
 fn handle_defaults<'a, 'b>(
-    args: &'a mut [serde_json::Value],
-    defaults: &'b [serde_json::Value],
-) -> &'a [serde_json::Value] {
+    args: &'a mut [Value],
+    defaults: &'b [Value],
+) -> &'a [Value] {
     assert!(args.len() >= defaults.len());
 
     // Pass over the optional arguments in backwards order, filling in defaults after the first
@@ -142,9 +144,9 @@ fn handle_defaults<'a, 'b>(
 
 /// Convert a possible-null result into an Option.
 fn opt_result<T: for<'a> serde::de::Deserialize<'a>>(
-    result: serde_json::Value,
+    result: Value,
 ) -> Result<Option<T>> {
-    if result == serde_json::Value::Null {
+    if result == Value::Null {
         Ok(None)
     } else {
         Ok(serde_json::from_value(result)?)
@@ -220,7 +222,7 @@ pub trait RpcApi: Sized {
     fn call<T: for<'a> serde::de::Deserialize<'a>>(
         &self,
         cmd: &str,
-        args: &[serde_json::Value],
+        args: &[Value],
     ) -> Result<T>;
 
     /// Query an object implementing `Querable` type
@@ -319,31 +321,32 @@ pub trait RpcApi: Sized {
         self.call("getconnectioncount", &[])
     }
 
-    fn get_block(&self, hash: &dashcore::BlockHash) -> Result<Block> {
+    fn get_block(&self, hash: &BlockHash) -> Result<Block> {
         let hex: String = self.call("getblock", &[into_json(hash)?, 0.into()])?;
         let bytes: Vec<u8> = FromHex::from_hex(&hex)?;
         Ok(dashcore::consensus::encode::deserialize(&bytes)?)
     }
 
-    fn get_block_hex(&self, hash: &dashcore::BlockHash) -> Result<String> {
+    fn get_block_json(&self, hash: &BlockHash) -> Result<Value> {
+        Ok(self.call::<Value>("getblock", &[into_json(hash)?, 0.into()])?)
+    }
+
+    fn get_block_hex(&self, hash: &BlockHash) -> Result<String> {
         self.call("getblock", &[into_json(hash)?, 0.into()])
     }
 
-    fn get_block_info(&self, hash: &dashcore::BlockHash) -> Result<json::GetBlockResult> {
+    fn get_block_info(&self, hash: &BlockHash) -> Result<json::GetBlockResult> {
         self.call("getblock", &[into_json(hash)?, 1.into()])
     }
     //TODO(stevenroose) add getblock_txs
 
-    fn get_block_header(&self, hash: &dashcore::BlockHash) -> Result<BlockHeader> {
+    fn get_block_header(&self, hash: &BlockHash) -> Result<BlockHeader> {
         let hex: String = self.call("getblockheader", &[into_json(hash)?, false.into()])?;
         let bytes: Vec<u8> = FromHex::from_hex(&hex)?;
         Ok(dashcore::consensus::encode::deserialize(&bytes)?)
     }
 
-    fn get_block_header_info(
-        &self,
-        hash: &dashcore::BlockHash,
-    ) -> Result<json::GetBlockHeaderResult> {
+    fn get_block_header_info(&self, hash: &BlockHash) -> Result<json::GetBlockHeaderResult> {
         self.call("getblockheader", &[into_json(hash)?, true.into()])
     }
 
@@ -377,98 +380,36 @@ pub trait RpcApi: Sized {
     /// Returns a data structure containing various state info regarding
     /// blockchain processing.
     fn get_blockchain_info(&self) -> Result<json::GetBlockchainInfoResult> {
-        let mut raw: serde_json::Value = self.call("getblockchaininfo", &[])?;
-        // The softfork fields are not backwards compatible:
-        // - 0.18.x returns a "softforks" array and a "bip9_softforks" map.
-        // - 0.19.x returns a "softforks" map.
-        Ok(if self.version()? < 190000 {
-            use Error::UnexpectedStructure as err;
-
-            // First, remove both incompatible softfork fields.
-            // We need to scope the mutable ref here for v1.29 borrowck.
-            let (bip9_softforks, old_softforks) = {
-                let map = raw.as_object_mut().ok_or(err)?;
-                let bip9_softforks = map.remove("bip9_softforks").ok_or(err)?;
-                let old_softforks = map.remove("softforks").ok_or(err)?;
-                // Put back an empty "softforks" field.
-                map.insert("softforks".into(), serde_json::Map::new().into());
-                (bip9_softforks, old_softforks)
-            };
-            let mut ret: json::GetBlockchainInfoResult = serde_json::from_value(raw)?;
-
-            // Then convert both softfork types and add them.
-            for sf in old_softforks.as_array().ok_or(err)?.iter() {
-                let json = sf.as_object().ok_or(err)?;
-                let id = json.get("id").ok_or(err)?.as_str().ok_or(err)?;
-                let reject = json.get("reject").ok_or(err)?.as_object().ok_or(err)?;
-                let active = reject.get("status").ok_or(err)?.as_bool().ok_or(err)?;
-                ret.softforks.insert(
-                    id.into(),
-                    json::Softfork {
-                        type_: json::SoftforkType::Buried,
-                        bip9: None,
-                        height: None,
-                        active: active,
-                    },
-                );
-            }
-            for (id, sf) in bip9_softforks.as_object().ok_or(err)?.iter() {
-                #[derive(Deserialize)]
-                struct OldBip9SoftFork {
-                    pub status: json::Bip9SoftforkStatus,
-                    pub bit: Option<u8>,
-                    #[serde(rename = "startTime")]
-                    pub start_time: i64,
-                    pub timeout: u64,
-                    pub since: u32,
-                    pub statistics: Option<json::Bip9SoftforkStatistics>,
-                }
-                let sf: OldBip9SoftFork = serde_json::from_value(sf.clone())?;
-                ret.softforks.insert(
-                    id.clone(),
-                    json::Softfork {
-                        type_: json::SoftforkType::Bip9,
-                        bip9: Some(json::Bip9SoftforkInfo {
-                            status: sf.status,
-                            bit: sf.bit,
-                            start_time: sf.start_time,
-                            timeout: sf.timeout,
-                            since: sf.since,
-                            statistics: sf.statistics,
-                        }),
-                        height: None,
-                        active: sf.status == json::Bip9SoftforkStatus::Active,
-                    },
-                );
-            }
-            ret
-        } else {
-            serde_json::from_value(raw)?
-        })
+        self.call("getblockchaininfo", &[])
     }
 
     /// Returns the numbers of block in the longest chain.
-    fn get_block_count(&self) -> Result<u64> {
+    fn get_block_count(&self) -> Result<u32> {
         self.call("getblockcount", &[])
     }
 
     /// Returns the hash of the best (tip) block in the longest blockchain.
-    fn get_best_block_hash(&self) -> Result<dashcore::BlockHash> {
+    fn get_best_block_hash(&self) -> Result<BlockHash> {
         self.call("getbestblockhash", &[])
     }
 
+    /// Returns information about the best chainlock.
+    fn get_best_chain_lock(&self) -> Result<json::GetBestChainLockResult> {
+        self.call("getbestchainlock", &[])
+    }
+
     /// Get block hash at a given height
-    fn get_block_hash(&self, height: u64) -> Result<dashcore::BlockHash> {
+    fn get_block_hash(&self, height: u32) -> Result<BlockHash> {
         self.call("getblockhash", &[height.into()])
     }
 
-    fn get_block_stats(&self, height: u64) -> Result<json::GetBlockStatsResult> {
+    fn get_block_stats(&self, height: u32) -> Result<json::GetBlockStatsResult> {
         self.call("getblockstats", &[height.into()])
     }
 
     fn get_block_stats_fields(
         &self,
-        height: u64,
+        height: u32,
         fields: &[json::BlockStatsFields],
     ) -> Result<json::GetBlockStatsResultPartial> {
         self.call("getblockstats", &[height.into(), fields.into()])
@@ -477,7 +418,7 @@ pub trait RpcApi: Sized {
     fn get_raw_transaction(
         &self,
         txid: &dashcore::Txid,
-        block_hash: Option<&dashcore::BlockHash>,
+        block_hash: Option<&BlockHash>,
     ) -> Result<Transaction> {
         let mut args = [into_json(txid)?, into_json(false)?, opt_into_json(block_hash)?];
         let hex: String = self.call("getrawtransaction", handle_defaults(&mut args, &[null()]))?;
@@ -488,7 +429,7 @@ pub trait RpcApi: Sized {
     fn get_raw_transaction_hex(
         &self,
         txid: &dashcore::Txid,
-        block_hash: Option<&dashcore::BlockHash>,
+        block_hash: Option<&BlockHash>,
     ) -> Result<String> {
         let mut args = [into_json(txid)?, into_json(false)?, opt_into_json(block_hash)?];
         self.call("getrawtransaction", handle_defaults(&mut args, &[null()]))
@@ -497,7 +438,7 @@ pub trait RpcApi: Sized {
     fn get_raw_transaction_info(
         &self,
         txid: &dashcore::Txid,
-        block_hash: Option<&dashcore::BlockHash>,
+        block_hash: Option<&BlockHash>,
     ) -> Result<json::GetRawTransactionResult> {
         let mut args = [into_json(txid)?, into_json(true)?, opt_into_json(block_hash)?];
         self.call("getrawtransaction", handle_defaults(&mut args, &[null()]))
@@ -505,7 +446,7 @@ pub trait RpcApi: Sized {
 
     fn get_block_filter(
         &self,
-        block_hash: &dashcore::BlockHash,
+        block_hash: &BlockHash,
     ) -> Result<json::GetBlockFilterResult> {
         self.call("getblockfilter", &[into_json(block_hash)?])
     }
@@ -559,7 +500,7 @@ pub trait RpcApi: Sized {
 
     fn list_since_block(
         &self,
-        blockhash: Option<&dashcore::BlockHash>,
+        blockhash: Option<&BlockHash>,
         target_confirmations: Option<usize>,
         include_watchonly: Option<bool>,
         include_removed: Option<bool>,
@@ -586,7 +527,7 @@ pub trait RpcApi: Sized {
     fn get_tx_out_proof(
         &self,
         txids: &[dashcore::Txid],
-        block_hash: Option<&dashcore::BlockHash>,
+        block_hash: Option<&BlockHash>,
     ) -> Result<Vec<u8>> {
         let mut args = [into_json(txids)?, opt_into_json(block_hash)?];
         let hex: String = self.call("gettxoutproof", handle_defaults(&mut args, &[null()]))?;
@@ -765,24 +706,6 @@ pub trait RpcApi: Sized {
         self.call("fundrawtransaction", handle_defaults(&mut args, &defaults))
     }
 
-    #[deprecated]
-    fn sign_raw_transaction<R: RawTx>(
-        &self,
-        tx: R,
-        utxos: Option<&[json::SignRawTransactionInput]>,
-        private_keys: Option<&[PrivateKey]>,
-        sighash_type: Option<json::SigHashType>,
-    ) -> Result<json::SignRawTransactionResult> {
-        let mut args = [
-            tx.raw_hex().into(),
-            opt_into_json(utxos)?,
-            opt_into_json(private_keys)?,
-            opt_into_json(sighash_type)?,
-        ];
-        let defaults = [empty_arr(), empty_arr(), null()];
-        self.call("signrawtransaction", handle_defaults(&mut args, &defaults))
-    }
-
     fn sign_raw_transaction_with_wallet<R: RawTx>(
         &self,
         tx: R,
@@ -815,8 +738,7 @@ pub trait RpcApi: Sized {
         &self,
         rawtxs: &[R],
     ) -> Result<Vec<json::TestMempoolAcceptResult>> {
-        let hexes: Vec<serde_json::Value> =
-            rawtxs.to_vec().into_iter().map(|r| r.raw_hex().into()).collect();
+        let hexes: Vec<Value> = rawtxs.to_vec().into_iter().map(|r| r.raw_hex().into()).collect();
         self.call("testmempoolaccept", &[hexes.into()])
     }
 
@@ -835,12 +757,8 @@ pub trait RpcApi: Sized {
     }
 
     /// Generate new address under own control
-    fn get_new_address(
-        &self,
-        label: Option<&str>,
-        address_type: Option<json::AddressType>,
-    ) -> Result<Address> {
-        self.call("getnewaddress", &[opt_into_json(label)?, opt_into_json(address_type)?])
+    fn get_new_address(&self, label: Option<&str>) -> Result<Address> {
+        self.call("getnewaddress", &[opt_into_json(label)?])
     }
 
     fn get_address_info(&self, address: &Address) -> Result<json::GetAddressInfoResult> {
@@ -854,23 +772,23 @@ pub trait RpcApi: Sized {
         &self,
         block_num: u64,
         address: &Address,
-    ) -> Result<Vec<dashcore::BlockHash>> {
+    ) -> Result<Vec<BlockHash>> {
         self.call("generatetoaddress", &[block_num.into(), address.to_string().into()])
     }
 
     /// Mine up to block_num blocks immediately (before the RPC call returns)
     /// to an address in the wallet.
-    fn generate(&self, block_num: u64, maxtries: Option<u64>) -> Result<Vec<dashcore::BlockHash>> {
+    fn generate(&self, block_num: u64, maxtries: Option<u64>) -> Result<Vec<BlockHash>> {
         self.call("generate", &[block_num.into(), opt_into_json(maxtries)?])
     }
 
     /// Mark a block as invalid by `block_hash`
-    fn invalidate_block(&self, block_hash: &dashcore::BlockHash) -> Result<()> {
+    fn invalidate_block(&self, block_hash: &BlockHash) -> Result<()> {
         self.call("invalidateblock", &[into_json(block_hash)?])
     }
 
     /// Mark a block as valid by `block_hash`
-    fn reconsider_block(&self, block_hash: &dashcore::BlockHash) -> Result<()> {
+    fn reconsider_block(&self, block_hash: &BlockHash) -> Result<()> {
         self.call("reconsiderblock", &[into_json(block_hash)?])
     }
 
@@ -1169,40 +1087,60 @@ pub trait RpcApi: Sized {
         self.call("masternode", &["count".into()])
     }
 
-
     /// Returns a list of known masternodes
-     fn get_masternode_list(&self, mode: Option<&str>, filter: Option<&str>) -> Result<HashMap<String, json::Masternode>>{ 
+    fn get_masternode_list(
+        &self,
+        mode: Option<&str>,
+        filter: Option<&str>,
+    ) -> Result<HashMap<String, json::Masternode>> {
         let mut args = ["list".into(), into_json(mode)?, opt_into_json(filter)?];
-        self.call::<HashMap<String, json::Masternode>>("masternode", handle_defaults(&mut args, &["json".into(), null()])) 
+        self.call::<HashMap<String, json::Masternode>>(
+            "masternode",
+            handle_defaults(&mut args, &["json".into(), null()]),
+        )
     }
 
     /// Returns masternode compatible outputs
-    fn get_masternode_outputs(&self) -> Result<HashMap<String, String>>{ 
-            let mut args = ["outputs".into()];
-            self.call::<HashMap<String, String>>("masternode", handle_defaults(&mut args, &[null()])) 
+    fn get_masternode_outputs(&self) -> Result<HashMap<String, String>> {
+        let mut args = ["outputs".into()];
+        self.call::<HashMap<String, String>>("masternode", handle_defaults(&mut args, &[]))
     }
 
     /// Returns an array of deterministic masternodes and their payments for the specified block
-    fn get_masternode_payments(&self, block_hash: Option<&str>, count: Option<&str>) -> Result<Vec<json::GetMasternodePaymentsResult>>{ 
-            let mut args = ["payments".into(), opt_into_json(block_hash)?, opt_into_json(count)?];
-            self.call::<Vec<json::GetMasternodePaymentsResult>>("masternode", handle_defaults(&mut args, &[null(), null()])) 
+    fn get_masternode_payments(
+        &self,
+        block_hash: Option<&str>,
+        count: Option<&str>,
+    ) -> Result<Vec<json::GetMasternodePaymentsResult>> {
+        let mut args = ["payments".into(), opt_into_json(block_hash)?, opt_into_json(count)?];
+        self.call::<Vec<json::GetMasternodePaymentsResult>>(
+            "masternode",
+            handle_defaults(&mut args, &[null(), null()]),
+        )
     }
 
     /// Returns masternode status information
     fn get_masternode_status(&self) -> Result<json::MasternodeStatus> {
-            self.call("masternode", &["status".into()])
+        self.call("masternode", &["status".into()])
     }
 
     /// Returns the list of masternode winners
-    fn get_masternode_winners(&self, count: Option<&str>, filter: Option<&str>) -> Result<HashMap<String, String>> {
-            let mut args = ["winners".into(), opt_into_json(count)?, opt_into_json(filter)?];
-            self.call::<HashMap<String, String>>("masternode", handle_defaults(&mut args, &["10".into(), null()])) 
+    fn get_masternode_winners(
+        &self,
+        count: Option<&str>,
+        filter: Option<&str>,
+    ) -> Result<HashMap<String, String>> {
+        let mut args = ["winners".into(), opt_into_json(count)?, opt_into_json(filter)?];
+        self.call::<HashMap<String, String>>(
+            "masternode",
+            handle_defaults(&mut args, &["10".into(), null()]),
+        )
     }
 
     // -------------------------- BLS -------------------------------
 
     /// Parses a BLS secret key and returns the secret/public key pair
-     fn get_bls_fromsecret(&self, secret: &str) -> Result<json::BLS> {
+    fn get_bls_fromsecret(&self, secret: &str) -> Result<json::BLS> {
         let mut args = ["fromsecret".into(), into_json(secret)?];
         self.call::<json::BLS>("bls", handle_defaults(&mut args, &[null()]))
     }
@@ -1215,74 +1153,154 @@ pub trait RpcApi: Sized {
     // -------------------------- Quorum -------------------------------
 
     /// Returns a list of on-chain quorums
-    fn get_quorum_list(&self, count: Option<u8>) -> Result<json::QuorumListResult> {
-            let mut args = ["list".into(), opt_into_json(count)?];
-            self.call::<json::QuorumListResult>("quorum", handle_defaults(&mut args, &[1.into(), null()]))
+    fn get_quorum_list(&self, count: Option<u8>) -> Result<json::QuorumListResult<QuorumHash>> {
+        let mut args = ["list".into(), opt_into_json(count)?];
+        self.call::<json::QuorumListResult<QuorumHash>>(
+            "quorum",
+            handle_defaults(&mut args, &[1.into(), null()]),
+        )
+    }
+
+    /// Returns an extended list of on-chain quorums
+    fn get_quorum_listextended(&self, height: Option<i64>) -> Result<json::QuorumListResult<HashMap<QuorumHash, ExtendedQuorumDetails>>> {
+        let mut args = ["listextended".into(), opt_into_json(height)?];
+        self.call::<json::QuorumListResult<HashMap<QuorumHash, ExtendedQuorumDetails>>>(
+            "quorum",
+            handle_defaults(&mut args, &[]),
+        )
     }
 
     /// Returns information about a specific quorum
-    fn get_quorum_info(&self, llmq_type: u8, quorum_hash: &str, include_sk_share: Option<bool>) -> Result<json::QuorumInfoResult> {
-            let mut args = ["info".into(), into_json(llmq_type)?, into_json(quorum_hash)?, opt_into_json(include_sk_share)?];
-            self.call::<json::QuorumInfoResult>("quorum", handle_defaults(&mut args, &[null()]))
+    fn get_quorum_info(
+        &self,
+        llmq_type: QuorumType,
+        quorum_hash: &QuorumHash,
+        include_sk_share: Option<bool>,
+    ) -> Result<json::QuorumInfoResult> {
+        let mut args = [
+            "info".into(),
+            into_json(llmq_type as u8)?,
+            into_json(quorum_hash)?,
+            opt_into_json(include_sk_share)?,
+        ];
+        self.call::<json::QuorumInfoResult>("quorum", handle_defaults(&mut args, &[null()]))
     }
 
     /// Returns the status of the current DKG process
     fn get_quorum_dkgstatus(&self, detail_level: Option<u8>) -> Result<json::QuorumDKGStatus> {
-           let mut args = ["dkgstatus".into(), opt_into_json(detail_level)?];
-           self.call::<json::QuorumDKGStatus>("quorum", handle_defaults(&mut args, &[0.into(), null()]))
-    }  
+        let mut args = ["dkgstatus".into(), opt_into_json(detail_level)?];
+        self.call::<json::QuorumDKGStatus>(
+            "quorum",
+            handle_defaults(&mut args, &[0.into(), null()]),
+        )
+    }
 
     /// Requests threshold-signing for a message
-    fn get_quorum_sign(&self, llmq_type: u8, id: &str, msg_hash: &str, quorum_hash: Option<&str>, submit: Option<bool>) -> Result<json::QuorumSignResult> {
-            let mut args = ["sign".into(), into_json(llmq_type)?, into_json(id)?, into_json(msg_hash)?, opt_into_json(quorum_hash)?, opt_into_json(submit)?];
-            self.call::<json::QuorumSignResult>("quorum", handle_defaults(&mut args, &[null()]))
+    fn get_quorum_sign(
+        &self,
+        llmq_type: QuorumType,
+        id: &str,
+        msg_hash: &str,
+        quorum_hash: Option<&str>,
+        submit: Option<bool>,
+    ) -> Result<json::QuorumSignResult> {
+        let mut args = [
+            "sign".into(),
+            into_json(llmq_type)?,
+            into_json(id)?,
+            into_json(msg_hash)?,
+            opt_into_json(quorum_hash)?,
+            opt_into_json(submit)?,
+        ];
+        self.call::<json::QuorumSignResult>("quorum", handle_defaults(&mut args, &[null()]))
     }
 
     /// Returns the recovered signature for a previous threshold-signing message request
-    fn get_quorum_getrecsig(&self, llmq_type: u8, id: &str, msg_hash: &str) -> Result<json::QuorumSignature> {
-        let mut args = ["getrecsig".into(), into_json(llmq_type)?, into_json(id)?, into_json(msg_hash)?];
+    fn get_quorum_getrecsig(
+        &self,
+        llmq_type: QuorumType,
+        id: &str,
+        msg_hash: &str,
+    ) -> Result<json::QuorumSignature> {
+        let mut args =
+            ["getrecsig".into(), into_json(llmq_type)?, into_json(id)?, into_json(msg_hash)?];
         self.call::<json::QuorumSignature>("quorum", handle_defaults(&mut args, &[null()]))
     }
 
     /// Checks for a recovered signature for a previous threshold-signing message request
-    fn get_quorum_hasrecsig(&self, llmq_type: u8, id: &str, msg_hash: &str) -> Result<bool> {
-        let mut args = ["hasrecsig".into(), into_json(llmq_type)?, into_json(id)?, into_json(msg_hash)?];
+    fn get_quorum_hasrecsig(&self, llmq_type: QuorumType, id: &str, msg_hash: &str) -> Result<bool> {
+        let mut args =
+            ["hasrecsig".into(), into_json(llmq_type)?, into_json(id)?, into_json(msg_hash)?];
         self.call::<bool>("quorum", handle_defaults(&mut args, &[null()]))
     }
 
     /// Checks if there is a conflict for a threshold-signing message request
-    fn get_quorum_isconflicting(&self, llmq_type: u8, id: &str, msg_hash: &str) -> Result<bool> {
-        let mut args = ["isconflicting".into(), into_json(llmq_type)?, into_json(id)?, into_json(msg_hash)?];
+    fn get_quorum_isconflicting(&self, llmq_type: QuorumType, id: &str, msg_hash: &str) -> Result<bool> {
+        let mut args =
+            ["isconflicting".into(), into_json(llmq_type)?, into_json(id)?, into_json(msg_hash)?];
         self.call::<bool>("quorum", handle_defaults(&mut args, &[null()]))
     }
 
     /// Checks which quorums the given masternode is a member of
-    fn get_quorum_memberof(&self, pro_tx_hash: &str, scan_quorums_count: Option<u8>) -> Result<json::QuorumMemberOfResult> {
-        let mut args = ["memberof".into(), into_json(pro_tx_hash)?, opt_into_json(scan_quorums_count)?];
+    fn get_quorum_memberof(
+        &self,
+        pro_tx_hash: &ProTxHash,
+        scan_quorums_count: Option<u8>,
+    ) -> Result<json::QuorumMemberOfResult> {
+        let mut args =
+            ["memberof".into(), into_json(pro_tx_hash)?, opt_into_json(scan_quorums_count)?];
         self.call::<json::QuorumMemberOfResult>("quorum", handle_defaults(&mut args, &[null()]))
     }
 
     /// Returns quorum rotation information
-    fn get_quorum_rotationinfo(&self, block_request_hash: &str, extra_share: Option<bool>, base_block_hash: Option<&str>) -> Result<json::QuorumRotationInfo> {
-        let mut args = ["rotationinfo".into(), into_json(block_request_hash)?, opt_into_json(extra_share)?, opt_into_json(base_block_hash)?];
-        self.call::<json::QuorumRotationInfo>("quorum", handle_defaults(&mut args, &[false.into(), "".into(), null()]))
+    fn get_quorum_rotationinfo(
+        &self,
+        block_request_hash: &BlockHash,
+        extra_share: Option<bool>,
+        base_block_hash: Option<&str>,
+    ) -> Result<json::QuorumRotationInfo> {
+        let mut args = [
+            "rotationinfo".into(),
+            into_json(block_request_hash)?,
+            opt_into_json(extra_share)?,
+            opt_into_json(base_block_hash)?,
+        ];
+        self.call::<json::QuorumRotationInfo>(
+            "quorum",
+            handle_defaults(&mut args, &[false.into(), "".into(), null()]),
+        )
     }
 
     /// Returns information about the quorum that would/should sign a request
-    fn get_quorum_selectquorum(&self, llmq_type: u8, id: &str) -> Result<json::SelectQuorumResult> {
+    fn get_quorum_selectquorum(&self, llmq_type: QuorumType, id: &str) -> Result<json::SelectQuorumResult> {
         let mut args = ["selectquorum".into(), into_json(llmq_type)?, into_json(id)?];
         self.call::<json::SelectQuorumResult>("quorum", handle_defaults(&mut args, &[null()]))
     }
 
     /// Tests if a quorum signature is valid for a request id and a message hash
-    fn get_quorum_verify(&self, llmq_type: u8, id: &str, msg_hash: &str, signature: &str, quorum_hash: Option<&str>, sign_height: Option<u32>) -> Result<bool> {
-            let mut args = ["verify".into(), into_json(llmq_type)?, into_json(id)?, into_json(msg_hash)?, into_json(signature)?, opt_into_json(quorum_hash)?, opt_into_json(sign_height)?];
-            self.call::<bool>("quorum", handle_defaults(&mut args, &[null()]))
+    fn get_quorum_verify(
+        &self,
+        llmq_type: QuorumType,
+        id: &str,
+        msg_hash: &str,
+        signature: &str,
+        quorum_hash: Option<QuorumHash>,
+        sign_height: Option<u32>,
+    ) -> Result<bool> {
+        let mut args = [
+            "verify".into(),
+            into_json(llmq_type)?,
+            into_json(id)?,
+            into_json(msg_hash)?,
+            into_json(signature)?,
+            opt_into_json(quorum_hash)?,
+            opt_into_json(sign_height)?,
+        ];
+        self.call::<bool>("quorum", handle_defaults(&mut args, &[null()]))
     }
 
-    
     // --------------------------- ProTx -------------------------------
-   
+
     /// Returns a diff and a proof between two masternode list
     fn get_protx_diff(&self, base_block: u32, block: u32) -> Result<json::MasternodeListDiff> {
         let mut args = ["diff".into(), into_json(base_block)?, into_json(block)?];
@@ -1290,32 +1308,99 @@ pub trait RpcApi: Sized {
     }
 
     /// Returns a returns detailed information about a deterministic masternode
-    fn get_protx_info(&self, protx_hash: &str) -> Result<json::ProTxInfo> {
+    fn get_protx_info(&self, protx_hash: &ProTxHash) -> Result<ProTxInfo> {
         let mut args = ["info".into(), into_json(protx_hash)?];
-        self.call::<json::ProTxInfo>("protx", handle_defaults(&mut args, &[null()]))
+        self.call::<ProTxInfo>("protx", handle_defaults(&mut args, &[null()]))
     }
 
     /// Returns a list of provider transactions
-    fn get_protx_list(&self, protx_type: Option<&str>, detailed: Option<bool>, height: Option<u32>) -> Result<json::ProTxList> {
-            let mut args = ["list".into(), opt_into_json(protx_type)?, opt_into_json(detailed)?, opt_into_json(height)?];
-            self.call::<json::ProTxList>("protx", handle_defaults(&mut args, &[null()]))
+    fn get_protx_list(
+        &self,
+        protx_type: Option<ProTxListType>,
+        detailed: Option<bool>,
+        height: Option<u32>,
+    ) -> Result<json::ProTxList> {
+        let mut args = [
+            "list".into(),
+            opt_into_json(protx_type)?,
+            opt_into_json(detailed)?,
+            opt_into_json(height)?,
+        ];
+        self.call::<json::ProTxList>("protx", handle_defaults(&mut args, &[null()]))
     }
 
     /// Creates a ProRegTx referencing an existing collateral and and sends it to the network
-    fn get_protx_register(&self, collateral_hash: &str, collateral_index: u32, ip_and_port: &str, owner_address: dashcore::Address, operator_pub_key: &str, voting_address: dashcore::Address, operator_reward: u32, payout_address: dashcore::Address, fee_source_address: Option<dashcore::Address>, submit: Option<bool>) -> Result<json::ProRegTxHash> {
-        let mut args = ["register".into(), into_json(collateral_hash)?, into_json(collateral_index)?, into_json(ip_and_port)?, into_json(owner_address)?, into_json(operator_pub_key)?, into_json(voting_address)?, into_json(operator_reward)?, into_json(payout_address)?, opt_into_json(fee_source_address)?, opt_into_json(submit)?];
+    fn get_protx_register(
+        &self,
+        collateral_hash: &str,
+        collateral_index: u32,
+        ip_and_port: &str,
+        owner_address: &str,
+        operator_pub_key: &str,
+        voting_address: &str,
+        operator_reward: u32,
+        payout_address: &str,
+        fee_source_address: Option<&str>,
+        submit: Option<bool>,
+    ) -> Result<json::ProRegTxHash> {
+        let mut args = [
+            "register".into(),
+            into_json(collateral_hash)?,
+            into_json(collateral_index)?,
+            into_json(ip_and_port)?,
+            into_json(owner_address)?,
+            into_json(operator_pub_key)?,
+            into_json(voting_address)?,
+            into_json(operator_reward)?,
+            into_json(payout_address)?,
+            opt_into_json(fee_source_address)?,
+            opt_into_json(submit)?,
+        ];
         self.call::<json::ProRegTxHash>("protx", handle_defaults(&mut args, &[null()]))
     }
 
     /// Creates and funds a ProRegTx with the 1,000 DASH necessary for a masternode and then sends it to the network
-    fn get_protx_register_fund(&self, collateral_address: dashcore::Address, ip_and_port: &str, owner_address: dashcore::Address, operator_pub_key: &str, voting_address: dashcore::Address, operator_reward: u32, payout_address: dashcore::Address, fund_address: Option<dashcore::Address>, submit: Option<bool>) -> Result<json::ProRegTxHash> {
-        let mut args = ["register_fund".into(), into_json(collateral_address)?, into_json(ip_and_port)?, into_json(owner_address)?, into_json(operator_pub_key)?, into_json(voting_address)?, into_json(operator_reward)?, into_json(payout_address)?, opt_into_json(fund_address)?, opt_into_json(submit)?];
+    fn get_protx_register_fund(
+        &self,
+        collateral_address: &str,
+        ip_and_port: &str,
+        owner_address: &str,
+        operator_pub_key: &str,
+        voting_address: &str,
+        operator_reward: u32,
+        payout_address: &str,
+        fund_address: Option<&str>,
+        submit: Option<bool>,
+    ) -> Result<json::ProRegTxHash> {
+        let mut args = [
+            "register_fund".into(),
+            into_json(collateral_address)?,
+            into_json(ip_and_port)?,
+            into_json(owner_address)?,
+            into_json(operator_pub_key)?,
+            into_json(voting_address)?,
+            into_json(operator_reward)?,
+            into_json(payout_address)?,
+            opt_into_json(fund_address)?,
+            opt_into_json(submit)?,
+        ];
         self.call::<json::ProRegTxHash>("protx", handle_defaults(&mut args, &[null()]))
     }
 
     /// Creates an unsigned ProTx and a message that must be signed externally
-    fn get_protx_register_prepare(&self, collateral_hash: &str, collateral_index: u32, ip_and_port: &str, owner_address: dashcore::Address, operator_pub_key: &str, voting_address: dashcore::Address, operator_reward: u32, payout_address: dashcore::Address, fee_source_address: Option<dashcore::Address>) -> Result<json::ProTxRegPrepare> {
-        let mut args = ["register_prepare".into(), into_json(collateral_address)?, into_json(collateral_index)?, into_json(ip_and_port)?, into_json(owner_address)?, into_json(operator_pub_key)?, into_json(voting_address)?, into_json(operator_reward)?, into_json(payout_address)?, opt_into_json(fee_source_address)?];
+    fn get_protx_register_prepare(
+        &self,
+        collateral_hash: &str,
+        collateral_index: u32,
+        ip_and_port: &str,
+        owner_address: dashcore::Address,
+        operator_pub_key: &str,
+        voting_address: dashcore::Address,
+        operator_reward: u32,
+        payout_address: dashcore::Address,
+        fee_source_address: Option<dashcore::Address>,
+    ) -> Result<json::ProTxRegPrepare> {
+        let mut args = ["register_prepare".into(), into_json(collateral_hash)?, into_json(collateral_index)?, into_json(ip_and_port)?, into_json(owner_address)?, into_json(operator_pub_key)?, into_json(voting_address)?, into_json(operator_reward)?, into_json(payout_address)?, opt_into_json(fee_source_address)?];
         self.call::<json::ProTxRegPrepare>("protx", handle_defaults(&mut args, &[null()]))
     }
 
@@ -1328,19 +1413,32 @@ pub trait RpcApi: Sized {
 
     /// Creates and sends a ProUpRevTx to the network
     fn get_protx_revoke(&self, pro_tx_hash: &str, operator_pub_key: &str, reason: json::ProTxRevokeReason, fee_source_address: Option<dashcore::Address>) -> Result<json::ProRegTxHash> {
-        let mut args = ["revoke".into(), into_json(pro_tx_hash)?, into_json(operator_pub_key)?, into_json(reason)?, opt_into_json(fee_source_address)?];
+        let mut args = ["revoke".into(), into_json(pro_tx_hash)?, into_json(operator_pub_key)?, into_json(reason as u8)?, opt_into_json(fee_source_address)?];
         self.call::<json::ProRegTxHash>("protx", handle_defaults(&mut args, &[null()]))
     }
 
     /// Creates and sends a ProUpRegTx to the network
-    fn get_protx_update_registrar(&self, pro_tx_hash: &str, operator_pub_key: &str, voting_address: dashcore::Address, payout_address: Option<dashcore::Address>, fee_source_address: Option<dashcore::Address>) -> Result<json::ProRegTxHash> {
-        let mut args = ["update_registrar".into(), into_json(pro_tx_hash)?, into_json(operator_pub_key)?, into_json(voting_address)?, opt_into_json(payout_address)?, opt_into_json(fee_source_address)?];
+    fn get_protx_update_registrar(
+        &self,
+        pro_tx_hash: &str,
+        operator_pub_key: &str,
+        voting_address: dashcore::Address,
+        payout_address: dashcore::Address,
+        fee_source_address: Option<dashcore::Address>,
+    ) -> Result<json::ProRegTxHash> {
+        let mut args = ["update_registrar".into(), into_json(pro_tx_hash)?, into_json(operator_pub_key)?, into_json(voting_address)?, into_json(payout_address)?, opt_into_json(fee_source_address)?];
         self.call::<json::ProRegTxHash>("protx", handle_defaults(&mut args, &[null()]))
     }
 
     /// Creates and sends a ProUpServTx to the network
-    fn get_protx_update_service(&self, pro_tx_hash: &str, ip_and_port: &str, operator_key: &str, operator_payout_address: Option<dashcore::Address>, fee_source_address: Option<dashcore::Address>) -> Result<json::ProRegTxHash> {
-        let mut args = ["update_service".into(), into_json(pro_tx_hash)?, into_json(ip_and_port)?, into_json(operator_key)?, opt_into_json(payout_address)?, opt_into_json(fee_source_address)?];
+    fn get_protx_update_service(
+        &self, pro_tx_hash: &str,
+        ip_and_port: &str,
+        operator_key: &str,
+        operator_payout_address: Option<dashcore::Address>,
+        fee_source_address: Option<dashcore::Address>,
+    ) -> Result<json::ProRegTxHash> {
+        let mut args = ["update_service".into(), into_json(pro_tx_hash)?, into_json(ip_and_port)?, into_json(operator_key)?, opt_into_json(operator_payout_address)?, opt_into_json(fee_source_address)?];
         self.call::<json::ProRegTxHash>("protx", handle_defaults(&mut args, &[null()]))
     }
 
@@ -1355,8 +1453,6 @@ pub trait RpcApi: Sized {
         let mut args = [into_json(id)?, into_json(tx_id)?, into_json(signature)?, opt_into_json(max_height)?];
         self.call::<bool>("verifyislock", handle_defaults(&mut args, &[null()]))
     }
-
-
 }
 
 /// Client implements a JSON-RPC client for the Dash Core daemon or compatible APIs.
@@ -1401,7 +1497,7 @@ impl RpcApi for Client {
     fn call<T: for<'a> serde::de::Deserialize<'a>>(
         &self,
         cmd: &str,
-        args: &[serde_json::Value],
+        args: &[Value],
     ) -> Result<T> {
         let raw_args: Vec<_> = args
             .iter()
@@ -1440,7 +1536,7 @@ fn log_response(cmd: &str, resp: &Result<jsonrpc::Response>) {
                     let def = serde_json::value::RawValue::from_string(
                         serde_json::Value::Null.to_string(),
                     )
-                    .unwrap();
+                        .unwrap();
                     let result = resp.result.as_ref().unwrap_or(&def);
                     trace!(target: "dashcore_rpc", "JSON-RPC response for {}: {}", cmd, result);
                 }
@@ -1452,14 +1548,13 @@ fn log_response(cmd: &str, resp: &Result<jsonrpc::Response>) {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use dashcore;
     use serde_json;
 
     #[test]
     fn test_raw_tx() {
         use dashcore::consensus::encode;
         let client = Client::new("http://localhost/".into(), Auth::None).unwrap();
-        let tx: dashcore::Transaction = encode::deserialize(&Vec::<u8>::from_hex("0200000001586bd02815cf5faabfec986a4e50d25dbee089bd2758621e61c5fab06c334af0000000006b483045022100e85425f6d7c589972ee061413bcf08dc8c8e589ce37b217535a42af924f0e4d602205c9ba9cb14ef15513c9d946fa1c4b797883e748e8c32171bdf6166583946e35c012103dae30a4d7870cd87b45dd53e6012f71318fdd059c1c2623b8cc73f8af287bb2dfeffffff021dc4260c010000001976a914f602e88b2b5901d8aab15ebe4a97cf92ec6e03b388ac00e1f505000000001976a914687ffeffe8cf4e4c038da46a9b1d37db385a472d88acfd211500").unwrap()).unwrap();
+        let tx: Transaction = encode::deserialize(&Vec::<u8>::from_hex("0200000001586bd02815cf5faabfec986a4e50d25dbee089bd2758621e61c5fab06c334af0000000006b483045022100e85425f6d7c589972ee061413bcf08dc8c8e589ce37b217535a42af924f0e4d602205c9ba9cb14ef15513c9d946fa1c4b797883e748e8c32171bdf6166583946e35c012103dae30a4d7870cd87b45dd53e6012f71318fdd059c1c2623b8cc73f8af287bb2dfeffffff021dc4260c010000001976a914f602e88b2b5901d8aab15ebe4a97cf92ec6e03b388ac00e1f505000000001976a914687ffeffe8cf4e4c038da46a9b1d37db385a472d88acfd211500").unwrap()).unwrap();
 
         assert!(client.send_raw_transaction(&tx).is_err());
         assert!(client.send_raw_transaction(&encode::serialize(&tx)).is_err());
