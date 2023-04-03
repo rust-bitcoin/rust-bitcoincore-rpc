@@ -237,7 +237,7 @@ pub struct GetBlockStatsResult {
     pub block_hash: dashcore::BlockHash,
     #[serde(rename = "feerate_percentiles")]
     pub fee_rate_percentiles: FeeRatePercentiles,
-    pub height: u64,
+    pub height: u32,
     pub ins: usize,
     #[serde(rename = "maxfee", with = "dashcore::util::amount::serde::as_sat")]
     pub max_fee: Amount,
@@ -286,7 +286,7 @@ pub struct GetBlockStatsResultPartial {
     #[serde(default, rename = "feerate_percentiles", skip_serializing_if = "Option::is_none")]
     pub fee_rate_percentiles: Option<FeeRatePercentiles>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub height: Option<u64>,
+    pub height: Option<u32>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub ins: Option<usize>,
     #[serde(default, rename = "maxfee", with = "dashcore::util::amount::serde::as_sat::opt", skip_serializing_if = "Option::is_none")]
@@ -770,10 +770,10 @@ pub enum Bip9SoftforkStatus {
 
 #[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
 pub struct Bip9SoftforkStatistics {
-    pub period: u32,
+    pub period: Option<u32>,
     pub threshold: Option<u32>,
-    pub elapsed: u32,
-    pub count: u32,
+    pub elapsed: Option<u32>,
+    pub count: Option<u32>,
     pub possible: Option<bool>,
 }
 
@@ -795,14 +795,21 @@ pub enum SoftforkType {
     Bip9,
 }
 
+#[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
+pub struct SoftforkInfo {
+    pub status: Option<bool>,
+    pub found: Option<u32>,
+    pub required: Option<u32>,
+    pub window: Option<u32>,
+}
+
 /// Status of a softfork
 #[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
 pub struct Softfork {
-    #[serde(rename = "type")]
-    pub type_: SoftforkType,
-    pub bip9: Option<Bip9SoftforkInfo>,
-    pub height: Option<u32>,
-    pub active: bool,
+    pub id: String,
+    pub version: u32,
+    pub enforce: Option<SoftforkInfo>,
+    pub reject: Option<SoftforkInfo>,
 }
 
 #[allow(non_camel_case_types)]
@@ -887,7 +894,7 @@ pub struct GetBlockchainInfoResult {
     pub headers: u64,
     /// The hash of the currently best block
     #[serde(rename = "bestblockhash")]
-    pub best_block_hash: dashcore::BlockHash,
+    pub best_block_hash: BlockHash,
     /// The current difficulty
     pub difficulty: f64,
     /// Median time for the current best block
@@ -915,7 +922,8 @@ pub struct GetBlockchainInfoResult {
     pub prune_target_size: Option<u64>,
     /// Status of softforks in progress
     #[serde(default)]
-    pub softforks: HashMap<String, Softfork>,
+    pub softforks: Vec<Softfork>,
+    pub bip9_softforks: HashMap<String, Bip9SoftforkInfo>,
     /// Any network and blockchain warnings.
     pub warnings: String,
 }
@@ -1891,6 +1899,12 @@ impl Serialize for ProTxListType {
 #[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
 pub struct ProTxHash(#[serde(with = "hex")] pub Vec<u8>);
 
+impl From<&str> for ProTxHash {
+    fn from(value: &str) -> Self {
+        ProTxHash(Vec::from_hex(value).unwrap())
+    }
+}
+
 #[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
 pub struct ProRegTxHash(pub Vec<u8>);
 
@@ -1913,11 +1927,11 @@ pub struct Masternode {
     #[serde(rename = "type")]
     pub node_type: String,
     #[serde(rename = "platformNodeID")]
-    pub platform_node_id: String,
+    pub platform_node_id: Option<String>,
     #[serde(rename = "platformP2PPort")]
-    pub platform_p2p_port: u32,
+    pub platform_p2p_port: Option<u32>,
     #[serde(rename = "platformHTTPPort")]
-    pub platform_http_port: u32,
+    pub platform_http_port: Option<u32>,
     #[serde(rename = "pospenaltyscore")]
     pub pos_penalty_score: u32,
     #[serde(rename = "consecutivePayments")]
@@ -2102,6 +2116,12 @@ impl From<&str> for QuorumType {
 
 #[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
 pub struct QuorumHash(#[serde(with = "hex")] pub Vec<u8>);
+
+impl From<&str> for QuorumHash {
+    fn from(value: &str) -> Self {
+        QuorumHash(Vec::from_hex(value).unwrap())
+    }
+}
 
 #[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
 pub struct QuorumListResult {
