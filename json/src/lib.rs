@@ -178,7 +178,8 @@ pub struct CoinbaseTxDetails {
 pub struct GetBestChainLockResult {
     pub blockhash: BlockHash,
     pub height: u32,
-    pub signature: String,
+    #[serde(with = "hex")]
+    pub signature: Vec<u8>,
     pub known_block: bool,
 }
 
@@ -2122,7 +2123,7 @@ impl From<&str> for QuorumType {
     }
 }
 
-#[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
+#[derive(Clone, PartialEq, Eq, Debug, Hash, Deserialize, Serialize)]
 pub struct QuorumHash(#[serde(with = "hex")] pub Vec<u8>);
 
 impl From<&str> for QuorumHash {
@@ -2138,7 +2139,7 @@ pub struct ExtendedQuorumDetails {
     pub quorum_index: Option<u32>,
     pub mined_block_hash: BlockHash,
     pub num_valid_members: u32,
-    #[serde(deserialize_with = "deserialize_f32_state")]
+    #[serde(deserialize_with = "deserialize_f32")]
     pub health_ratio: f32,
 }
 
@@ -2563,7 +2564,7 @@ fn deserialize_quorum_type<'de, D>(deserializer: D) -> Result<QuorumType, D::Err
     };
 }
 
-fn deserialize_f32_state<'de, D>(deserializer: D) -> Result<f32, D::Error>
+fn deserialize_f32<'de, D>(deserializer: D) -> Result<f32, D::Error>
     where
         D: Deserializer<'de>,
 {

@@ -1162,9 +1162,9 @@ pub trait RpcApi: Sized {
     }
 
     /// Returns an extended list of on-chain quorums
-    fn get_quorum_listextended(&self, height: Option<i64>) -> Result<json::QuorumListResult<HashMap<String, ExtendedQuorumDetails>>> {
+    fn get_quorum_listextended(&self, height: Option<i64>) -> Result<json::QuorumListResult<HashMap<QuorumHash, ExtendedQuorumDetails>>> {
         let mut args = ["listextended".into(), opt_into_json(height)?];
-        self.call::<json::QuorumListResult<HashMap<String, ExtendedQuorumDetails>>>(
+        self.call::<json::QuorumListResult<HashMap<QuorumHash, ExtendedQuorumDetails>>>(
             "quorum",
             handle_defaults(&mut args, &[]),
         )
