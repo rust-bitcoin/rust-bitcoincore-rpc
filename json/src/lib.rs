@@ -34,7 +34,8 @@ use dashcore::hashes::hex::{FromHex, ToHex};
 use dashcore::hashes::sha256;
 use dashcore::util::{bip158, bip32};
 use dashcore::{Address, Amount, BlockHash, PrivateKey, PublicKey, Script, SignedAmount, Transaction};
-use serde::{Deserialize, Deserializer, Serialize, Serializer};
+use serde::{de, Deserialize, Deserializer, Serialize, Serializer};
+use serde_json::Value;
 use serde_with::{serde_as, Bytes, DisplayFromStr};
 
 //TODO(stevenroose) consider using a Time type
@@ -171,6 +172,15 @@ pub struct CoinbaseTxDetails {
     merkle_root_mn_list: Vec<u8>,
     #[serde(rename = "merkleRootQuorums", with = "hex")]
     merkle_root_quorums: Vec<u8>,
+}
+
+#[derive(Clone, PartialEq, Debug, Deserialize, Serialize)]
+pub struct GetBestChainLockResult {
+    pub blockhash: BlockHash,
+    pub height: u32,
+    #[serde(with = "hex")]
+    pub signature: Vec<u8>,
+    pub known_block: bool,
 }
 
 #[derive(Clone, PartialEq, Debug, Deserialize, Serialize)]
@@ -1076,7 +1086,6 @@ impl<'de> serde::Deserialize<'de> for ImportMultiRescanSince {
         where
             D: Deserializer<'de>,
     {
-        use serde::de;
         struct Visitor;
         impl<'de> de::Visitor<'de> for Visitor {
             type Value = ImportMultiRescanSince;
@@ -2114,7 +2123,7 @@ impl From<&str> for QuorumType {
     }
 }
 
-#[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
+#[derive(Clone, PartialEq, Eq, Debug, Hash, Deserialize, Serialize)]
 pub struct QuorumHash(#[serde(with = "hex")] pub Vec<u8>);
 
 impl From<&str> for QuorumHash {
@@ -2123,17 +2132,36 @@ impl From<&str> for QuorumHash {
     }
 }
 
-#[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
-pub struct QuorumListResult {
-    pub llmq_50_60: Option<Vec<QuorumHash>>,
-    pub llmq_400_60: Option<Vec<QuorumHash>>,
-    pub llmq_400_85: Option<Vec<QuorumHash>>,
-    pub llmq_100_67: Option<Vec<QuorumHash>>,
-    pub llmq_test: Option<Vec<QuorumHash>>,
-    pub llmq_test_instantsend: Option<Vec<QuorumHash>>,
-    pub llmq_test_v17: Option<Vec<QuorumHash>>,
-    pub llmq_test_dip0024: Option<Vec<QuorumHash>>,
-    pub llmq_test_platform: Option<Vec<QuorumHash>>,
+#[derive(Clone, PartialEq, Debug, Deserialize, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ExtendedQuorumDetails {
+    pub creation_height: u32,
+    pub quorum_index: Option<u32>,
+    pub mined_block_hash: BlockHash,
+    pub num_valid_members: u32,
+    #[serde(deserialize_with = "deserialize_f32")]
+    pub health_ratio: f32,
+}
+
+#[derive(Clone, PartialEq, Debug, Deserialize, Serialize)]
+pub struct QuorumListResult<T> {
+    pub llmq_50_60: Option<Vec<T>>,
+    pub llmq_400_60: Option<Vec<T>>,
+    pub llmq_400_85: Option<Vec<T>>,
+    pub llmq_100_67: Option<Vec<T>>,
+    pub llmq_60_75: Option<Vec<T>>,
+    pub llmq_25_67: Option<Vec<T>>,
+    // for devnets only
+    pub llmq_devnet: Option<Vec<T>>,
+    pub llmq_devnet_platform: Option<Vec<T>>,
+    // for devnets only. rotated version (v2) for devnets
+    pub llmq_devnet_dip0024: Option<Vec<T>>,
+    // for testing only
+    pub llmq_test: Option<Vec<T>>,
+    pub llmq_test_instantsend: Option<Vec<T>>,
+    pub llmq_test_v17: Option<Vec<T>>,
+    pub llmq_test_dip0024: Option<Vec<T>>,
+    pub llmq_test_platform: Option<Vec<T>>,
 }
 
 #[serde_as]
@@ -2534,4 +2562,15 @@ fn deserialize_quorum_type<'de, D>(deserializer: D) -> Result<QuorumType, D::Err
             Ok(qt)
         }
     };
+}
+
+fn deserialize_f32<'de, D>(deserializer: D) -> Result<f32, D::Error>
+    where
+        D: Deserializer<'de>,
+{
+    Ok(match Value::deserialize(deserializer)? {
+        Value::String(s) => s.parse().map_err(de::Error::custom)?,
+        Value::Number(num) => num.as_f64().ok_or(de::Error::custom("Invalid number"))? as f32,
+        _ => return Err(de::Error::custom("wrong type"))
+    })
 }

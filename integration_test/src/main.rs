@@ -143,6 +143,7 @@ fn main() {
     test_get_balance_generate_to_address(&cl);
     test_get_balances_generate_to_address(&cl);
     test_get_best_block_hash(&cl);
+    test_get_best_chain_lock(&cl);
     test_get_block_count(&cl);
     test_get_block_hash(&cl);
     test_get_block(&cl);
@@ -219,6 +220,7 @@ fn main() {
     test_get_masternode_status(&cl);
     test_get_masternode_winners(&cl);
     test_get_quorum_list(&cl);
+    test_get_quorum_listextended(&cl);
     test_get_quorum_info(&cl);
     test_get_quorum_dkgstatus(&cl);
     test_get_quorum_sign(&cl);
@@ -312,6 +314,10 @@ fn test_get_balances_generate_to_address(cl: &Client) {
 
 fn test_get_best_block_hash(cl: &Client) {
     let _ = cl.get_best_block_hash().unwrap();
+}
+
+fn test_get_best_chain_lock(cl: &Client) {
+    let _ = cl.get_best_chain_lock().unwrap();
 }
 
 fn test_get_block_count(cl: &Client) {
@@ -1210,6 +1216,11 @@ fn test_get_masternode_winners(cl: &Client) {
 
 fn test_get_quorum_list(cl: &Client) {
     let _quorum_list = cl.get_quorum_list(Some(b'1')).unwrap();
+}
+
+fn test_get_quorum_listextended(cl: &Client) {
+    let _quorum_list = cl.get_quorum_listextended(None).unwrap();
+    let _quorum_list = cl.get_quorum_listextended(Some(1000)).unwrap();
 }
 
 fn test_get_quorum_info(cl: &Client) {
