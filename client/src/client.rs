@@ -25,7 +25,7 @@ use dashcore::{
     Address, Amount, Block, BlockHeader, OutPoint, PrivateKey, PublicKey, Script, Transaction,
 };
 use log::Level::{Debug, Trace, Warn};
-use dashcore_rpc_json::{ProTxHash, ProTxInfo, ProTxListType, QuorumHash, QuorumType};
+use dashcore_rpc_json::{ExtendedQuorumDetails, ProTxHash, ProTxInfo, ProTxListType, QuorumHash, QuorumType};
 use dashcore_rpc_json::dashcore::BlockHash;
 
 use crate::error::*;
@@ -394,7 +394,7 @@ pub trait RpcApi: Sized {
     }
 
     /// Returns information about the best chainlock.
-    fn get_best_chain_lock(&self) -> Result<dashcore::BlockHash> {
+    fn get_best_chain_lock(&self) -> Result<json::GetBestChainLockResult> {
         self.call("getbestchainlock", &[])
     }
 
@@ -1153,18 +1153,18 @@ pub trait RpcApi: Sized {
     // -------------------------- Quorum -------------------------------
 
     /// Returns a list of on-chain quorums
-    fn get_quorum_list(&self, count: Option<u8>) -> Result<json::QuorumListResult> {
+    fn get_quorum_list(&self, count: Option<u8>) -> Result<json::QuorumListResult<QuorumHash>> {
         let mut args = ["list".into(), opt_into_json(count)?];
-        self.call::<json::QuorumListResult>(
+        self.call::<json::QuorumListResult<QuorumHash>>(
             "quorum",
             handle_defaults(&mut args, &[1.into(), null()]),
         )
     }
 
     /// Returns an extended list of on-chain quorums
-    fn get_quorum_listextended(&self, height: Option<i64>) -> Result<json::QuorumListResult> {
+    fn get_quorum_listextended(&self, height: Option<i64>) -> Result<json::QuorumListResult<HashMap<String, ExtendedQuorumDetails>>> {
         let mut args = ["listextended".into(), opt_into_json(height)?];
-        self.call::<json::QuorumListResult>(
+        self.call::<json::QuorumListResult<HashMap<String, ExtendedQuorumDetails>>>(
             "quorum",
             handle_defaults(&mut args, &[]),
         )
