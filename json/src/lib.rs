@@ -135,6 +135,11 @@ pub struct LoadWalletResult {
 }
 
 #[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
+pub struct UnloadWalletResult {
+    pub warning: Option<String>,
+}
+
+#[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
 pub struct ListWalletDirResult {
     pub wallets: Vec<ListWalletDirItem>,
 }
