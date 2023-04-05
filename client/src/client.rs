@@ -272,7 +272,7 @@ pub trait RpcApi: Sized {
         self.call("loadwallet", &[wallet.into()])
     }
 
-    fn unload_wallet(&self, wallet: Option<&str>) -> Result<()> {
+    fn unload_wallet(&self, wallet: Option<&str>) -> Result<Option<json::UnloadWalletResult>> {
         let mut args = [opt_into_json(wallet)?];
         self.call("unloadwallet", handle_defaults(&mut args, &[null()]))
     }

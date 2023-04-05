@@ -122,13 +122,15 @@ fn get_auth() -> bitcoincore_rpc::Auth {
     };
 }
 
+fn new_wallet_client(wallet_name: &str) -> Client {
+    let url = format!("{}{}{}", get_rpc_url(), "/wallet/", wallet_name);
+    Client::new(&url, get_auth()).unwrap()
+}
+
 fn main() {
     log::set_logger(&LOGGER).map(|()| log::set_max_level(log::LevelFilter::max())).unwrap();
 
-    let rpc_url = format!("{}/wallet/testwallet", get_rpc_url());
-    let auth = get_auth();
-
-    let cl = Client::new(&rpc_url, auth).unwrap();
+    let cl = new_wallet_client("testwallet");
 
     test_get_network_info(&cl);
     unsafe { VERSION = cl.version().unwrap() };
@@ -200,6 +202,7 @@ fn main() {
     test_get_network_hash_ps(&cl);
     test_uptime(&cl);
     test_getblocktemplate(&cl);
+    test_unloadwallet(&cl);
     //TODO import_multi(
     //TODO verify_message(
     //TODO wait_for_new_block(&self, timeout: u64) -> Result<json::BlockRef> {
@@ -210,7 +213,6 @@ fn main() {
     //TODO get_by_id<T: queryable::Queryable<Self>>(
     //TODO add_multisig_address(
     //TODO load_wallet(&self, wallet: &str) -> Result<json::LoadWalletResult> {
-    //TODO unload_wallet(&self, wallet: Option<&str>) -> Result<()> {
     //TODO backup_wallet(&self, destination: Option<&str>) -> Result<()> {
     test_add_node(&cl);
     test_get_added_node_info(&cl);
@@ -1130,8 +1132,7 @@ fn test_create_wallet(cl: &Client) {
         };
         assert_eq!(result.warning, expected_warning);
 
-        let wallet_client_url = format!("{}{}{}", get_rpc_url(), "/wallet/", wallet_param.name);
-        let wallet_client = Client::new(&wallet_client_url, get_auth()).unwrap();
+        let wallet_client = new_wallet_client(wallet_param.name);
         let wallet_info = wallet_client.get_wallet_info().unwrap();
 
         assert_eq!(wallet_info.wallet_name, wallet_param.name);
@@ -1265,6 +1266,20 @@ fn test_getblocktemplate(cl: &Client) {
 
     // cleanup mempool transaction
     cl.generate_to_address(2, &RANDOM_ADDRESS).unwrap();
+}
+
+fn test_unloadwallet(cl: &Client) {
+    cl.create_wallet("testunloadwallet", None, None, None, None).unwrap();
+
+    let res = new_wallet_client("testunloadwallet")
+        .unload_wallet(None)
+        .unwrap();
+
+    if version() >= 210000 {
+        assert!(res.is_some());
+    } else {
+        assert!(res.is_none());
+    }
 }
 
 fn test_get_index_info(cl: &Client) {
