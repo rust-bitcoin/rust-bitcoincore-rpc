@@ -1,3 +1,8 @@
+# 0.17.0
+
+- Add listwalletdir rpc
+- Update `jsonrpc` dependency to 0.14.0
+
 # 0.16.0
 
 - MSRV changed from 1.29 to 1.41.1
