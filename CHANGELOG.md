@@ -1,7 +1,17 @@
 # 0.17.0
 
-- Add listwalletdir rpc
-- Update `jsonrpc` dependency to 0.14.0
+- add `list_wallet_dir` rpc
+- add `join_psbt` rpc
+- add `get_raw_change_address` rpc
+- add `create_psbt` rpc
+- add `combine_raw_transaction` rpc
+- add `decode_raw_transaction` rpc
+- add `import_descriptors` rpc
+- add `get_mempool_info` rpc
+- add `get_index_info` rpc
+- change return type of `unload_wallet`
+- update `jsonrpc` dependency to 0.14.0
+- update `bitcoin` dependency to 0.30.0
 
 # 0.16.0
 
