@@ -2,14 +2,8 @@
 set -xe
 
 # Just echo all the relevant env vars to help debug Travis.
-echo "RUSTFMTCHECK: \"$RUSTFMTCHECK\""
 echo "BITCOINVERSION: \"$BITCOINVERSION\""
 echo "PATH: \"$PATH\""
-
-if [ -n "$RUSTFMTCHECK" ]; then
-  rustup component add rustfmt
-  cargo fmt --all -- --check
-fi
 
 # Integration test.
 if [ -n "$BITCOINVERSION" ]; then

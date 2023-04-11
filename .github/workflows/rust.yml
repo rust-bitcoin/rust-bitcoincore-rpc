@@ -11,13 +11,10 @@ jobs:
                 include:
                     - rust: stable
                       env:
-                          RUSTFMTCHK: true
                     - rust: nightly
                       env:
-                          RUSTFMTCHK: false
                     - rust: 1.41.1
                       env:
-                          RUSTFMTCHK: false
         steps:
             - name: Checkout Crate
               uses: actions/checkout@v2
