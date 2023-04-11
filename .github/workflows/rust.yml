@@ -10,14 +10,8 @@ jobs:
             matrix:
                 include:
                     - rust: stable
-                      env:
-                          RUSTFMTCHK: true
                     - rust: nightly
-                      env:
-                          RUSTFMTCHK: false
                     - rust: 1.41.1
-                      env:
-                          RUSTFMTCHK: false
         steps:
             - name: Checkout Crate
               uses: actions/checkout@v2
@@ -29,7 +23,6 @@ jobs:
                   override: true
             - run: cargo update -p serde --precise 1.0.152
             - name: Running test script
-              env: ${{ matrix.env }}
               run: ./contrib/test.sh
 
     integrations-tests:
