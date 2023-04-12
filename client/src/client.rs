@@ -328,7 +328,7 @@ pub trait RpcApi: Sized {
     }
 
     fn get_block_json(&self, hash: &BlockHash) -> Result<Value> {
-        Ok(self.call::<Value>("getblock", &[into_json(hash)?, 0.into()])?)
+        Ok(self.call::<Value>("getblock", &[into_json(hash)?, 1.into()])?)
     }
 
     fn get_block_hex(&self, hash: &BlockHash) -> Result<String> {
