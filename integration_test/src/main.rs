@@ -108,6 +108,10 @@ fn sbtc<F: Into<f64>>(btc: F) -> SignedAmount {
     SignedAmount::from_btc(btc.into()).unwrap()
 }
 
+fn get_testdir() -> String {
+    return std::env::var("TESTDIR").expect("TESTDIR must be set");
+}
+
 fn get_rpc_url() -> String {
     return std::env::var("RPC_URL").expect("RPC_URL must be set");
 }
@@ -203,6 +207,8 @@ fn main() {
     test_uptime(&cl);
     test_getblocktemplate(&cl);
     test_unloadwallet(&cl);
+    test_loadwallet(&cl);
+    test_backupwallet(&cl);
     //TODO import_multi(
     //TODO verify_message(
     //TODO wait_for_new_block(&self, timeout: u64) -> Result<json::BlockRef> {
@@ -212,8 +218,6 @@ fn main() {
     //TODO encrypt_wallet(&self, passphrase: &str) -> Result<()> {
     //TODO get_by_id<T: queryable::Queryable<Self>>(
     //TODO add_multisig_address(
-    //TODO load_wallet(&self, wallet: &str) -> Result<json::LoadWalletResult> {
-    //TODO backup_wallet(&self, destination: Option<&str>) -> Result<()> {
     test_add_node(&cl);
     test_get_added_node_info(&cl);
     test_get_node_addresses(&cl);
@@ -1280,6 +1284,31 @@ fn test_unloadwallet(cl: &Client) {
     } else {
         assert!(res.is_none());
     }
+}
+
+fn test_loadwallet(_: &Client) {
+    let wallet_name = "testloadwallet";
+    let wallet_client = new_wallet_client(wallet_name);
+
+    assert!(wallet_client.load_wallet(wallet_name).is_err());
+    wallet_client.create_wallet(wallet_name, None, None, None, None).unwrap();
+    assert!(wallet_client.load_wallet(wallet_name).is_err());
+    wallet_client.unload_wallet(None).unwrap();
+
+    let res = wallet_client.load_wallet(wallet_name).unwrap();
+    assert_eq!(res.name, wallet_name);
+    assert_eq!(res.warning, Some("".into()));
+}
+
+fn test_backupwallet(_: &Client) {
+    let wallet_client = new_wallet_client("testbackupwallet");
+    let backup_path = format!("{}/testbackupwallet.dat", get_testdir());
+
+    assert!(wallet_client.backup_wallet(None).is_err());
+    assert!(wallet_client.backup_wallet(Some(&backup_path)).is_err());
+    wallet_client.create_wallet("testbackupwallet", None, None, None, None).unwrap();
+    assert!(wallet_client.backup_wallet(None).is_err());
+    assert!(wallet_client.backup_wallet(Some(&backup_path)).is_ok());
 }
 
 fn test_get_index_info(cl: &Client) {
