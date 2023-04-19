@@ -24,12 +24,13 @@ extern crate serde_json;
 
 use std::collections::HashMap;
 
+
 use bitcoin::address::NetworkUnchecked;
 use bitcoin::block::Version;
 use bitcoin::consensus::encode;
 use bitcoin::hashes::hex::FromHex;
 use bitcoin::hashes::sha256;
-use bitcoin::{Address, Amount, PrivateKey, PublicKey, SignedAmount, Transaction, ScriptBuf, Script, bip158, bip32};
+use bitcoin::{Address, Amount, PrivateKey, PublicKey, SignedAmount, Transaction, ScriptBuf, Script, bip158, bip32, Network};
 use serde::de::Error as SerdeError;
 use serde::{Deserialize, Serialize};
 use std::fmt;
@@ -515,7 +516,8 @@ pub struct GetMiningInfoResult {
     pub network_hash_ps: f64,
     #[serde(rename = "pooledtx")]
     pub pooled_tx: usize,
-    pub chain: String,
+    #[serde(deserialize_with = "deserialize_bip70_network")]
+    pub chain: Network,
     pub warnings: String,
 }
 
@@ -1006,8 +1008,9 @@ pub struct GetAddressInfoResult {
 /// Models the result of "getblockchaininfo"
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct GetBlockchainInfoResult {
-    /// Current network name as defined in BIP70 (main, test, regtest)
-    pub chain: String,
+    /// Current network name as defined in BIP70 (main, test, signet, regtest)
+    #[serde(deserialize_with = "deserialize_bip70_network")]
+    pub chain: Network,
     /// The current number of blocks processed in the server
     pub blocks: u64,
     /// The current number of headers we have validated
@@ -2167,6 +2170,29 @@ where
         res.push(FromHex::from_hex(&h).map_err(D::Error::custom)?);
     }
     Ok(Some(res))
+}
+
+/// deserialize_bip70_network deserializes a Bitcoin Core network according to BIP70
+/// The accepted input variants are: {"main", "test", "signet", "regtest"}
+fn deserialize_bip70_network<'de, D>(deserializer: D) -> Result<Network, D::Error> 
+where
+    D: serde::Deserializer<'de>,
+{
+    struct NetworkVisitor;
+    impl<'de> serde::de::Visitor<'de> for NetworkVisitor {
+        type Value = Network;
+
+        fn visit_str<E: serde::de::Error>(self, s: &str) -> Result<Self::Value, E> {
+            Network::from_core_arg(s)
+                .map_err(|_| E::invalid_value(serde::de::Unexpected::Str(s), &"bitcoin network encoded as a string"))
+        }
+
+        fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+            write!(formatter, "bitcoin network encoded as a string")
+        }
+    }
+
+    deserializer.deserialize_str(NetworkVisitor)
 }
 
 #[cfg(test)]
