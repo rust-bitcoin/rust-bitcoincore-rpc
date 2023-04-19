@@ -7,3 +7,5 @@
   (Sighash type is more often used optionally, maybe we can make our own type for that and not need generics?)
 
 - Fix logging
+
+- Should hashes arguments be references or values?
