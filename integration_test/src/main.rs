@@ -209,10 +209,10 @@ fn main() {
     test_unloadwallet(&cl);
     test_loadwallet(&cl);
     test_backupwallet(&cl);
+    test_wait_for_new_block(&cl);
+    test_wait_for_block(&cl);
     //TODO import_multi(
     //TODO verify_message(
-    //TODO wait_for_new_block(&self, timeout: u64) -> Result<json::BlockRef> {
-    //TODO wait_for_block(
     //TODO get_descriptor_info(&self, desc: &str) -> Result<json::GetDescriptorInfoResult> {
     //TODO derive_addresses(&self, descriptor: &str, range: Option<[u32; 2]>) -> Result<Vec<Address>> {
     //TODO encrypt_wallet(&self, passphrase: &str) -> Result<()> {
@@ -1309,6 +1309,22 @@ fn test_backupwallet(_: &Client) {
     wallet_client.create_wallet("testbackupwallet", None, None, None, None).unwrap();
     assert!(wallet_client.backup_wallet(None).is_err());
     assert!(wallet_client.backup_wallet(Some(&backup_path)).is_ok());
+}
+
+fn test_wait_for_new_block(cl: &Client) {
+    let height = cl.get_block_count().unwrap();
+    let hash = cl.get_block_hash(height).unwrap();
+
+    assert!(cl.wait_for_new_block(std::u64::MAX).is_err()); // JSON integer out of range
+    assert_eq!(cl.wait_for_new_block(100).unwrap(), json::BlockRef{hash, height});
+}
+
+fn test_wait_for_block(cl: &Client) {
+    let height = cl.get_block_count().unwrap();
+    let hash = cl.get_block_hash(height).unwrap();
+
+    assert!(cl.wait_for_block(&hash, std::u64::MAX).is_err()); // JSON integer out of range
+    assert_eq!(cl.wait_for_block(&hash, 0).unwrap(), json::BlockRef{hash, height});
 }
 
 fn test_get_index_info(cl: &Client) {
