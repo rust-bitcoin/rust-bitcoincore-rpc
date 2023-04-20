@@ -28,13 +28,18 @@ use serde_repr::*;
 use std::collections::{BTreeMap, HashMap};
 use std::fmt;
 use std::fmt::{Display, Formatter};
+use std::marker::PhantomData;
 use std::net::SocketAddr;
 
 use dashcore::consensus::encode;
 use dashcore::hashes::hex::{FromHex, ToHex};
 use dashcore::hashes::sha256;
 use dashcore::util::{bip158, bip32};
-use dashcore::{Address, Amount, BlockHash, PrivateKey, ProTxHash, PublicKey, QuorumHash, Script, SignedAmount, Transaction};
+use dashcore::{
+    Address, Amount, BlockHash, PrivateKey, ProTxHash, PublicKey, QuorumHash, Script, SignedAmount,
+    Transaction,
+};
+use serde::de::{MapAccess, Visitor};
 use serde::{de, Deserialize, Deserializer, Serialize, Serializer};
 use serde_json::Value;
 use serde_with::{serde_as, Bytes, DisplayFromStr};
@@ -2222,8 +2227,7 @@ pub struct BLS {
 
 // --------------------------- Quorum -------------------------------
 
-#[derive(Clone, Copy, PartialEq, Eq, Debug, Deserialize, Serialize_repr, Hash)]
-#[serde(untagged)]
+#[derive(Clone, Copy, PartialEq, Eq, Debug, Serialize_repr, Hash)]
 #[repr(u8)]
 pub enum QuorumType {
     Llmq50_60 = 1,
@@ -2325,6 +2329,48 @@ pub struct ExtendedQuorumDetails {
 pub struct QuorumListResult<T> {
     #[serde(flatten)]
     pub quorums_by_type: HashMap<QuorumType, T>,
+}
+
+#[derive(Clone, PartialEq, Debug, Deserialize, Serialize)]
+#[serde(from = "ExtendedQuorumListResultIntermediate")]
+pub struct ExtendedQuorumListResult {
+    #[serde(flatten)]
+    pub quorums_by_type: HashMap<QuorumType, HashMap<QuorumHash, ExtendedQuorumDetails>>,
+}
+
+impl From<ExtendedQuorumListResultIntermediate> for ExtendedQuorumListResult {
+    fn from(value: ExtendedQuorumListResultIntermediate) -> Self {
+        ExtendedQuorumListResult {
+            quorums_by_type: value
+                .quorums_by_type
+                .into_iter()
+                .map(|(quorum_type, vec)| {
+                    (
+                        quorum_type,
+                        vec.into_iter()
+                            .flatten()
+                            .collect::<HashMap<QuorumHash, ExtendedQuorumDetails>>(),
+                    )
+                })
+                .collect(),
+        }
+    }
+}
+
+#[derive(Clone, PartialEq, Debug, Deserialize, Serialize)]
+pub struct ExtendedQuorumListResultIntermediate {
+    #[serde(flatten)]
+    pub quorums_by_type: HashMap<QuorumType, Vec<HashMap<QuorumHash, ExtendedQuorumDetails>>>,
+}
+
+impl<'de> Deserialize<'de> for QuorumType {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        let s = String::deserialize(deserializer)?;
+        Ok(QuorumType::from(s.as_str()))
+    }
 }
 
 #[derive(Clone, PartialEq, Debug, Deserialize, Serialize)]
@@ -2784,4 +2830,28 @@ where
         Value::Number(num) => num.as_f64().ok_or(de::Error::custom("Invalid number"))? as f32,
         _ => return Err(de::Error::custom("wrong type")),
     })
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::{ExtendedQuorumDetails, ExtendedQuorumListResult, QuorumListResult};
+
+    #[test]
+    fn deserialize_quorum_listextended() {
+        let json_list = r#"{
+              "llmq_50_60": [
+                {
+                  "000000da4509523408c751905d4e48df335e3ee565b4d2288800c7e51d592e2f": {
+                    "creationHeight": 871992,
+                    "minedBlockHash": "000000cd7f101437069956c0ca9f4180b41f0506827a828d57e85b35f215487e",
+                    "numValidMembers": 50,
+                    "healthRatio": "1.00"
+                  }
+                }
+              ]
+            }"#;
+        let result: ExtendedQuorumListResult =
+            serde_json::from_str(json_list).expect("expected to deserialize json");
+        println!("{:#?}", result);
+    }
 }
