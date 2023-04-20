@@ -1227,7 +1227,9 @@ fn test_get_quorum_listextended(cl: &Client) {
 }
 
 fn test_get_quorum_info(cl: &Client) {
-    let qh = QuorumHash::from_str("000000000c9eddd5d2a707281b7e30d5aac974dac600ff10f01937e1ca36066f").unwrap();
+    let qh =
+        QuorumHash::from_str("000000000c9eddd5d2a707281b7e30d5aac974dac600ff10f01937e1ca36066f")
+            .unwrap();
     let quorum_info = cl.get_quorum_info(QuorumType::Llmq50_60, &qh, None).unwrap();
     assert!(quorum_info.height > 0);
     // assert!(quorum_info.members.len() >= 0);
@@ -1284,7 +1286,9 @@ fn test_get_quorum_isconflicting(cl: &Client) {
 }
 
 fn test_get_quorum_memberof(cl: &Client) {
-    let pro_tx_hash = ProTxHash::from_str("39c07d2c9c6d0ead56f52726b63c15e295cb5c3ecf7fe1fefcfb23b2e3cfed1f").unwrap();
+    let pro_tx_hash =
+        ProTxHash::from_str("39c07d2c9c6d0ead56f52726b63c15e295cb5c3ecf7fe1fefcfb23b2e3cfed1f")
+            .unwrap();
     let quorum_memberof = cl.get_quorum_memberof(&pro_tx_hash, Some(1)).unwrap();
     assert!(quorum_memberof.0[0].height > 0);
 }
@@ -1337,7 +1341,9 @@ fn test_get_protx_diff(cl: &Client) {
 }
 
 fn test_get_protx_info(cl: &Client) {
-    let pro_tx_hash = ProTxHash::from_str("000000000c9eddd5d2a707281b7e30d5aac974dac600ff10f01937e1ca36066f").unwrap();
+    let pro_tx_hash =
+        ProTxHash::from_str("000000000c9eddd5d2a707281b7e30d5aac974dac600ff10f01937e1ca36066f")
+            .unwrap();
     let protx_info = cl.get_protx_info(&pro_tx_hash).unwrap();
 
     match protx_info {

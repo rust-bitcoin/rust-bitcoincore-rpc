@@ -22,13 +22,11 @@ use serde_json::{self, Value};
 use dashcore::hashes::hex::{FromHex, ToHex};
 use dashcore::secp256k1::ecdsa::Signature;
 use dashcore::{
-    Address, Amount, Block, BlockHeader, OutPoint, PrivateKey, PublicKey, ProTxHash, QuorumHash,
+    Address, Amount, Block, BlockHeader, OutPoint, PrivateKey, ProTxHash, PublicKey, QuorumHash,
     Script, Transaction,
 };
 use dashcore_rpc_json::dashcore::BlockHash;
-use dashcore_rpc_json::{
-    ExtendedQuorumDetails, ProTxInfo, ProTxListType, QuorumType,
-};
+use dashcore_rpc_json::{ProTxInfo, ProTxListType, QuorumType};
 use log::Level::{Debug, Trace, Warn};
 
 use crate::error::*;
@@ -65,16 +63,16 @@ impl Into<OutPoint> for JsonOutPoint {
 
 /// Shorthand for converting a variable into a serde_json::Value.
 fn into_json<T>(val: T) -> Result<Value>
-where
-    T: serde::ser::Serialize,
+    where
+        T: serde::ser::Serialize,
 {
     Ok(serde_json::to_value(val)?)
 }
 
 /// Shorthand for converting an Option into an Option<serde_json::Value>.
 fn opt_into_json<T>(opt: Option<T>) -> Result<Value>
-where
-    T: serde::ser::Serialize,
+    where
+        T: serde::ser::Serialize,
 {
     match opt {
         Some(val) => Ok(into_json(val)?),
@@ -1154,10 +1152,10 @@ pub trait RpcApi: Sized {
     /// Returns an extended list of on-chain quorums
     fn get_quorum_listextended(
         &self,
-        height: Option<i64>,
-    ) -> Result<json::QuorumListResult<HashMap<QuorumHash, ExtendedQuorumDetails>>> {
+        height: Option<u32>,
+    ) -> Result<json::ExtendedQuorumListResult> {
         let mut args = ["listextended".into(), opt_into_json(height)?];
-        self.call::<json::QuorumListResult<HashMap<QuorumHash, ExtendedQuorumDetails>>>(
+        self.call::<json::ExtendedQuorumListResult>(
             "quorum",
             handle_defaults(&mut args, &[]),
         )
@@ -1590,7 +1588,7 @@ fn log_response(cmd: &str, resp: &Result<jsonrpc::Response>) {
                     let def = serde_json::value::RawValue::from_string(
                         serde_json::Value::Null.to_string(),
                     )
-                    .unwrap();
+                        .unwrap();
                     let result = resp.result.as_ref().unwrap_or(&def);
                     trace!(target: "dashcore_rpc", "JSON-RPC response for {}: {}", cmd, result);
                 }
