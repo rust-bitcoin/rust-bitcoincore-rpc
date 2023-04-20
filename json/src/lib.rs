@@ -25,10 +25,9 @@ extern crate serde_with;
 
 use hex;
 use serde_repr::*;
-use std::collections::{BTreeMap, HashMap};
+use std::collections::{HashMap};
 use std::fmt;
 use std::fmt::{Display, Formatter};
-use std::marker::PhantomData;
 use std::net::SocketAddr;
 
 use dashcore::consensus::encode;
@@ -39,7 +38,6 @@ use dashcore::{
     Address, Amount, BlockHash, PrivateKey, ProTxHash, PublicKey, QuorumHash, Script, SignedAmount,
     Transaction,
 };
-use serde::de::{MapAccess, Visitor};
 use serde::{de, Deserialize, Deserializer, Serialize, Serializer};
 use serde_json::Value;
 use serde_with::{serde_as, Bytes, DisplayFromStr};
@@ -2410,7 +2408,7 @@ pub struct QuorumMember {
 #[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct QuorumInfoResult {
-    pub height: u64,
+    pub height: u32,
     #[serde(rename = "type", deserialize_with = "deserialize_quorum_type")]
     pub quorum_type: QuorumType,
     pub quorum_hash: QuorumHash,

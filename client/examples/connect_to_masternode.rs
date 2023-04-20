@@ -8,7 +8,7 @@ use dashcore_rpc_json::{ProTxListType, QuorumType};
 fn main() {
     let rpc = Client::new(
         "localhost:19998",
-        Auth::UserPass("dashrpc".to_string(), "rpcpassword".to_string()),
+        Auth::UserPass("dashrpc".to_string(), "password".to_string()),
     )
     .unwrap();
 
@@ -72,13 +72,16 @@ fn main() {
     let quorum_list = rpc.get_quorum_list(None).unwrap();
     println!("\nQuorum list: \n{:?}", quorum_list);
 
-    let quorum_hashes = quorum_list.llmq_test.unwrap();
+    let quorum_hashes = quorum_list.quorums_by_type.get(&QuorumType::LlmqTest).unwrap();
     let quorum_hash = quorum_hashes.get(0);
 
     // Get Quorum info
     let quorum_info =
         rpc.get_quorum_info(QuorumType::LlmqTest, quorum_hash.unwrap(), None).unwrap();
     println!("\nQuorum info: \n{:?}", quorum_info);
+
+    let quorum_listextended = rpc.get_quorum_listextended(Some(quorum_info.height)).unwrap();
+    println!("\n\nQuorum list extended \n{:?}", quorum_listextended);
 
     let mn0 = quorum_info.members.get(0).unwrap();
     let mn0_pro_tx_hash = mn0.to_owned().pro_tx_hash;
