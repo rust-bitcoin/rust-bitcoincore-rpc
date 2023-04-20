@@ -1,6 +1,6 @@
-extern crate log;
 extern crate dashcore_rpc;
 extern crate dashcore_rpc_json;
+extern crate log;
 
 use dashcore_rpc::{Auth, Client, RpcApi};
 use dashcore_rpc_json::{ProTxListType, QuorumType};
@@ -46,7 +46,7 @@ fn main() {
     let mn_outputs = rpc.get_masternode_outputs().unwrap();
     println!("\n\nMasternode Outputs: \n{:?}", mn_outputs);
 
-    // Get masternode payments 
+    // Get masternode payments
     let mn_payments = rpc.get_masternode_payments(None, None).unwrap();
     println!("\n\nMasternode Payments: \n{:?}", mn_payments);
 
@@ -59,7 +59,9 @@ fn main() {
     println!("\n\nMasternode Winners: \n{:?}", mn_winners);
 
     // Get BLS fromsecret
-    let bls_fromsecret = rpc.get_bls_fromsecret("52f35cd3d977a505485f2474e7e71ef3f60f859603d72ad6b0fa7f7bd163e144").unwrap();
+    let bls_fromsecret = rpc
+        .get_bls_fromsecret("52f35cd3d977a505485f2474e7e71ef3f60f859603d72ad6b0fa7f7bd163e144")
+        .unwrap();
     println!("\nBLS fromsecret: \n{:?}", bls_fromsecret);
 
     // Get BLS generate
@@ -74,11 +76,8 @@ fn main() {
     let quorum_hash = quorum_hashes.get(0);
 
     // Get Quorum info
-    let quorum_info = rpc.get_quorum_info(
-        QuorumType::LlmqTest,
-        quorum_hash.unwrap(),
-        None,
-    ).unwrap();
+    let quorum_info =
+        rpc.get_quorum_info(QuorumType::LlmqTest, quorum_hash.unwrap(), None).unwrap();
     println!("\nQuorum info: \n{:?}", quorum_info);
 
     let mn0 = quorum_info.members.get(0).unwrap();
@@ -89,13 +88,15 @@ fn main() {
     println!("\nQuorum dkg status: \n{:?}", quorum_dkgstatus);
 
     // Get Quorum sign
-    let quorum_sign = rpc.get_quorum_sign(
-        QuorumType::LlmqTest,
-        "abcd1234abcd1234abcd1234abcd1234abcd1234abcd1234abcd1234abcd1234",
-        "51c11d287dfa85aef3eebb5420834c8e443e01d15c0b0a8e397d67e2e51aa239",
-        None,
-        None,
-    ).unwrap();
+    let quorum_sign = rpc
+        .get_quorum_sign(
+            QuorumType::LlmqTest,
+            "abcd1234abcd1234abcd1234abcd1234abcd1234abcd1234abcd1234abcd1234",
+            "51c11d287dfa85aef3eebb5420834c8e443e01d15c0b0a8e397d67e2e51aa239",
+            None,
+            None,
+        )
+        .unwrap();
     println!("\nQuorum sign: \n{:?}", quorum_sign);
 
     // Get Quorum GetRecSig
@@ -107,26 +108,27 @@ fn main() {
     // println!("\nQuorum getrecsig: \n{:?}", quorum_getrecsig);
 
     // Get Quorum HasRecSig
-    let quorum_hasrecsig = rpc.get_quorum_hasrecsig(
-        QuorumType::LlmqTest,
-        "e980ebf295b42f24b03321ffb255818753b2b211e8c46b61c0b6fde91242d12f",
-        "907087d4720850e639b7b5cc41d7a6d020e5a50debb3bc3974f0cb3d7d378ea4",
-    ).unwrap();
+    let quorum_hasrecsig = rpc
+        .get_quorum_hasrecsig(
+            QuorumType::LlmqTest,
+            "e980ebf295b42f24b03321ffb255818753b2b211e8c46b61c0b6fde91242d12f",
+            "907087d4720850e639b7b5cc41d7a6d020e5a50debb3bc3974f0cb3d7d378ea4",
+        )
+        .unwrap();
     println!("\nQuorum hasrecsig: \n{:?}", quorum_hasrecsig);
 
     // Get Quorum isconflicting
-    let quorum_isconflicting = rpc.get_quorum_isconflicting(
-        QuorumType::LlmqTest,
-        "e980ebf295b42f24b03321ffb255818753b2b211e8c46b61c0b6fde91242d12f",
-        "907087d4720850e639b7b5cc41d7a6d020e5a50debb3bc3974f0cb3d7d378ea4",
-    ).unwrap();
+    let quorum_isconflicting = rpc
+        .get_quorum_isconflicting(
+            QuorumType::LlmqTest,
+            "e980ebf295b42f24b03321ffb255818753b2b211e8c46b61c0b6fde91242d12f",
+            "907087d4720850e639b7b5cc41d7a6d020e5a50debb3bc3974f0cb3d7d378ea4",
+        )
+        .unwrap();
     println!("\nQuorum isconflicting: \n{:?}", quorum_isconflicting);
 
     // Get Quorum memberof
-    let quorum_memberof = rpc.get_quorum_memberof(
-        &mn0_pro_tx_hash,
-        Some(1),
-    ).unwrap();
+    let quorum_memberof = rpc.get_quorum_memberof(&mn0_pro_tx_hash, Some(1)).unwrap();
     println!("\nQuorum memberof: \n{:?}", quorum_memberof);
 
     // Get Quorum rotationinfo

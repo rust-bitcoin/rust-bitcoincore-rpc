@@ -16,6 +16,9 @@ use dashcore::secp256k1;
 use jsonrpc;
 use serde_json;
 
+pub type OldVecLen = usize;
+pub type FixedSizeLen = usize;
+
 /// The error type for errors produced in this library.
 #[derive(Debug)]
 pub enum Error {

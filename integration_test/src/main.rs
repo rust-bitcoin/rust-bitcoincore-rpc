@@ -13,6 +13,7 @@ extern crate lazy_static;
 extern crate log;
 
 use std::collections::HashMap;
+use std::str::FromStr;
 
 use dashcore_rpc::json;
 use dashcore_rpc::jsonrpc::error::Error as JsonRpcError;
@@ -27,9 +28,12 @@ use dashcore_rpc::{
     Auth, Client, Error, RpcApi,
 };
 
-use dashcore_rpc::dashcore::BlockHash;
-use dashcore_rpc::dashcore_rpc_json::{GetBlockTemplateModes, GetBlockTemplateRules, ProTxInfo, ProTxRevokeReason, QuorumType, ScanTxOutRequest};
-use dashcore_rpc::json::{ProTxListType};
+use dashcore_rpc::dashcore::{BlockHash, ProTxHash, QuorumHash};
+use dashcore_rpc::dashcore_rpc_json::{
+    GetBlockTemplateModes, GetBlockTemplateRules, ProTxInfo, ProTxRevokeReason, QuorumType,
+    ScanTxOutRequest,
+};
+use dashcore_rpc::json::ProTxListType;
 use dashcore_rpc::json::QuorumType::LlmqTest;
 use json::BlockStatsFields as BsFields;
 
@@ -1223,14 +1227,8 @@ fn test_get_quorum_listextended(cl: &Client) {
 }
 
 fn test_get_quorum_info(cl: &Client) {
-    let qh = "000000000c9eddd5d2a707281b7e30d5aac974dac600ff10f01937e1ca36066f".into();
-    let quorum_info = cl
-        .get_quorum_info(
-            QuorumType::Llmq50_60,
-            &qh,
-            None,
-        )
-        .unwrap();
+    let qh = QuorumHash::from_str("000000000c9eddd5d2a707281b7e30d5aac974dac600ff10f01937e1ca36066f").unwrap();
+    let quorum_info = cl.get_quorum_info(QuorumType::Llmq50_60, &qh, None).unwrap();
     assert!(quorum_info.height > 0);
     // assert!(quorum_info.members.len() >= 0);
 }
@@ -1286,25 +1284,16 @@ fn test_get_quorum_isconflicting(cl: &Client) {
 }
 
 fn test_get_quorum_memberof(cl: &Client) {
-    let pro_tx_hash = "39c07d2c9c6d0ead56f52726b63c15e295cb5c3ecf7fe1fefcfb23b2e3cfed1f".into();
-    let quorum_memberof = cl
-        .get_quorum_memberof(
-            &pro_tx_hash,
-            Some(1),
-        )
-        .unwrap();
+    let pro_tx_hash = ProTxHash::from_str("39c07d2c9c6d0ead56f52726b63c15e295cb5c3ecf7fe1fefcfb23b2e3cfed1f").unwrap();
+    let quorum_memberof = cl.get_quorum_memberof(&pro_tx_hash, Some(1)).unwrap();
     assert!(quorum_memberof.0[0].height > 0);
 }
 
 fn test_get_quorum_rotationinfo(cl: &Client) {
-    let block_hash = BlockHash::from_hex("0000012197b7ca6360af3756c6a49c217dbbdf8b595fd55e0fcef7ffcd546044").unwrap();
-    let _quorum_rotationinfo = cl
-        .get_quorum_rotationinfo(
-            &block_hash,
-            None,
-            None,
-        )
-        .unwrap();
+    let block_hash =
+        BlockHash::from_hex("0000012197b7ca6360af3756c6a49c217dbbdf8b595fd55e0fcef7ffcd546044")
+            .unwrap();
+    let _quorum_rotationinfo = cl.get_quorum_rotationinfo(&block_hash, None, None).unwrap();
 }
 
 fn test_get_quorum_selectquorum(cl: &Client) {
@@ -1322,7 +1311,7 @@ fn test_get_quorum_verify(cl: &Client) {
         "2ceeaa7ff20de327ef65b14de692199d15b67b9458d0ded7d68735cce98dd039",
         "8b5174d0e95b5642ebec23c3fe8f0bbf8f6993502f4210322871bba0e818ff3b",
         "99cf2a0deb08286a2d1ffdd2564b35522fd748c8802e561abed330dea20df5cb5a5dffeddbe627ea32cb36de13d5b4a516fdfaebae9886b2f7969a5d112416cf8d1983ebcbf1463a64f7522505627e08b9c76c036616fbb1649271a2773a1653",
-        Some("000000583a348d1a0a5f753ef98e6a69f9bcd9b27919f10eb1a1c3edb6c79182".into()),
+        Some(QuorumHash::from_str("000000583a348d1a0a5f753ef98e6a69f9bcd9b27919f10eb1a1c3edb6c79182").unwrap()),
         None,
     ).unwrap();
 }
@@ -1348,10 +1337,8 @@ fn test_get_protx_diff(cl: &Client) {
 }
 
 fn test_get_protx_info(cl: &Client) {
-    let pro_tx_hash = "000000000c9eddd5d2a707281b7e30d5aac974dac600ff10f01937e1ca36066f".into();
-    let protx_info = cl
-        .get_protx_info(&pro_tx_hash)
-        .unwrap();
+    let pro_tx_hash = ProTxHash::from_str("000000000c9eddd5d2a707281b7e30d5aac974dac600ff10f01937e1ca36066f").unwrap();
+    let protx_info = cl.get_protx_info(&pro_tx_hash).unwrap();
 
     match protx_info {
         ProTxInfo {
@@ -1363,7 +1350,8 @@ fn test_get_protx_info(cl: &Client) {
             state: _,
             confirmations: _,
             wallet: _,
-            meta_info: _, ..
+            meta_info: _,
+            ..
         } => {
             // assert!(collateral_index >= 0);
             // assert!(operator_reward >= 0);
@@ -1372,7 +1360,8 @@ fn test_get_protx_info(cl: &Client) {
 }
 
 fn test_get_protx_list(cl: &Client) {
-    let _protx_list = cl.get_protx_list(Some(ProTxListType::Valid), Some(true), Some(7090)).unwrap();
+    let _protx_list =
+        cl.get_protx_list(Some(ProTxListType::Valid), Some(true), Some(7090)).unwrap();
 }
 
 fn test_get_protx_register(cl: &Client) {
