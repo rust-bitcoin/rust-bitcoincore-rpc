@@ -2099,7 +2099,7 @@ pub struct DMNState {
     #[serde(rename = "PoSeRevivedHeight")]
     pub pose_revived_height: u32,
     #[serde(rename = "PoSeBanHeight")]
-    pub pose_ban_height: u32,
+    pub pose_ban_height: Option<u32>,
     pub revocation_reason: u32,
     pub owner_address: [u8; 20],
     pub voting_address: [u8; 20],
@@ -2107,7 +2107,13 @@ pub struct DMNState {
     #[serde_as(as = "Bytes")]
     pub pub_key_operator: Vec<u8>,
     pub operator_payout_address: Option<[u8; 20]>,
+    #[serde(rename = "platformNodeID")]
+    #[serde_as(as = "Option<Bytes>")]
     pub platform_node_id: Option<[u8; 20]>,
+    #[serde(rename = "platformP2PPort")]
+    pub platform_p2p_port: Option<u32>,
+    #[serde(rename = "platformHTTPPort")]
+    pub platform_http_port: Option<u32>,
 }
 
 #[serde_as]
@@ -2117,7 +2123,7 @@ pub struct DMNStateDiff {
     pub service: Option<SocketAddr>,
     #[serde(rename = "PoSeRevivedHeight")]
     pub pose_revived_height: Option<u32>,
-    #[serde(rename = "PoSeBanHeight")]
+    #[serde(default, rename = "PoSeBanHeight", deserialize_with = "deserialize_u32_opt")]
     pub pose_ban_height: Option<u32>,
     pub revocation_reason: Option<u32>,
     pub owner_address: Option<[u8; 20]>,
@@ -2143,14 +2149,12 @@ impl DMNState {
             operator_payout_address,
             platform_node_id,
         } = diff;
+        self.pose_ban_height = pose_ban_height;
         if let Some(service) = service {
             self.service = service
         }
         if let Some(pose_revived_height) = pose_revived_height {
             self.pose_revived_height = pose_revived_height;
-        }
-        if let Some(pose_ban_height) = pose_ban_height {
-            self.pose_ban_height = pose_ban_height;
         }
         if let Some(revocation_reason) = revocation_reason {
             self.revocation_reason = revocation_reason;
@@ -2590,7 +2594,9 @@ pub struct QuorumSnapshot {
 #[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct QuorumMasternodeListItem {
+    #[serde(with = "hex")]
     pub pro_reg_tx_hash: Vec<u8>,
+    #[serde(with = "hex")]
     pub confirmed_hash: Vec<u8>,
     #[serde_as(as = "DisplayFromStr")]
     pub service: SocketAddr,
@@ -2604,7 +2610,7 @@ pub struct QuorumMasternodeListItem {
 #[serde_as]
 #[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
-pub struct MasternodeListDiff {
+pub struct MasternodeDiff {
     pub base_block_hash: dashcore::BlockHash,
     pub block_hash: dashcore::BlockHash,
     #[serde_as(as = "Bytes")]
@@ -2622,32 +2628,66 @@ pub struct MasternodeListDiff {
     pub merkle_root_quorums: Vec<u8>,
 }
 
-// #[serde_as]
-// #[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
-// #[serde(rename_all = "camelCase")]
-// pub struct MasternodeListDiffWithMasternodes {
-//     pub base_block_hash: dashcore::BlockHash,
-//     pub block_hash: dashcore::BlockHash,
-//     #[serde_as(as = "Bytes")]
-//     pub cb_tx_merkle_tree: Vec<u8>,
-//     #[serde_as(as = "Bytes")]
-//     pub cb_tx: Vec<u8>,
-//     #[serde(rename = "deletedMNs")]
-//     pub deleted_mns: Vec<Masternode>,
-//     pub mn_list: Vec<Masternode>,
-//     pub deleted_quorums: Vec<QuorumItemDeleted>,
-//     pub new_quorums: Vec<QuorumMinableCommitments>,
-//     #[serde(rename = "merkleRootMNList", with = "hex")]
-//     pub merkle_root_mn_list: Vec<u8>,
-//     #[serde(rename = "merkleRootQuorums", with = "hex")]
-//     pub merkle_root_quorums: Vec<u8>,
-// }
+#[serde_as]
+#[derive(Clone, PartialEq, Eq, Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct MasternodeListDiffAddItem {
+    #[serde(rename = "type")]
+    pub node_type: MasternodeType,
+    pub pro_tx_hash: ProTxHash,
+    #[serde(with = "hex")]
+    pub collateral_hash: Vec<u8>,
+    pub collateral_index: i32,
+    #[serde_as(as = "Bytes")]
+    pub collateral_address: Vec<u8>,
+    pub operator_reward: i32,
+    pub state: MasternodeListDiffState,
+}
 
-// #[serde_as]
-// #[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
-// pub struct {
-//
-// }
+#[serde_as]
+#[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct MasternodeListDiffState {
+    pub service: Option<SocketAddr>,
+    pub registered_height: Option<u32>,
+    pub last_paid_height: Option<u32>,
+    pub consecutive_payments: Option<i32>,
+    #[serde(rename = "PoSePenalty")]
+    pub pose_penalty: Option<u32>,
+    #[serde(rename = "PoSeRevivedHeight")]
+    pub pose_revived_height: Option<u32>,
+    #[serde(default, rename = "PoSeBanHeight", deserialize_with = "deserialize_u32_opt")]
+    pub pose_ban_height: Option<u32>,
+    pub revocation_reason: Option<i32>,
+    #[serde_as(as = "Option<Bytes>")]
+    pub owner_address: Option<Vec<u8>>,
+    #[serde_as(as = "Option<Bytes>")]
+    pub voting_address: Option<Vec<u8>>,
+    #[serde(rename = "platformNodeID")]
+    #[serde_as(as = "Option<Bytes>")]
+    pub platform_node_id: Option<Vec<u8>>,
+    #[serde(rename = "platformP2PPort")]
+    pub platform_p2p_port: Option<u32>,
+    #[serde(rename = "platformHTTPPort")]
+    pub platform_http_port: Option<u32>,
+    #[serde_as(as = "Option<Bytes>")]
+    pub payout_address: Option<Vec<u8>>,
+    #[serde_as(as = "Option<Bytes>")]
+    pub pub_key_operator: Option<Vec<u8>>,
+}
+
+#[derive(Clone, PartialEq, Eq, Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct MasternodeListDiff {
+    base_height: u32,
+    block_height: u32,
+    #[serde(rename = "addedMNs")]
+    added_mns: Vec<MasternodeListDiffAddItem>,
+    #[serde(rename = "removedMNs")]
+    removed_mns: Vec<ProTxHash>,
+    #[serde(rename = "updatedMNs")]
+    updated_mns: Vec<HashMap<ProTxHash, MasternodeListDiffState>>,
+}
 
 #[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -2656,14 +2696,14 @@ pub struct QuorumRotationInfo {
     pub quorum_snapshot_at_h_minus_c: QuorumSnapshot,
     pub quorum_snapshot_at_h_minus_2c: QuorumSnapshot,
     pub quorum_snapshot_at_h_minus_3c: QuorumSnapshot,
-    pub mn_list_diff_tip: MasternodeListDiff,
-    pub mn_list_diff_h: MasternodeListDiff,
-    pub mn_list_diff_at_h_minus_c: MasternodeListDiff,
-    pub mn_list_diff_at_h_minus_2c: MasternodeListDiff,
-    pub mn_list_diff_at_h_minus_3c: MasternodeListDiff,
+    pub mn_list_diff_tip: MasternodeDiff,
+    pub mn_list_diff_h: MasternodeDiff,
+    pub mn_list_diff_at_h_minus_c: MasternodeDiff,
+    pub mn_list_diff_at_h_minus_2c: MasternodeDiff,
+    pub mn_list_diff_at_h_minus_3c: MasternodeDiff,
     pub block_hash_list: Vec<dashcore::BlockHash>,
     pub quorum_snapshot_list: Vec<QuorumSnapshot>,
-    pub mn_list_diff_list: Vec<MasternodeListDiff>,
+    pub mn_list_diff_list: Vec<MasternodeDiff>,
 }
 
 #[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
@@ -2830,9 +2870,36 @@ where
     })
 }
 
+fn deserialize_u32_opt<'de, D>(deserializer: D) -> Result<Option<u32>, D::Error>
+    where
+        D: Deserializer<'de>,
+{
+    let val = i64::deserialize(deserializer)?;
+    if val < 0 {
+        return Ok(None);
+    }
+    Ok(Some(val as u32))
+}
+
 #[cfg(test)]
 mod tests {
-    use crate::{ExtendedQuorumDetails, ExtendedQuorumListResult, QuorumListResult};
+    use crate::{ExtendedQuorumListResult, MasternodeListDiff, deserialize_u32_opt};
+
+    #[test]
+    fn test_deserialize_u32_opt() {
+        #[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
+        struct Test {
+            #[serde(deserialize_with = "deserialize_u32_opt")]
+            pub field: Option<u32>
+        }
+
+        let json = r#"{"field": 1}"#;
+        let result: Test = serde_json::from_str(&json).unwrap();
+        assert_eq!(result.field, Some(1));
+        let json = r#"{"field": -1}"#;
+        let result: Test = serde_json::from_str(&json).unwrap();
+        assert_eq!(result.field, None);
+    }
 
     #[test]
     fn deserialize_quorum_listextended() {
@@ -2850,6 +2917,64 @@ mod tests {
             }"#;
         let result: ExtendedQuorumListResult =
             serde_json::from_str(json_list).expect("expected to deserialize json");
+        println!("{:#?}", result);
+    }
+
+    #[test]
+    fn deserialize_mn_listdiff() {
+        let json = r#"{
+              "baseHeight": 850000,
+              "blockHeight": 867165,
+              "addedMNs": [
+                {
+                  "type": "HighPerformance",
+                  "proTxHash": "c560a9be2be9db79e1aaa16e4dd3cd22bddcb0155f88aba68aa4797d375ef370",
+                  "collateralHash": "ff6226e6c97bfcf40b6d04e12e3f75678024988823bfba28cde2a9ac11b1a765",
+                  "collateralIndex": 1,
+                  "collateralAddress": "yNqYnF9sHURjwRmhZMLFGQ3WjC5DZNJMUi",
+                  "operatorReward": 0,
+                  "state": {
+                    "service": "194.135.88.227:6666",
+                    "registeredHeight": 850319,
+                    "lastPaidHeight": 0,
+                    "consecutivePayments": 0,
+                    "PoSePenalty": 525,
+                    "PoSeRevivedHeight": 861579,
+                    "PoSeBanHeight": 861611,
+                    "revocationReason": 0,
+                    "ownerAddress": "yPBWCdMRY5PsS3hJzs7csbdWQVRR85yxUz",
+                    "votingAddress": "ySM11LUD65Bi4p1gm68XLkdWc65TBKRzvQ",
+                    "platformNodeID": "f2dbd9b0a1f541a7c44d34a58674d0262f5feca5",
+                    "platformP2PPort": 22821,
+                    "platformHTTPPort": 22822,
+                    "payoutAddress": "yX4Ve7Q8Y4jscV4LZJD8HVCHKyePzR3MhA",
+                    "pubKeyOperator": "8ed3f0c208efbcfc815cbfb94490dc68cf2e29d44dd9f8a91e20e06057aa110d7062c8ab7ccc85a9ff0c88760157f563"
+                  }
+                }
+              ],
+              "removedMNs": [
+                "a370c55db003676e937b1555196f92789506093e7b84eff6197f42617331b4c3",
+                "51238bb9e2b68fc822e8eb15d415e97ebc86f769a72c15e0a6e25d9ea8d38475",
+                "9bdf384d34d57ce21aab914356f834b6decbde06608dab78cf87188705aab8f2"
+              ],
+              "updatedMNs": [
+                {
+                  "3bed128ba5c04b627627cf5d9f1dec0622caef4725d8d9d4c37c65642dce92ff": {
+                    "lastPaidHeight": 867103,
+                    "PoSePenalty": 0,
+                    "PoSeRevivedHeight": 854855,
+                    "PoSeBanHeight": -1
+                  }
+                },
+                {
+                  "8e7a3cbb99a9ce89685175ce3b3b5efe33498f22ddb539a2c66190390ff9e37e": {
+                    "lastPaidHeight": 867104,
+                    "PoSeRevivedHeight": 853498
+                  }
+                }
+              ]
+            }"#;
+        let result: MasternodeListDiff = serde_json::from_str(&json).expect("expected to deserialize json");
         println!("{:#?}", result);
     }
 }
