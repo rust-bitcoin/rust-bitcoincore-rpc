@@ -2514,7 +2514,6 @@ pub struct QuorumMember {
     pub pub_key_share: Option<Vec<u8>>,
 }
 
-#[serde_as]
 #[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct QuorumInfoResult {
@@ -2523,10 +2522,10 @@ pub struct QuorumInfoResult {
     pub quorum_type: QuorumType,
     pub quorum_hash: QuorumHash,
     pub quorum_index: u32,
-    #[serde_as(as = "hex")]
+    #[serde(with = "hex")]
     pub mined_block: Vec<u8>,
     pub members: Vec<QuorumMember>,
-    #[serde_as(as = "hex")]
+    #[serde(with = "hex")]
     pub quorum_public_key: Vec<u8>,
     #[serde(default, deserialize_with = "deserialize_hex_opt")]
     pub secret_key_share: Option<Vec<u8>>,
