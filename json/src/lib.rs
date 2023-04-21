@@ -2523,7 +2523,7 @@ pub struct QuorumInfoResult {
     pub quorum_type: QuorumType,
     pub quorum_hash: QuorumHash,
     pub quorum_index: u32,
-    #[serde(with = "hex")]
+    #[serde_as(as = "hex")]
     pub mined_block: Vec<u8>,
     pub members: Vec<QuorumMember>,
     #[serde_as(as = "hex")]
