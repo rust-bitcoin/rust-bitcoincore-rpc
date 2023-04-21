@@ -1307,9 +1307,15 @@ pub trait RpcApi: Sized {
     // --------------------------- ProTx -------------------------------
 
     /// Returns a diff and a proof between two masternode list
-    fn get_protx_diff(&self, base_block: u32, block: u32) -> Result<json::MasternodeListDiff> {
+    fn get_protx_diff(&self, base_block: u32, block: u32) -> Result<json::MasternodeDiff> {
         let mut args = ["diff".into(), into_json(base_block)?, into_json(block)?];
-        self.call::<json::MasternodeListDiff>("protx", handle_defaults(&mut args, &[null()]))
+        self.call::<json::MasternodeDiff>("protx", handle_defaults(&mut args, &[null()]))
+    }
+
+    /// Returns a full deterministic masternode list diff between two heigts
+    fn get_protx_listdiff(&self, base_block: u32, block: u32) -> Result<json::MasternodeListDiff> {
+        let mut args = ["listdiff".into(), into_json(base_block)?, into_json(block)?];
+        self.call::<json::MasternodeListDiff>("protx", handle_defaults(&mut args, &[null(), null()]))
     }
 
     /// Returns a returns detailed information about a deterministic masternode
