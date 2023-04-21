@@ -25,19 +25,24 @@ extern crate serde_with;
 
 use hex;
 use serde_repr::*;
-use std::collections::{HashMap};
+use std::collections::HashMap;
+use std::error::Error;
 use std::fmt;
 use std::fmt::{Display, Formatter};
 use std::net::SocketAddr;
+use std::str::FromStr;
 
 use dashcore::consensus::encode;
+use dashcore::hashes::hex::Error::InvalidChar;
 use dashcore::hashes::hex::{FromHex, ToHex};
 use dashcore::hashes::sha256;
-use dashcore::util::{bip158, bip32};
+use dashcore::util::{address, bip158, bip32};
 use dashcore::{
     Address, Amount, BlockHash, PrivateKey, ProTxHash, PublicKey, QuorumHash, Script, SignedAmount,
     Transaction,
 };
+use hex::FromHexError;
+use serde::de::Error as SerdeError;
 use serde::{de, Deserialize, Deserializer, Serialize, Serializer};
 use serde_json::Value;
 use serde_with::{serde_as, Bytes, DisplayFromStr};
@@ -2101,14 +2106,18 @@ pub struct DMNState {
     #[serde(rename = "PoSeBanHeight")]
     pub pose_ban_height: Option<u32>,
     pub revocation_reason: u32,
+    #[serde(deserialize_with = "deserialize_address")]
     pub owner_address: [u8; 20],
+    #[serde(deserialize_with = "deserialize_address")]
     pub voting_address: [u8; 20],
+    #[serde(deserialize_with = "deserialize_address")]
     pub payout_address: [u8; 20],
     #[serde_as(as = "Bytes")]
     pub pub_key_operator: Vec<u8>,
+    #[serde(default, deserialize_with = "deserialize_address_optional")]
     pub operator_payout_address: Option<[u8; 20]>,
     #[serde(rename = "platformNodeID")]
-    #[serde_as(as = "Option<Bytes>")]
+    #[serde(deserialize_with = "deserialize_hex_to_address_optional")]
     pub platform_node_id: Option<[u8; 20]>,
     #[serde(rename = "platformP2PPort")]
     pub platform_p2p_port: Option<u32>,
@@ -2116,23 +2125,109 @@ pub struct DMNState {
     pub platform_http_port: Option<u32>,
 }
 
-#[serde_as]
-#[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
-#[serde(rename_all = "camelCase")]
+#[derive(Clone, PartialEq, Eq, Debug, Deserialize)]
+#[serde(try_from = "DMNStateDiffIntermediate")]
 pub struct DMNStateDiff {
     pub service: Option<SocketAddr>,
-    #[serde(rename = "PoSeRevivedHeight")]
+    pub registered_height: Option<u32>,
+    pub last_paid_height: Option<u32>,
+    pub consecutive_payments: Option<i32>,
+    pub pose_penalty: Option<u32>,
     pub pose_revived_height: Option<u32>,
-    #[serde(default, rename = "PoSeBanHeight", deserialize_with = "deserialize_u32_opt")]
     pub pose_ban_height: Option<u32>,
     pub revocation_reason: Option<u32>,
     pub owner_address: Option<[u8; 20]>,
     pub voting_address: Option<[u8; 20]>,
     pub payout_address: Option<[u8; 20]>,
-    #[serde_as(as = "Option<Bytes>")]
     pub pub_key_operator: Option<Vec<u8>>,
     pub operator_payout_address: Option<Option<[u8; 20]>>,
     pub platform_node_id: Option<[u8; 20]>,
+    pub platform_p2p_port: Option<u32>,
+    pub platform_http_port: Option<u32>,
+}
+
+impl TryFrom<DMNStateDiffIntermediate> for DMNStateDiff {
+    type Error = encode::Error;
+
+    fn try_from(value: DMNStateDiffIntermediate) -> Result<Self, Self::Error> {
+        let DMNStateDiffIntermediate {
+            service,
+            registered_height,
+            last_paid_height,
+            consecutive_payments,
+            pose_penalty,
+            pose_revived_height,
+            pose_ban_height,
+            revocation_reason,
+            owner_address,
+            voting_address,
+            platform_node_id,
+            platform_p2p_port,
+            platform_http_port,
+            payout_address,
+            pub_key_operator,
+        } = value;
+
+        let owner_address = owner_address
+            .map(|address| {
+                let address = Address::from_str(address.as_str())?;
+                address.payload_to_vec().try_into().map_err(|_| encode::Error::InvalidVectorSize {
+                    expected: 20,
+                    actual: address.payload_to_vec().len(),
+                })
+            })
+            .transpose()?;
+        let voting_address = voting_address
+            .map(|address| {
+                let address = Address::from_str(address.as_str())?;
+                address.payload_to_vec().try_into().map_err(|_| encode::Error::InvalidVectorSize {
+                    expected: 20,
+                    actual: address.payload_to_vec().len(),
+                })
+            })
+            .transpose()?;
+        let payout_address = payout_address
+            .map(|address| {
+                let address = Address::from_str(address.as_str())?;
+                address.payload_to_vec().try_into().map_err(|_| encode::Error::InvalidVectorSize {
+                    expected: 20,
+                    actual: address.payload_to_vec().len(),
+                })
+            })
+            .transpose()?;
+        let operator_payout_address = None; //todo
+
+        let platform_node_id = platform_node_id
+            .map(|address| {
+                let address =
+                    hex::decode(address).map_err(|_| encode::Error::Hex(InvalidChar(0)))?;
+                let len = address.len();
+                address.try_into().map_err(|_| encode::Error::InvalidVectorSize {
+                    expected: 20,
+                    actual: len,
+                })
+            })
+            .transpose()?;
+
+        Ok(DMNStateDiff {
+            service,
+            registered_height,
+            last_paid_height,
+            consecutive_payments,
+            pose_penalty,
+            pose_revived_height,
+            pose_ban_height,
+            revocation_reason,
+            owner_address,
+            voting_address,
+            payout_address,
+            pub_key_operator,
+            operator_payout_address,
+            platform_node_id,
+            platform_p2p_port,
+            platform_http_port,
+        })
+    }
 }
 
 impl DMNState {
@@ -2148,6 +2243,9 @@ impl DMNState {
             pub_key_operator,
             operator_payout_address,
             platform_node_id,
+            platform_p2p_port,
+            platform_http_port,
+            ..
         } = diff;
         self.pose_ban_height = pose_ban_height;
         if let Some(service) = service {
@@ -2177,6 +2275,14 @@ impl DMNState {
         }
         if let Some(platform_node_id) = platform_node_id {
             self.platform_node_id = Some(platform_node_id);
+        }
+
+        if let Some(platform_p2p_port) = platform_p2p_port {
+            self.platform_p2p_port = Some(platform_p2p_port);
+        }
+
+        if let Some(platform_http_port) = platform_http_port {
+            self.platform_http_port = Some(platform_http_port);
         }
     }
 }
@@ -2420,7 +2526,7 @@ pub struct QuorumInfoResult {
     #[serde(with = "hex")]
     pub mined_block: Vec<u8>,
     pub members: Vec<QuorumMember>,
-    #[serde_as(as = "Bytes")]
+    #[serde_as(as = "hex")]
     pub quorum_public_key: Vec<u8>,
     #[serde(default, deserialize_with = "deserialize_hex_opt")]
     pub secret_key_share: Option<Vec<u8>>,
@@ -2641,13 +2747,13 @@ pub struct MasternodeListDiffAddItem {
     #[serde_as(as = "Bytes")]
     pub collateral_address: Vec<u8>,
     pub operator_reward: i32,
-    pub state: MasternodeListDiffState,
+    pub state: DMNState,
 }
 
 #[serde_as]
 #[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
-pub struct MasternodeListDiffState {
+pub struct DMNStateDiffIntermediate {
     pub service: Option<SocketAddr>,
     pub registered_height: Option<u32>,
     pub last_paid_height: Option<u32>,
@@ -2658,27 +2764,37 @@ pub struct MasternodeListDiffState {
     pub pose_revived_height: Option<u32>,
     #[serde(default, rename = "PoSeBanHeight", deserialize_with = "deserialize_u32_opt")]
     pub pose_ban_height: Option<u32>,
-    pub revocation_reason: Option<i32>,
-    #[serde_as(as = "Option<Bytes>")]
-    pub owner_address: Option<Vec<u8>>,
-    #[serde_as(as = "Option<Bytes>")]
-    pub voting_address: Option<Vec<u8>>,
+    pub revocation_reason: Option<u32>,
+    pub owner_address: Option<String>,
+    pub voting_address: Option<String>,
     #[serde(rename = "platformNodeID")]
-    #[serde_as(as = "Option<Bytes>")]
-    pub platform_node_id: Option<Vec<u8>>,
+    pub platform_node_id: Option<String>,
     #[serde(rename = "platformP2PPort")]
     pub platform_p2p_port: Option<u32>,
     #[serde(rename = "platformHTTPPort")]
     pub platform_http_port: Option<u32>,
-    #[serde_as(as = "Option<Bytes>")]
-    pub payout_address: Option<Vec<u8>>,
+    pub payout_address: Option<String>,
     #[serde_as(as = "Option<Bytes>")]
     pub pub_key_operator: Option<Vec<u8>>,
 }
 
 #[derive(Clone, PartialEq, Eq, Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
+#[serde(from = "MasternodeListDiffIntermediate")]
 pub struct MasternodeListDiff {
+    pub base_height: u32,
+    pub block_height: u32,
+    #[serde(rename = "addedMNs")]
+    pub added_mns: Vec<MasternodeListDiffAddItem>,
+    #[serde(rename = "removedMNs")]
+    pub removed_mns: Vec<ProTxHash>,
+    #[serde(rename = "updatedMNs")]
+    pub updated_mns: Vec<(ProTxHash, DMNStateDiff)>,
+}
+
+#[derive(Clone, PartialEq, Eq, Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct MasternodeListDiffIntermediate {
     base_height: u32,
     block_height: u32,
     #[serde(rename = "addedMNs")]
@@ -2686,7 +2802,27 @@ pub struct MasternodeListDiff {
     #[serde(rename = "removedMNs")]
     removed_mns: Vec<ProTxHash>,
     #[serde(rename = "updatedMNs")]
-    updated_mns: Vec<HashMap<ProTxHash, MasternodeListDiffState>>,
+    updated_mns: Vec<HashMap<ProTxHash, DMNStateDiff>>,
+}
+
+impl From<MasternodeListDiffIntermediate> for MasternodeListDiff {
+    fn from(value: MasternodeListDiffIntermediate) -> Self {
+        let MasternodeListDiffIntermediate {
+            base_height,
+            block_height,
+            added_mns,
+            removed_mns,
+            updated_mns,
+        } = value;
+
+        MasternodeListDiff {
+            base_height,
+            block_height,
+            added_mns,
+            removed_mns,
+            updated_mns: updated_mns.into_iter().flatten().collect(),
+        }
+    }
 }
 
 #[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
@@ -2795,13 +2931,118 @@ pub enum ProTxRevokeReason {
 
 // Custom deserializer functions.
 
-/// deserialize_hex_opt deserializes a vector of hex-encoded byte array.
+#[derive(Debug)]
+pub struct HexError(FromHexError);
+
+impl std::fmt::Display for HexError {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        write!(f, "Failed to deserialize hex string: {}", self.0)
+    }
+}
+
+impl Error for HexError {}
+
+impl From<FromHexError> for HexError {
+    fn from(err: FromHexError) -> HexError {
+        HexError(err)
+    }
+}
+
 fn deserialize_hex_opt<'de, D>(deserializer: D) -> Result<Option<Vec<u8>>, D::Error>
 where
     D: Deserializer<'de>,
 {
-    let v: Vec<u8> = hex::decode(String::deserialize(deserializer)?).unwrap();
-    Ok(Some(v))
+    match String::deserialize(deserializer) {
+        Ok(s) => match hex::decode(s) {
+            Ok(v) => Ok(Some(v)),
+            Err(err) => Err(D::Error::custom(HexError::from(err))),
+        },
+        Err(e) => Err(e),
+    }
+}
+
+fn deserialize_hex_to_address_optional<'de, D>(
+    deserializer: D,
+) -> Result<Option<[u8; 20]>, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    match String::deserialize(deserializer) {
+        Ok(s) => match hex::decode(s) {
+            Ok(v) => match v.clone().try_into() {
+                Ok(array) => Ok(Some(array)),
+                Err(_) => Err(D::Error::custom(ArrayConversionError(v))),
+            },
+            Err(err) => Err(D::Error::custom(HexError::from(err))),
+        },
+        Err(e) => Err(e),
+    }
+}
+
+#[derive(Debug)]
+pub struct CustomAddressError(address::Error);
+
+impl std::fmt::Display for CustomAddressError {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        write!(f, "Failed to deserialize address: {}", self.0)
+    }
+}
+
+impl Error for CustomAddressError {}
+
+impl From<address::Error> for CustomAddressError {
+    fn from(err: address::Error) -> CustomAddressError {
+        CustomAddressError(err)
+    }
+}
+
+#[derive(Debug)]
+pub struct ArrayConversionError(Vec<u8>);
+
+impl std::fmt::Display for ArrayConversionError {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        write!(f, "Failed to convert Vec<u8> to [u8; 20]: {:?}", self.0)
+    }
+}
+
+impl Error for ArrayConversionError {}
+fn deserialize_address<'de, D>(deserializer: D) -> Result<[u8; 20], D::Error>
+where
+    D: Deserializer<'de>,
+{
+    match String::deserialize(deserializer) {
+        Ok(s) => match Address::from_str(s.as_str()) {
+            Ok(address) => {
+                let v: Vec<u8> = address.payload_to_vec();
+                match v.clone().try_into() {
+                    Ok(array) => Ok(array),
+                    Err(_) => Err(D::Error::custom(ArrayConversionError(v))),
+                }
+            }
+            Err(err) => Err(D::Error::custom(CustomAddressError::from(err))),
+        },
+        Err(e) => Err(e),
+    }
+}
+
+fn deserialize_address_optional<'de, D>(deserializer: D) -> Result<Option<[u8; 20]>, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    match Option::<String>::deserialize(deserializer) {
+        Ok(Some(s)) => match Address::from_str(s.as_str()) {
+            Ok(address) => {
+                let v: Vec<u8> = address.payload_to_vec();
+                match v.clone().try_into() {
+                    Ok(array) => Ok(Some(array)),
+                    Err(_) => Err(D::Error::custom(ArrayConversionError(v))),
+                }
+            }
+            Err(err) => Err(D::Error::custom(CustomAddressError::from(err))),
+        },
+        Ok(None) => Ok(None),
+        Err(e) => Err(e),
+    }
 }
 
 /// deserialize_outpoint deserializes a hex-encoded outpoint
@@ -2871,8 +3112,8 @@ where
 }
 
 fn deserialize_u32_opt<'de, D>(deserializer: D) -> Result<Option<u32>, D::Error>
-    where
-        D: Deserializer<'de>,
+where
+    D: Deserializer<'de>,
 {
     let val = i64::deserialize(deserializer)?;
     if val < 0 {
@@ -2883,14 +3124,14 @@ fn deserialize_u32_opt<'de, D>(deserializer: D) -> Result<Option<u32>, D::Error>
 
 #[cfg(test)]
 mod tests {
-    use crate::{ExtendedQuorumListResult, MasternodeListDiff, deserialize_u32_opt};
+    use crate::{deserialize_u32_opt, ExtendedQuorumListResult, MasternodeListDiff};
 
     #[test]
     fn test_deserialize_u32_opt() {
         #[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
         struct Test {
             #[serde(deserialize_with = "deserialize_u32_opt")]
-            pub field: Option<u32>
+            pub field: Option<u32>,
         }
 
         let json = r#"{"field": 1}"#;
@@ -2974,7 +3215,8 @@ mod tests {
                 }
               ]
             }"#;
-        let result: MasternodeListDiff = serde_json::from_str(&json).expect("expected to deserialize json");
+        let result: MasternodeListDiff =
+            serde_json::from_str(&json).expect("expected to deserialize json");
         println!("{:#?}", result);
     }
 }

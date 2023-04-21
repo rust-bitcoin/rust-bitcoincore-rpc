@@ -63,16 +63,16 @@ impl Into<OutPoint> for JsonOutPoint {
 
 /// Shorthand for converting a variable into a serde_json::Value.
 fn into_json<T>(val: T) -> Result<Value>
-    where
-        T: serde::ser::Serialize,
+where
+    T: serde::ser::Serialize,
 {
     Ok(serde_json::to_value(val)?)
 }
 
 /// Shorthand for converting an Option into an Option<serde_json::Value>.
 fn opt_into_json<T>(opt: Option<T>) -> Result<Value>
-    where
-        T: serde::ser::Serialize,
+where
+    T: serde::ser::Serialize,
 {
     match opt {
         Some(val) => Ok(into_json(val)?),
@@ -1155,10 +1155,7 @@ pub trait RpcApi: Sized {
         height: Option<u32>,
     ) -> Result<json::ExtendedQuorumListResult> {
         let mut args = ["listextended".into(), opt_into_json(height)?];
-        self.call::<json::ExtendedQuorumListResult>(
-            "quorum",
-            handle_defaults(&mut args, &[]),
-        )
+        self.call::<json::ExtendedQuorumListResult>("quorum", handle_defaults(&mut args, &[]))
     }
 
     /// Returns information about a specific quorum
@@ -1315,7 +1312,10 @@ pub trait RpcApi: Sized {
     /// Returns a full deterministic masternode list diff between two heigts
     fn get_protx_listdiff(&self, base_block: u32, block: u32) -> Result<json::MasternodeListDiff> {
         let mut args = ["listdiff".into(), into_json(base_block)?, into_json(block)?];
-        self.call::<json::MasternodeListDiff>("protx", handle_defaults(&mut args, &[null(), null()]))
+        self.call::<json::MasternodeListDiff>(
+            "protx",
+            handle_defaults(&mut args, &[null(), null()]),
+        )
     }
 
     /// Returns a returns detailed information about a deterministic masternode
@@ -1594,7 +1594,7 @@ fn log_response(cmd: &str, resp: &Result<jsonrpc::Response>) {
                     let def = serde_json::value::RawValue::from_string(
                         serde_json::Value::Null.to_string(),
                     )
-                        .unwrap();
+                    .unwrap();
                     let result = resp.result.as_ref().unwrap_or(&def);
                     trace!(target: "dashcore_rpc", "JSON-RPC response for {}: {}", cmd, result);
                 }
