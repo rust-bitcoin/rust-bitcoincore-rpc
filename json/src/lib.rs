@@ -39,7 +39,7 @@ use dashcore::hashes::sha256;
 use dashcore::util::{address, bip158, bip32};
 use dashcore::{
     Address, Amount, BlockHash, PrivateKey, ProTxHash, PublicKey, QuorumHash, Script, SignedAmount,
-    Transaction,
+    Transaction, Txid,
 };
 use hex::FromHexError;
 use serde::de::Error as SerdeError;
@@ -2042,11 +2042,11 @@ pub enum MasternodeType {
 pub struct MasternodeListItem {
     #[serde(rename = "type")]
     pub node_type: MasternodeType,
-    pub protx_hash: ProTxHash,
-    // TODO: confirm if this is correct
-    pub collateral_hash: [u8; 32],
+    pub pro_tx_hash: ProTxHash,
+    pub collateral_hash: Txid,
     pub collateral_index: u32,
-    // TODO: add collateral_address
+    #[serde(deserialize_with = "deserialize_address")]
+    pub collateral_address: [u8; 20],
     pub operator_reward: u32,
     pub state: DMNState,
 }
@@ -2734,22 +2734,6 @@ pub struct MasternodeDiff {
 }
 
 #[serde_as]
-#[derive(Clone, PartialEq, Eq, Debug, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct MasternodeListDiffAddItem {
-    #[serde(rename = "type")]
-    pub node_type: MasternodeType,
-    pub pro_tx_hash: ProTxHash,
-    #[serde(with = "hex")]
-    pub collateral_hash: Vec<u8>,
-    pub collateral_index: i32,
-    #[serde_as(as = "Bytes")]
-    pub collateral_address: Vec<u8>,
-    pub operator_reward: i32,
-    pub state: DMNState,
-}
-
-#[serde_as]
 #[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct DMNStateDiffIntermediate {
@@ -2784,7 +2768,7 @@ pub struct MasternodeListDiff {
     pub base_height: u32,
     pub block_height: u32,
     #[serde(rename = "addedMNs")]
-    pub added_mns: Vec<MasternodeListDiffAddItem>,
+    pub added_mns: Vec<MasternodeListItem>,
     #[serde(rename = "removedMNs")]
     pub removed_mns: Vec<ProTxHash>,
     #[serde(rename = "updatedMNs")]
@@ -2797,7 +2781,7 @@ struct MasternodeListDiffIntermediate {
     base_height: u32,
     block_height: u32,
     #[serde(rename = "addedMNs")]
-    added_mns: Vec<MasternodeListDiffAddItem>,
+    added_mns: Vec<MasternodeListItem>,
     #[serde(rename = "removedMNs")]
     removed_mns: Vec<ProTxHash>,
     #[serde(rename = "updatedMNs")]
