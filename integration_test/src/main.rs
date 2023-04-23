@@ -211,10 +211,10 @@ fn main() {
     test_backupwallet(&cl);
     test_wait_for_new_block(&cl);
     test_wait_for_block(&cl);
+    test_get_descriptor_info(&cl);
+    test_derive_addresses(&cl);
     //TODO import_multi(
     //TODO verify_message(
-    //TODO get_descriptor_info(&self, desc: &str) -> Result<json::GetDescriptorInfoResult> {
-    //TODO derive_addresses(&self, descriptor: &str, range: Option<[u32; 2]>) -> Result<Vec<Address>> {
     //TODO encrypt_wallet(&self, passphrase: &str) -> Result<()> {
     //TODO get_by_id<T: queryable::Queryable<Self>>(
     //TODO add_multisig_address(
@@ -1325,6 +1325,33 @@ fn test_wait_for_block(cl: &Client) {
 
     assert!(cl.wait_for_block(&hash, std::u64::MAX).is_err()); // JSON integer out of range
     assert_eq!(cl.wait_for_block(&hash, 0).unwrap(), json::BlockRef{hash, height});
+}
+
+fn test_get_descriptor_info(cl: &Client) {
+    let res = cl.get_descriptor_info(r"pkh(cSQPHDBwXGjVzWRqAHm6zfvQhaTuj1f2bFH58h55ghbjtFwvmeXR)").unwrap();
+    assert_eq!(res.descriptor, r"pkh(02e96fe52ef0e22d2f131dd425ce1893073a3c6ad20e8cac36726393dfb4856a4c)#62k9sn4x");
+    assert_eq!(res.checksum, "37v3lm8x");
+    assert_eq!(res.is_range, false);
+    assert_eq!(res.is_solvable, true);
+    assert_eq!(res.has_private_keys, true);
+
+    assert!(cl.get_descriptor_info("abcdef").is_err());
+}
+
+fn test_derive_addresses(cl: &Client) {
+    let descriptor = r"pkh(02e96fe52ef0e22d2f131dd425ce1893073a3c6ad20e8cac36726393dfb4856a4c)#62k9sn4x";
+    assert_eq!(cl.derive_addresses(descriptor, None).unwrap(), vec!["mrkwtj5xpYQjHeJe5wsweNjVeTKkvR5fCr".parse().unwrap()]);
+    assert!(cl.derive_addresses(descriptor, Some([0, 1])).is_err()); // Range should not be specified for an unranged descriptor
+
+    let descriptor = std::concat!(
+        r"wpkh([1004658e/84'/1'/0']tpubDCBEcmVKbfC9KfdydyLbJ2gfNL88grZu1XcWSW9ytTM6fi",
+        r"tvaRmVyr8Ddf7SjZ2ZfMx9RicjYAXhuh3fmLiVLPodPEqnQQURUfrBKiiVZc8/0/*)#g8l47ngv",
+    );
+    assert_eq!(cl.derive_addresses(descriptor, Some([0, 1])).unwrap(), vec![
+        "bcrt1q5n5tjkpva8v5s0uadu2y5f0g7pn4h5eqaq2ux2".parse().unwrap(),
+        "bcrt1qcgl303ht03ja2e0hudpwk7ypcxk5t478wspzlt".parse().unwrap(),
+    ]);
+    assert!(cl.derive_addresses(descriptor, None).is_err()); // Range must be specified for a ranged descriptor
 }
 
 fn test_get_index_info(cl: &Client) {
