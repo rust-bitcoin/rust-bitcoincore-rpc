@@ -1330,10 +1330,16 @@ fn test_wait_for_block(cl: &Client) {
 fn test_get_descriptor_info(cl: &Client) {
     let res = cl.get_descriptor_info(r"pkh(cSQPHDBwXGjVzWRqAHm6zfvQhaTuj1f2bFH58h55ghbjtFwvmeXR)").unwrap();
     assert_eq!(res.descriptor, r"pkh(02e96fe52ef0e22d2f131dd425ce1893073a3c6ad20e8cac36726393dfb4856a4c)#62k9sn4x");
-    assert_eq!(res.checksum, "37v3lm8x");
     assert_eq!(res.is_range, false);
     assert_eq!(res.is_solvable, true);
     assert_eq!(res.has_private_keys, true);
+
+    // Checksum introduced in: https://github.com/bitcoin/bitcoin/commit/26d3fad1093dfc697048313be7a96c9adf723654
+    if version() >= 190000 {
+        assert_eq!(res.checksum, Some("37v3lm8x".to_string()));
+    } else {
+        assert!(res.checksum.is_none());
+    }
 
     assert!(cl.get_descriptor_info("abcdef").is_err());
 }

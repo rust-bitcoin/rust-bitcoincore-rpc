@@ -1498,7 +1498,7 @@ pub struct BlockRef {
 #[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
 pub struct GetDescriptorInfoResult {
     pub descriptor: String,
-    pub checksum: String,
+    pub checksum: Option<String>,
     #[serde(rename = "isrange")]
     pub is_range: bool,
     #[serde(rename = "issolvable")]
