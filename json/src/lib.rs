@@ -2101,9 +2101,9 @@ pub struct DMNState {
     #[serde_as(as = "DisplayFromStr")]
     pub service: SocketAddr,
     pub registered_height: u32,
-    #[serde(rename = "PoSeRevivedHeight")]
-    pub pose_revived_height: u32,
-    #[serde(rename = "PoSeBanHeight")]
+    #[serde(default, rename = "PoSeRevivedHeight", deserialize_with = "deserialize_u32_opt")]
+    pub pose_revived_height: Option<u32>,
+    #[serde(default, rename = "PoSeBanHeight", deserialize_with = "deserialize_u32_opt")]
     pub pose_ban_height: Option<u32>,
     pub revocation_reason: u32,
     #[serde(deserialize_with = "deserialize_address")]
@@ -2248,11 +2248,9 @@ impl DMNState {
             ..
         } = diff;
         self.pose_ban_height = pose_ban_height;
+        self.pose_revived_height = pose_revived_height;
         if let Some(service) = service {
             self.service = service
-        }
-        if let Some(pose_revived_height) = pose_revived_height {
-            self.pose_revived_height = pose_revived_height;
         }
         if let Some(revocation_reason) = revocation_reason {
             self.revocation_reason = revocation_reason;
@@ -2743,7 +2741,7 @@ pub struct DMNStateDiffIntermediate {
     pub consecutive_payments: Option<i32>,
     #[serde(rename = "PoSePenalty")]
     pub pose_penalty: Option<u32>,
-    #[serde(rename = "PoSeRevivedHeight")]
+    #[serde(rename = "PoSeRevivedHeight", deserialize_with = "deserialize_u32_opt")]
     pub pose_revived_height: Option<u32>,
     #[serde(default, rename = "PoSeBanHeight", deserialize_with = "deserialize_u32_opt")]
     pub pose_ban_height: Option<u32>,
@@ -3173,6 +3171,31 @@ mod tests {
                     "platformHTTPPort": 22822,
                     "payoutAddress": "yX4Ve7Q8Y4jscV4LZJD8HVCHKyePzR3MhA",
                     "pubKeyOperator": "8ed3f0c208efbcfc815cbfb94490dc68cf2e29d44dd9f8a91e20e06057aa110d7062c8ab7ccc85a9ff0c88760157f563"
+                  }
+                },
+                {
+                  "type": "HighPerformance",
+                  "proTxHash": "9a8cfd0e5fa3a7467b81a5a2fa41e40f7981591cfb62d86e35db37962c128bb0",
+                  "collateralHash": "35215134107b5e423d327cab12d2b4c60a9b769301096e05a95916676d2f7867",
+                  "collateralIndex": 0,
+                  "collateralAddress": "yd2PwFoqtEJdnJVSEzBDMxVnFVgEvJyvyY",
+                  "operatorReward": 0,
+                  "state": {
+                    "service": "172.17.0.1:20201",
+                    "registeredHeight": 1176,
+                    "lastPaidHeight": 1641,
+                    "consecutivePayments": 3,
+                    "PoSePenalty": 0,
+                    "PoSeRevivedHeight": -1,
+                    "PoSeBanHeight": -1,
+                    "revocationReason": 0,
+                    "ownerAddress": "yLtkvxSueGSufQZQq8L9GVHch9QRqJqGkZ",
+                    "votingAddress": "yLtkvxSueGSufQZQq8L9GVHch9QRqJqGkZ",
+                    "platformNodeID": "9f3ea5525b35daf58dd17e916b8ec03cd0fa2f0c",
+                    "platformP2PPort": 46856,
+                    "platformHTTPPort": 2643,
+                    "payoutAddress": "ybhjexnMcGckdJCyUwFu3F25zPo4mqQg1k",
+                    "pubKeyOperator": "a792ce1af5f7bb9281053b3934cb8b08d00d075a56498e1a525388ce467f188e8a80911fd96a20982baa9b9678452534"
                   }
                 }
               ],
