@@ -2231,6 +2231,84 @@ impl TryFrom<DMNStateDiffIntermediate> for DMNStateDiff {
 }
 
 impl DMNState {
+    pub fn compare_to_older_dmn_state(&self, older: &DMNState) -> DMNStateDiff {
+        older.compare_to_newer_dmn_state(self)
+    }
+    pub fn compare_to_newer_dmn_state(&self, newer: &DMNState) -> DMNStateDiff {
+        DMNStateDiff {
+            service: if self.service != newer.service {
+                Some(newer.service)
+            } else {
+                None
+            },
+            registered_height: if self.registered_height != newer.registered_height {
+                Some(newer.registered_height)
+            } else {
+                None
+            },
+            last_paid_height: None,     //todo?
+            consecutive_payments: None, //todo?
+            pose_penalty: None,         //todo?
+            pose_revived_height: if self.pose_revived_height != newer.pose_revived_height {
+                newer.pose_revived_height
+            } else {
+                None
+            },
+            pose_ban_height: if self.pose_ban_height != newer.pose_ban_height {
+                newer.pose_ban_height
+            } else {
+                None
+            },
+            revocation_reason: if self.revocation_reason != newer.revocation_reason {
+                Some(newer.revocation_reason)
+            } else {
+                None
+            },
+            owner_address: if self.owner_address != newer.owner_address {
+                Some(newer.owner_address)
+            } else {
+                None
+            },
+            voting_address: if self.voting_address != newer.voting_address {
+                Some(newer.voting_address)
+            } else {
+                None
+            },
+            payout_address: if self.payout_address != newer.payout_address {
+                Some(newer.payout_address)
+            } else {
+                None
+            },
+            pub_key_operator: if self.pub_key_operator != newer.pub_key_operator {
+                Some(newer.pub_key_operator.clone())
+            } else {
+                None
+            },
+            operator_payout_address: if self.operator_payout_address
+                != newer.operator_payout_address
+            {
+                Some(newer.operator_payout_address)
+            } else {
+                None
+            },
+            platform_node_id: if self.platform_node_id != newer.platform_node_id {
+                newer.platform_node_id
+            } else {
+                None
+            },
+            platform_p2p_port: if self.platform_p2p_port != newer.platform_p2p_port {
+                newer.platform_p2p_port
+            } else {
+                None
+            },
+            platform_http_port: if self.platform_http_port != newer.platform_http_port {
+                newer.platform_http_port
+            } else {
+                None
+            },
+        }
+    }
+
     pub fn apply_diff(&mut self, diff: DMNStateDiff) {
         let DMNStateDiff {
             service,
