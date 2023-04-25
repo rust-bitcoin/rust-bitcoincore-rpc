@@ -2112,8 +2112,8 @@ pub struct DMNState {
     pub voting_address: [u8; 20],
     #[serde(deserialize_with = "deserialize_address")]
     pub payout_address: [u8; 20],
-    #[serde_as(as = "Bytes")]
-    pub pub_key_operator: Vec<u8>,
+    #[serde(default, deserialize_with = "deserialize_hex_opt")]
+    pub pub_key_operator: Option<Vec<u8>>,
     #[serde(default, deserialize_with = "deserialize_address_optional")]
     pub operator_payout_address: Option<[u8; 20]>,
     #[serde(rename = "platformNodeID")]
@@ -2249,6 +2249,7 @@ impl DMNState {
         } = diff;
         self.pose_ban_height = pose_ban_height;
         self.pose_revived_height = pose_revived_height;
+        self.pub_key_operator = pub_key_operator;
         if let Some(service) = service {
             self.service = service
         }
@@ -2264,9 +2265,6 @@ impl DMNState {
         }
         if let Some(payout_address) = payout_address {
             self.payout_address = payout_address;
-        }
-        if let Some(pub_key_operator) = pub_key_operator {
-            self.pub_key_operator = pub_key_operator;
         }
         if let Some(operator_payout_address) = operator_payout_address {
             self.operator_payout_address = operator_payout_address;
@@ -2505,8 +2503,8 @@ pub struct QuorumListResultInternal<T> {
 #[serde(rename_all = "camelCase")]
 pub struct QuorumMember {
     pub pro_tx_hash: ProTxHash,
-    #[serde_as(as = "Bytes")]
-    pub pub_key_operator: Vec<u8>,
+    #[serde(default, deserialize_with = "deserialize_hex_opt")]
+    pub pub_key_operator: Option<Vec<u8>>,
     pub valid: bool,
     #[serde(deserialize_with = "deserialize_hex_opt")]
     pub pub_key_share: Option<Vec<u8>>,
@@ -2703,8 +2701,8 @@ pub struct QuorumMasternodeListItem {
     pub confirmed_hash: Vec<u8>,
     #[serde_as(as = "DisplayFromStr")]
     pub service: SocketAddr,
-    #[serde_as(as = "Bytes")]
-    pub pub_key_operator: Vec<u8>,
+    #[serde(default, deserialize_with = "deserialize_hex_opt")]
+    pub pub_key_operator: Option<Vec<u8>>,
     #[serde_as(as = "Bytes")]
     pub voting_address: Vec<u8>,
     pub is_valid: bool,
@@ -2755,7 +2753,7 @@ pub struct DMNStateDiffIntermediate {
     #[serde(rename = "platformHTTPPort")]
     pub platform_http_port: Option<u32>,
     pub payout_address: Option<String>,
-    #[serde_as(as = "Option<Bytes>")]
+    #[serde(default, deserialize_with = "deserialize_hex_opt")]
     pub pub_key_operator: Option<Vec<u8>>,
 }
 
