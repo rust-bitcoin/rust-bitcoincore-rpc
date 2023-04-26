@@ -213,6 +213,7 @@ fn main() {
     test_wait_for_block(&cl);
     test_get_descriptor_info(&cl);
     test_derive_addresses(&cl);
+    test_get_mempool_info(&cl);
     //TODO import_multi(
     //TODO verify_message(
     //TODO encrypt_wallet(&self, passphrase: &str) -> Result<()> {
@@ -1358,6 +1359,36 @@ fn test_derive_addresses(cl: &Client) {
         "bcrt1qcgl303ht03ja2e0hudpwk7ypcxk5t478wspzlt".parse().unwrap(),
     ]);
     assert!(cl.derive_addresses(descriptor, None).is_err()); // Range must be specified for a ranged descriptor
+}
+
+fn test_get_mempool_info(cl: &Client) {
+    let res = cl.get_mempool_info().unwrap();
+
+    if version() >= 190000 {
+        assert!(res.loaded.is_some());
+    } else {
+        assert!(res.loaded.is_none());
+    }
+
+    if version() >= 210000 {
+        assert!(res.unbroadcast_count.is_some());
+    } else {
+        assert!(res.unbroadcast_count.is_none());
+    }
+
+    if version() >= 220000 {
+        assert!(res.total_fee.is_some());
+    } else {
+        assert!(res.total_fee.is_none());
+    }
+
+    if version() >= 240000 {
+        assert!(res.incremental_relay_fee.is_some());
+        assert!(res.full_rbf.is_some());
+    } else {
+        assert!(res.incremental_relay_fee.is_none());
+        assert!(res.full_rbf.is_none());
+    }
 }
 
 fn test_get_index_info(cl: &Client) {
