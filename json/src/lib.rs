@@ -2503,8 +2503,8 @@ pub struct QuorumListResultInternal<T> {
 #[serde(rename_all = "camelCase")]
 pub struct QuorumMember {
     pub pro_tx_hash: ProTxHash,
-    #[serde(default, deserialize_with = "deserialize_hex_opt")]
-    pub pub_key_operator: Option<Vec<u8>>,
+    #[serde(with = "hex")]
+    pub pub_key_operator: Vec<u8>,
     pub valid: bool,
     #[serde(deserialize_with = "deserialize_hex_opt")]
     pub pub_key_share: Option<Vec<u8>>,
@@ -2701,8 +2701,8 @@ pub struct QuorumMasternodeListItem {
     pub confirmed_hash: Vec<u8>,
     #[serde_as(as = "DisplayFromStr")]
     pub service: SocketAddr,
-    #[serde(default, deserialize_with = "deserialize_hex_opt")]
-    pub pub_key_operator: Option<Vec<u8>>,
+    #[serde(with = "hex")]
+    pub pub_key_operator: Vec<u8>,
     #[serde_as(as = "Bytes")]
     pub voting_address: Vec<u8>,
     pub is_valid: bool,
