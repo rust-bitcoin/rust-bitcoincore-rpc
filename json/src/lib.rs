@@ -2110,8 +2110,8 @@ pub struct DMNState {
     pub voting_address: [u8; 20],
     #[serde(deserialize_with = "deserialize_address")]
     pub payout_address: [u8; 20],
-    #[serde(default, deserialize_with = "deserialize_hex_opt")]
-    pub pub_key_operator: Option<Vec<u8>>,
+    #[serde(with = "hex")]
+    pub pub_key_operator: Vec<u8>,
     #[serde(default, deserialize_with = "deserialize_address_optional")]
     pub operator_payout_address: Option<[u8; 20]>,
     #[serde(rename = "platformNodeID")]
@@ -2288,7 +2288,7 @@ impl DMNState {
             },
             pub_key_operator: if self.pub_key_operator != newer.pub_key_operator {
                 has_diff = true;
-                newer.pub_key_operator.clone()
+                Some(newer.pub_key_operator.clone())
             } else {
                 None
             },
@@ -2344,7 +2344,10 @@ impl DMNState {
         } = diff;
         self.pose_ban_height = pose_ban_height;
         self.pose_revived_height = pose_revived_height;
-        self.pub_key_operator = pub_key_operator;
+        if let Some(pub_key_operator) = pub_key_operator {
+            self.pub_key_operator = pub_key_operator;
+        }
+
         if let Some(service) = service {
             self.service = service
         }
@@ -3334,9 +3337,8 @@ mod tests {
 
         assert_eq!(
             "8ed3f0c208efbcfc815cbfb94490dc68cf2e29d44dd9f8a91e20e06057aa110d7062c8ab7ccc85a9ff0c88760157f563".to_string(),
-            hex::encode(result.added_mns[0].state.pub_key_operator.clone().unwrap()),
+            hex::encode(result.added_mns[0].state.pub_key_operator.clone()),
             "invalid pub_key_operator"
         );
-
     }
 }
