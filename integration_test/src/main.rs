@@ -1191,8 +1191,12 @@ fn test_add_node(cl: &Client) {
 
 fn test_get_added_node_info(cl: &Client) {
     cl.add_node("127.0.0.1:1234").unwrap();
-    let added_info = cl.get_added_node_info(None).unwrap();
-    assert_eq!(added_info.len(), 1);
+    cl.add_node("127.0.0.1:4321").unwrap();
+
+    assert!(cl.get_added_node_info(Some("127.0.0.1:1111")).is_err());
+    assert_eq!(cl.get_added_node_info(None).unwrap().len(), 2);
+    assert_eq!(cl.get_added_node_info(Some("127.0.0.1:1234")).unwrap().len(), 1);
+    assert_eq!(cl.get_added_node_info(Some("127.0.0.1:4321")).unwrap().len(), 1);
 }
 
 fn test_get_node_addresses(cl: &Client) {
