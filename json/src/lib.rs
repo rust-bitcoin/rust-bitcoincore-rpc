@@ -17,13 +17,11 @@
 #![crate_type = "rlib"]
 
 pub extern crate dashcore;
-#[allow(unused)]
 #[macro_use] // `macro_use` is needed for v1.24.0 compilation.
 extern crate serde;
 extern crate serde_json;
 extern crate serde_with;
 
-use hex;
 use serde_repr::*;
 use std::collections::HashMap;
 use std::error::Error;
@@ -633,7 +631,7 @@ impl GetRawTransactionResult {
     }
 
     pub fn transaction(&self) -> Result<Transaction, encode::Error> {
-        Ok(encode::deserialize(&self.hex)?)
+        encode::deserialize(&self.hex)
     }
 }
 
@@ -719,7 +717,7 @@ pub struct GetTransactionResult {
 
 impl GetTransactionResult {
     pub fn transaction(&self) -> Result<Transaction, encode::Error> {
-        Ok(encode::deserialize(&self.hex)?)
+        encode::deserialize(&self.hex)
     }
 }
 
@@ -824,7 +822,7 @@ pub struct SignRawTransactionResult {
 
 impl SignRawTransactionResult {
     pub fn transaction(&self) -> Result<Transaction, encode::Error> {
-        Ok(encode::deserialize(&self.hex)?)
+        encode::deserialize(&self.hex)
     }
 }
 
@@ -2290,7 +2288,7 @@ impl DMNState {
             },
             pub_key_operator: if self.pub_key_operator != newer.pub_key_operator {
                 has_diff = true;
-                Some(newer.pub_key_operator.clone())
+                newer.pub_key_operator.clone()
             } else {
                 None
             },
@@ -3133,8 +3131,8 @@ where
     let vout: u32 = str_array[1].parse().unwrap();
 
     let outpoint = dashcore::OutPoint {
-        txid: txid,
-        vout: vout,
+        txid,
+        vout,
     };
     Ok(outpoint)
 }
@@ -3164,7 +3162,7 @@ fn deserialize_quorum_type<'de, D>(deserializer: D) -> Result<QuorumType, D::Err
 where
     D: Deserializer<'de>,
 {
-    return match IntegerOrString::deserialize(deserializer)? {
+    match IntegerOrString::deserialize(deserializer)? {
         IntegerOrString::String(s) => {
             let qt: QuorumType = s.into();
             Ok(qt)
@@ -3173,7 +3171,7 @@ where
             let qt: QuorumType = n.into();
             Ok(qt)
         }
-    };
+    }
 }
 
 fn deserialize_f32<'de, D>(deserializer: D) -> Result<f32, D::Error>
@@ -3200,7 +3198,9 @@ where
 
 #[cfg(test)]
 mod tests {
-    use crate::{deserialize_u32_opt, ExtendedQuorumListResult, MasternodeListDiff};
+    use dashcore::hashes::hex::ToHex;
+
+    use crate::{deserialize_u32_opt, ExtendedQuorumListResult, MasternodeListDiff, QuorumType};
 
     #[test]
     fn test_deserialize_u32_opt() {
@@ -3235,6 +3235,17 @@ mod tests {
         let result: ExtendedQuorumListResult =
             serde_json::from_str(json_list).expect("expected to deserialize json");
         println!("{:#?}", result);
+        let first_type = result.quorums_by_type.get(&QuorumType::Llmq50_60).unwrap();
+        let first_quorum = first_type.into_iter().nth(0).unwrap();
+
+        assert_eq!(
+            "000000da4509523408c751905d4e48df335e3ee565b4d2288800c7e51d592e2f",
+            first_quorum.0.to_hex()
+        );
+        assert_eq!(
+            "000000cd7f101437069956c0ca9f4180b41f0506827a828d57e85b35f215487e",
+            first_quorum.1.mined_block_hash.to_hex()
+        );
     }
 
     #[test]
@@ -3319,5 +3330,13 @@ mod tests {
         let result: MasternodeListDiff =
             serde_json::from_str(&json).expect("expected to deserialize json");
         println!("{:#?}", result);
+        assert_eq!(32, result.added_mns[0].pro_tx_hash.len());
+
+        assert_eq!(
+            "8ed3f0c208efbcfc815cbfb94490dc68cf2e29d44dd9f8a91e20e06057aa110d7062c8ab7ccc85a9ff0c88760157f563".to_string(),
+            hex::encode(result.added_mns[0].state.pub_key_operator.clone().unwrap()),
+            "invalid pub_key_operator"
+        );
+
     }
 }
