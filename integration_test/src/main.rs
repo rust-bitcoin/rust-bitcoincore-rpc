@@ -214,11 +214,11 @@ fn main() {
     test_get_descriptor_info(&cl);
     test_derive_addresses(&cl);
     test_get_mempool_info(&cl);
+    test_add_multisig_address(&cl);
     //TODO import_multi(
     //TODO verify_message(
     //TODO encrypt_wallet(&self, passphrase: &str) -> Result<()> {
     //TODO get_by_id<T: queryable::Queryable<Self>>(
-    //TODO add_multisig_address(
     test_add_node(&cl);
     test_get_added_node_info(&cl);
     test_get_node_addresses(&cl);
@@ -1347,6 +1347,24 @@ fn test_get_descriptor_info(cl: &Client) {
     }
 
     assert!(cl.get_descriptor_info("abcdef").is_err());
+}
+
+fn test_add_multisig_address(cl: &Client) {
+    let addr1 = cl.get_new_address(None, Some(json::AddressType::Bech32)).unwrap().assume_checked();
+    let addr2 = cl.get_new_address(None, Some(json::AddressType::Bech32)).unwrap().assume_checked();
+    let addresses = [
+        json::PubKeyOrAddress::Address(&addr1),
+        json::PubKeyOrAddress::Address(&addr2),
+    ];
+
+    assert!(cl.add_multisig_address(addresses.len(), &addresses, None, None).is_ok());
+    assert!(cl.add_multisig_address(addresses.len() - 1, &addresses, None, None).is_ok());
+    assert!(cl.add_multisig_address(addresses.len() + 1, &addresses, None, None).is_err());
+    assert!(cl.add_multisig_address(0, &addresses, None, None).is_err());
+    assert!(cl.add_multisig_address(addresses.len(), &addresses, Some("test_label"), None).is_ok());
+    assert!(cl.add_multisig_address(addresses.len(), &addresses, None, Some(json::AddressType::Legacy)).is_ok());
+    assert!(cl.add_multisig_address(addresses.len(), &addresses, None, Some(json::AddressType::P2shSegwit)).is_ok());
+    assert!(cl.add_multisig_address(addresses.len(), &addresses, None, Some(json::AddressType::Bech32)).is_ok());
 }
 
 fn test_derive_addresses(cl: &Client) {
