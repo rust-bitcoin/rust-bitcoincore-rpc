@@ -2837,7 +2837,7 @@ pub struct DMNStateDiffIntermediate {
     pub consecutive_payments: Option<i32>,
     #[serde(rename = "PoSePenalty")]
     pub pose_penalty: Option<u32>,
-    #[serde(rename = "PoSeRevivedHeight", deserialize_with = "deserialize_u32_opt")]
+    #[serde(default, rename = "PoSeRevivedHeight", deserialize_with = "deserialize_u32_opt")]
     pub pose_revived_height: Option<u32>,
     #[serde(default, rename = "PoSeBanHeight", deserialize_with = "deserialize_u32_opt")]
     pub pose_ban_height: Option<u32>,
