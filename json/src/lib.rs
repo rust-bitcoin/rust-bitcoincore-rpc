@@ -1059,7 +1059,7 @@ pub enum ImportMultiRequestScriptPubkey<'a> {
 #[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
 pub struct GetMempoolInfoResult {
     /// True if the mempool is fully loaded
-    pub loaded: bool,
+    pub loaded: Option<bool>,
     /// Current tx count
     pub size: usize,
     /// Sum of all virtual transaction sizes as defined in BIP 141. Differs from actual serialized size because witness data is discounted
@@ -1067,8 +1067,8 @@ pub struct GetMempoolInfoResult {
     /// Total memory usage for the mempool
     pub usage: usize,
     /// Total fees for the mempool in BTC, ignoring modified fees through prioritisetransaction
-    #[serde(with = "bitcoin::amount::serde::as_btc")]
-    pub total_fee: Amount,
+    #[serde(default, with = "bitcoin::amount::serde::as_btc::opt")]
+    pub total_fee: Option<Amount>,
     /// Maximum memory usage for the mempool
     #[serde(rename = "maxmempool")]
     pub max_mempool: usize,
@@ -1079,14 +1079,14 @@ pub struct GetMempoolInfoResult {
     #[serde(rename = "minrelaytxfee", with = "bitcoin::amount::serde::as_btc")]
     pub min_relay_tx_fee: Amount,
     /// Minimum fee rate increment for mempool limiting or replacement in BTC/kvB
-    #[serde(rename = "incrementalrelayfee", with = "bitcoin::amount::serde::as_btc")]
-    pub incremental_relay_fee: Amount,
+    #[serde(rename = "incrementalrelayfee", default, with = "bitcoin::amount::serde::as_btc::opt")]
+    pub incremental_relay_fee: Option<Amount>,
     /// Current number of transactions that haven't passed initial broadcast yet
     #[serde(rename = "unbroadcastcount")]
-    pub unbroadcast_count: usize,
+    pub unbroadcast_count: Option<usize>,
     /// True if the mempool accepts RBF without replaceability signaling inspection
     #[serde(rename = "fullrbf")]
-    pub full_rbf: bool,
+    pub full_rbf: Option<bool>,
 }
 
 #[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
