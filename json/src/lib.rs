@@ -2604,7 +2604,7 @@ pub struct QuorumMember {
     #[serde(with = "hex")]
     pub pub_key_operator: Vec<u8>,
     pub valid: bool,
-    #[serde(deserialize_with = "deserialize_hex_opt")]
+    #[serde(default, deserialize_with = "deserialize_hex_opt")]
     pub pub_key_share: Option<Vec<u8>>,
 }
 
