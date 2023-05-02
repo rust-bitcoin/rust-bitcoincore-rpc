@@ -2114,12 +2114,15 @@ pub struct DMNState {
     pub pub_key_operator: Vec<u8>,
     #[serde(default, deserialize_with = "deserialize_address_optional")]
     pub operator_payout_address: Option<[u8; 20]>,
-    #[serde(rename = "platformNodeID")]
-    #[serde(deserialize_with = "deserialize_hex_to_address_optional")]
+    #[serde(
+        default,
+        deserialize_with = "deserialize_hex_to_address_optional",
+        rename = "platformNodeID"
+    )]
     pub platform_node_id: Option<[u8; 20]>,
-    #[serde(rename = "platformP2PPort")]
+    #[serde(default, rename = "platformP2PPort")]
     pub platform_p2p_port: Option<u32>,
-    #[serde(rename = "platformHTTPPort")]
+    #[serde(default, rename = "platformHTTPPort")]
     pub platform_http_port: Option<u32>,
 }
 
@@ -2831,9 +2834,13 @@ pub struct MasternodeDiff {
 #[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct DMNStateDiffIntermediate {
+    #[serde(default)]
     pub service: Option<SocketAddr>,
+    #[serde(default)]
     pub registered_height: Option<u32>,
+    #[serde(default)]
     pub last_paid_height: Option<u32>,
+    #[serde(default)]
     pub consecutive_payments: Option<i32>,
     #[serde(rename = "PoSePenalty")]
     pub pose_penalty: Option<u32>,
@@ -2841,15 +2848,19 @@ pub struct DMNStateDiffIntermediate {
     pub pose_revived_height: Option<u32>,
     #[serde(default, rename = "PoSeBanHeight", deserialize_with = "deserialize_u32_opt")]
     pub pose_ban_height: Option<u32>,
+    #[serde(default)]
     pub revocation_reason: Option<u32>,
+    #[serde(default)]
     pub owner_address: Option<String>,
+    #[serde(default)]
     pub voting_address: Option<String>,
-    #[serde(rename = "platformNodeID")]
+    #[serde(default, rename = "platformNodeID")]
     pub platform_node_id: Option<String>,
-    #[serde(rename = "platformP2PPort")]
+    #[serde(default, rename = "platformP2PPort")]
     pub platform_p2p_port: Option<u32>,
-    #[serde(rename = "platformHTTPPort")]
+    #[serde(default, rename = "platformHTTPPort")]
     pub platform_http_port: Option<u32>,
+    #[serde(default)]
     pub payout_address: Option<String>,
     #[serde(default, deserialize_with = "deserialize_hex_opt")]
     pub pub_key_operator: Option<Vec<u8>>,
@@ -3257,6 +3268,28 @@ mod tests {
               "baseHeight": 850000,
               "blockHeight": 867165,
               "addedMNs": [
+                 {
+                  "type": "Regular",
+                  "proTxHash": "c560a9be2be9db79e1aaa16e4dd3cd22bddcb0155f88aba68aa4797d375ef370",
+                  "collateralHash": "ff6226e6c97bfcf40b6d04e12e3f75678024988823bfba28cde2a9ac11b1a765",
+                  "collateralIndex": 1,
+                  "collateralAddress": "yNqYnF9sHURjwRmhZMLFGQ3WjC5DZNJMUi",
+                  "operatorReward": 0,
+                  "state": {
+                    "service": "194.135.88.228:6667",
+                    "registeredHeight": 850310,
+                    "lastPaidHeight": 0,
+                    "consecutivePayments": 0,
+                    "PoSePenalty": 0,
+                    "PoSeRevivedHeight": -1,
+                    "PoSeBanHeight": -1,
+                    "revocationReason": 0,
+                    "ownerAddress": "yPBWCdMRY5PsS3hJzs7csbdWQVRR85yxUz",
+                    "votingAddress": "ySM11LUD65Bi4p1gm68XLkdWc65TBKRzvQ",
+                    "payoutAddress": "yX4Ve7Q8Y4jscV4LZJD8HVCHKyePzR3MhA",
+                    "pubKeyOperator": "8ed3f0c208efbcfc815cbfb94490dc68cf2e29d44dd9f8a91e20e06057aa110d7062c8ab7ccc85a9ff0c88760157f563"
+                  }
+                },
                 {
                   "type": "HighPerformance",
                   "proTxHash": "c560a9be2be9db79e1aaa16e4dd3cd22bddcb0155f88aba68aa4797d375ef370",
