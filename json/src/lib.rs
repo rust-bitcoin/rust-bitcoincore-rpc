@@ -846,6 +846,51 @@ pub struct TestMempoolAcceptResult {
 }
 
 #[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
+pub struct Fees {
+    /// Transaction fee.
+    #[serde(with = "bitcoin::amount::serde::as_btc")]
+    pub base: Amount,
+
+    /// If the transaction was not already in the mempool, the effective feerate
+    /// in BTC per KvB. For example, the package feerate and/or feerate with
+    /// modified fees from prioritisetransaction.
+    #[serde(default, rename = "effective-feerate", with = "bitcoin::amount::serde::as_btc::opt")]
+    pub effective_feerate: Option<Amount>,
+
+    /// If effective-feerate is provided, the wtxids of the transactions whose
+    /// fees and vsizes are included in effective-feerate.
+    #[serde(rename = "effective-includes")]
+    pub effective_includes: Option<Vec<bitcoin::Wtxid>>,
+}
+
+#[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
+pub struct TxResult {
+    pub txid: bitcoin::Txid,
+
+    /// The wtxid of a different transaction with the same txid but different
+    /// witness found in the mempool. This means the submitted transaction was
+    /// ignored.
+    #[serde(rename = "other-wtxid")]
+    pub other_wtxid: Option<bitcoin::Wtxid>,
+
+    /// Virtual transaction size as defined in BIP 141.
+    pub vsize: u64,
+
+    pub fees: Fees,
+}
+
+#[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
+pub struct SubmitPackageResult {
+    /// Transaction results keyed by wtxid.
+    #[serde(rename = "tx-results")]
+    pub tx_results: HashMap<bitcoin::Wtxid, TxResult>,
+
+    /// List of txids of replaced transactions.
+    #[serde(rename = "replaced-transactions")]
+    pub replaced_transactions: Vec<bitcoin::Txid>,
+}
+
+#[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
 pub struct TestMempoolAcceptResultFees {
     /// Transaction fee in BTC
     #[serde(with = "bitcoin::amount::serde::as_btc")]
