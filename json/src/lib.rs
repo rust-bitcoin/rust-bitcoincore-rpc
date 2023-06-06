@@ -2419,6 +2419,55 @@ pub struct MasternodeStatus {
     pub status: String,
 }
 
+/// Masternode sync status response for `mnsync_status` method
+#[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
+pub struct MnSyncStatus {
+    #[serde(rename = "AssetID")]
+    pub asset_id: u16,
+
+    #[serde(rename = "AssetName")]
+    #[serde(deserialize_with = "deserialize_mn_sync_asset_name")]
+    pub asset_name: MnSyncAssetName,
+
+    #[serde(rename = "AssetStartTime")]
+    pub asset_start_time: u32,
+
+    #[serde(rename = "Attempt")]
+    pub attempt: u16,
+
+    #[serde(rename = "IsBlockchainSynced")]
+    pub is_blockchain_synced: bool,
+
+    #[serde(rename = "IsSynced")]
+    pub is_synced: bool,
+}
+
+/// Masternode Sync Assets
+#[derive(Clone, Copy, PartialEq, Eq, Debug, Hash, Serialize, Deserialize)]
+#[repr(u16)]
+pub enum MnSyncAssetName {
+    Initial = 0,
+    Blockchain = 1,
+    Governance = 2,
+    Finished = 999,
+}
+
+/// deserialize_mn_state deserializes a masternode state
+fn deserialize_mn_sync_asset_name<'de, D>(deserializer: D) -> Result<MnSyncAssetName, D::Error>
+    where
+        D: Deserializer<'de>,
+{
+    let str_sequence = String::deserialize(deserializer)?;
+
+    Ok(match str_sequence.as_str() {
+        "MASTERNODE_SYNC_INITIAL" => MnSyncAssetName::Initial,
+        "MASTERNODE_SYNC_BLOCKCHAIN" => MnSyncAssetName::Blockchain,
+        "MASTERNODE_SYNC_GOVERNANCE" => MnSyncAssetName::Governance,
+        "MASTERNODE_SYNC_FINISHED" => MnSyncAssetName::Finished,
+        _ => return Err(de::Error::custom(format!("unknown masternode sync asset name: {}", str_sequence))),
+    })
+}
+
 // --------------------------- BLS -------------------------------
 
 #[serde_as]
@@ -3213,8 +3262,9 @@ where
 #[cfg(test)]
 mod tests {
     use dashcore::hashes::hex::ToHex;
+    use serde_json::json;
 
-    use crate::{deserialize_u32_opt, ExtendedQuorumListResult, MasternodeListDiff, QuorumType};
+    use crate::{deserialize_u32_opt, ExtendedQuorumListResult, MasternodeListDiff, MnSyncStatus, QuorumType};
 
     #[test]
     fn test_deserialize_u32_opt() {
@@ -3373,5 +3423,23 @@ mod tests {
             hex::encode(result.added_mns[0].state.pub_key_operator.clone()),
             "invalid pub_key_operator"
         );
+    }
+
+
+    #[test]
+    fn deserialize_mnsync_status() {
+        let json_value = json!({
+          "AssetID": 999,
+          "AssetName": "MASTERNODE_SYNC_FINISHED",
+          "AssetStartTime": 1507662300,
+          "Attempt": 0,
+          "IsBlockchainSynced": true,
+          "IsSynced": true,
+        });
+
+        let result: MnSyncStatus =
+            serde_json::from_value(json_value).expect("expected to deserialize json");
+
+        println!("{:#?}", result);
     }
 }

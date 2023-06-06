@@ -1515,6 +1515,11 @@ pub trait RpcApi: Sized {
             [into_json(id)?, into_json(tx_id)?, into_json(signature)?, opt_into_json(max_height)?];
         self.call::<bool>("verifyislock", handle_defaults(&mut args, &[null()]))
     }
+
+    /// Returns masternode sync status
+    fn mnsync_status(&self) -> Result<json::MnSyncStatus> {
+        self.call::<json::MnSyncStatus>("mnsync", &["status".into()])
+    }
 }
 
 /// Client implements a JSON-RPC client for the Dash Core daemon or compatible APIs.
