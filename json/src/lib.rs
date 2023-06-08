@@ -292,17 +292,17 @@ pub struct GetBlockStatsResult {
 #[derive(Clone, PartialEq, Debug, Deserialize, Serialize)]
 pub struct GetBlockStatsResultPartial {
     #[serde(
-        default,
-        rename = "avgfee",
-        with = "dashcore::util::amount::serde::as_sat::opt",
-        skip_serializing_if = "Option::is_none"
+    default,
+    rename = "avgfee",
+    with = "dashcore::util::amount::serde::as_sat::opt",
+    skip_serializing_if = "Option::is_none"
     )]
     pub avg_fee: Option<Amount>,
     #[serde(
-        default,
-        rename = "avgfeerate",
-        with = "dashcore::util::amount::serde::as_sat::opt",
-        skip_serializing_if = "Option::is_none"
+    default,
+    rename = "avgfeerate",
+    with = "dashcore::util::amount::serde::as_sat::opt",
+    skip_serializing_if = "Option::is_none"
     )]
     pub avg_fee_rate: Option<Amount>,
     #[serde(default, rename = "avgtxsize", skip_serializing_if = "Option::is_none")]
@@ -316,26 +316,26 @@ pub struct GetBlockStatsResultPartial {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub ins: Option<usize>,
     #[serde(
-        default,
-        rename = "maxfee",
-        with = "dashcore::util::amount::serde::as_sat::opt",
-        skip_serializing_if = "Option::is_none"
+    default,
+    rename = "maxfee",
+    with = "dashcore::util::amount::serde::as_sat::opt",
+    skip_serializing_if = "Option::is_none"
     )]
     pub max_fee: Option<Amount>,
     #[serde(
-        default,
-        rename = "maxfeerate",
-        with = "dashcore::util::amount::serde::as_sat::opt",
-        skip_serializing_if = "Option::is_none"
+    default,
+    rename = "maxfeerate",
+    with = "dashcore::util::amount::serde::as_sat::opt",
+    skip_serializing_if = "Option::is_none"
     )]
     pub max_fee_rate: Option<Amount>,
     #[serde(default, rename = "maxtxsize", skip_serializing_if = "Option::is_none")]
     pub max_tx_size: Option<u32>,
     #[serde(
-        default,
-        rename = "medianfee",
-        with = "dashcore::util::amount::serde::as_sat::opt",
-        skip_serializing_if = "Option::is_none"
+    default,
+    rename = "medianfee",
+    with = "dashcore::util::amount::serde::as_sat::opt",
+    skip_serializing_if = "Option::is_none"
     )]
     pub median_fee: Option<Amount>,
     #[serde(default, rename = "mediantime", skip_serializing_if = "Option::is_none")]
@@ -343,17 +343,17 @@ pub struct GetBlockStatsResultPartial {
     #[serde(default, rename = "mediantxsize", skip_serializing_if = "Option::is_none")]
     pub median_tx_size: Option<u32>,
     #[serde(
-        default,
-        rename = "minfee",
-        with = "dashcore::util::amount::serde::as_sat::opt",
-        skip_serializing_if = "Option::is_none"
+    default,
+    rename = "minfee",
+    with = "dashcore::util::amount::serde::as_sat::opt",
+    skip_serializing_if = "Option::is_none"
     )]
     pub min_fee: Option<Amount>,
     #[serde(
-        default,
-        rename = "minfeerate",
-        with = "dashcore::util::amount::serde::as_sat::opt",
-        skip_serializing_if = "Option::is_none"
+    default,
+    rename = "minfeerate",
+    with = "dashcore::util::amount::serde::as_sat::opt",
+    skip_serializing_if = "Option::is_none"
     )]
     pub min_fee_rate: Option<Amount>,
     #[serde(default, rename = "mintxsize", skip_serializing_if = "Option::is_none")]
@@ -361,26 +361,26 @@ pub struct GetBlockStatsResultPartial {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub outs: Option<usize>,
     #[serde(
-        default,
-        with = "dashcore::util::amount::serde::as_sat::opt",
-        skip_serializing_if = "Option::is_none"
+    default,
+    with = "dashcore::util::amount::serde::as_sat::opt",
+    skip_serializing_if = "Option::is_none"
     )]
     pub subsidy: Option<Amount>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub time: Option<u64>,
     #[serde(
-        default,
-        with = "dashcore::util::amount::serde::as_sat::opt",
-        skip_serializing_if = "Option::is_none"
+    default,
+    with = "dashcore::util::amount::serde::as_sat::opt",
+    skip_serializing_if = "Option::is_none"
     )]
     pub total_out: Option<Amount>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub total_size: Option<usize>,
     #[serde(
-        default,
-        rename = "totalfee",
-        with = "dashcore::util::amount::serde::as_sat::opt",
-        skip_serializing_if = "Option::is_none"
+    default,
+    rename = "totalfee",
+    with = "dashcore::util::amount::serde::as_sat::opt",
+    skip_serializing_if = "Option::is_none"
     )]
     pub total_fee: Option<Amount>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -756,23 +756,23 @@ pub struct GetTxOutResult {
 #[serde(rename_all = "camelCase")]
 pub struct ListUnspentQueryOptions {
     #[serde(
-        rename = "minimumAmount",
-        with = "dashcore::util::amount::serde::as_btc::opt",
-        skip_serializing_if = "Option::is_none"
+    rename = "minimumAmount",
+    with = "dashcore::util::amount::serde::as_btc::opt",
+    skip_serializing_if = "Option::is_none"
     )]
     pub minimum_amount: Option<Amount>,
     #[serde(
-        rename = "maximumAmount",
-        with = "dashcore::util::amount::serde::as_btc::opt",
-        skip_serializing_if = "Option::is_none"
+    rename = "maximumAmount",
+    with = "dashcore::util::amount::serde::as_btc::opt",
+    skip_serializing_if = "Option::is_none"
     )]
     pub maximum_amount: Option<Amount>,
     #[serde(rename = "maximumCount", skip_serializing_if = "Option::is_none")]
     pub maximum_count: Option<usize>,
     #[serde(
-        rename = "minimumSumAmount",
-        with = "dashcore::util::amount::serde::as_btc::opt",
-        skip_serializing_if = "Option::is_none"
+    rename = "minimumSumAmount",
+    with = "dashcore::util::amount::serde::as_btc::opt",
+    skip_serializing_if = "Option::is_none"
     )]
     pub minimum_sum_amount: Option<Amount>,
 }
@@ -1069,8 +1069,8 @@ pub struct GetMempoolEntryResultFees {
 
 impl<'a> serde::Serialize for ImportMultiRequestScriptPubkey<'a> {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: Serializer,
+        where
+            S: Serializer,
     {
         match *self {
             ImportMultiRequestScriptPubkey::Address(ref addr) => {
@@ -1137,8 +1137,8 @@ pub enum ImportMultiRescanSince {
 
 impl serde::Serialize for ImportMultiRescanSince {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: Serializer,
+        where
+            S: Serializer,
     {
         match *self {
             ImportMultiRescanSince::Now => serializer.serialize_str("now"),
@@ -1149,8 +1149,8 @@ impl serde::Serialize for ImportMultiRescanSince {
 
 impl<'de> serde::Deserialize<'de> for ImportMultiRescanSince {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
-    where
-        D: Deserializer<'de>,
+        where
+            D: Deserializer<'de>,
     {
         struct Visitor;
         impl<'de> de::Visitor<'de> for Visitor {
@@ -1161,15 +1161,15 @@ impl<'de> serde::Deserialize<'de> for ImportMultiRescanSince {
             }
 
             fn visit_u64<E>(self, value: u64) -> Result<Self::Value, E>
-            where
-                E: de::Error,
+                where
+                    E: de::Error,
             {
                 Ok(ImportMultiRescanSince::Timestamp(value))
             }
 
             fn visit_str<E>(self, value: &str) -> Result<Self::Value, E>
-            where
-                E: de::Error,
+                where
+                    E: de::Error,
             {
                 if value == "now" {
                     Ok(ImportMultiRescanSince::Now)
@@ -1392,10 +1392,10 @@ pub struct ListBannedResult {
 pub struct EstimateSmartFeeResult {
     /// Estimate fee rate in BTC/kB.
     #[serde(
-        default,
-        rename = "feerate",
-        skip_serializing_if = "Option::is_none",
-        with = "dashcore::util::amount::serde::as_btc::opt"
+    default,
+    rename = "feerate",
+    skip_serializing_if = "Option::is_none",
+    with = "dashcore::util::amount::serde::as_btc::opt"
     )]
     pub fee_rate: Option<Amount>,
     /// Errors encountered during processing.
@@ -1648,9 +1648,9 @@ pub struct WalletCreateFundedPsbtOptions {
     #[serde(rename = "lockUnspents", skip_serializing_if = "Option::is_none")]
     pub lock_unspent: Option<bool>,
     #[serde(
-        rename = "feeRate",
-        skip_serializing_if = "Option::is_none",
-        with = "dashcore::util::amount::serde::as_btc::opt"
+    rename = "feeRate",
+    skip_serializing_if = "Option::is_none",
+    with = "dashcore::util::amount::serde::as_btc::opt"
     )]
     pub fee_rate: Option<Amount>,
     #[serde(rename = "subtractFeeFromOutputs", skip_serializing_if = "Vec::is_empty")]
@@ -1728,8 +1728,8 @@ impl From<dashcore::EcdsaSighashType> for SigHashType {
 
 impl serde::Serialize for SigHashType {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: Serializer,
+        where
+            S: Serializer,
     {
         serializer.serialize_str(match self.0 {
             dashcore::EcdsaSighashType::All => "ALL",
@@ -1770,8 +1770,8 @@ pub struct FundRawTransactionOptions {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub lock_unspents: Option<bool>,
     #[serde(
-        with = "dashcore::util::amount::serde::as_btc::opt",
-        skip_serializing_if = "Option::is_none"
+    with = "dashcore::util::amount::serde::as_btc::opt",
+    skip_serializing_if = "Option::is_none"
     )]
     pub fee_rate: Option<Amount>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -1827,9 +1827,9 @@ pub struct SignRawTransactionInput {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub redeem_script: Option<Script>,
     #[serde(
-        default,
-        skip_serializing_if = "Option::is_none",
-        with = "dashcore::util::amount::serde::as_btc::opt"
+    default,
+    skip_serializing_if = "Option::is_none",
+    with = "dashcore::util::amount::serde::as_btc::opt"
     )]
     pub amount: Option<Amount>,
 }
@@ -1948,8 +1948,8 @@ pub struct Utxo {
 
 impl<'a> serde::Serialize for PubKeyOrAddress<'a> {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: Serializer,
+        where
+            S: Serializer,
     {
         match *self {
             PubKeyOrAddress::Address(a) => serde::Serialize::serialize(a, serializer),
@@ -1969,8 +1969,8 @@ pub enum ProTxListType {
 
 impl Serialize for ProTxListType {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: Serializer,
+        where
+            S: Serializer,
     {
         match self {
             ProTxListType::Registered => serializer.serialize_str("registered"),
@@ -2101,8 +2101,8 @@ pub struct DMNState {
     pub registered_height: u32,
     #[serde(default, rename = "PoSeRevivedHeight", deserialize_with = "deserialize_u32_opt")]
     pub pose_revived_height: Option<u32>,
-    #[serde(default, rename = "PoSeBanHeight", deserialize_with = "deserialize_u32_opt")]
-    pub pose_ban_height: Option<u32>,
+    #[serde(default, rename = "PoSeBanHeight", deserialize_with = "deserialize_u32_2opt")]
+    pub pose_ban_height: Option<Option<u32>>,
     pub revocation_reason: u32,
     #[serde(deserialize_with = "deserialize_address")]
     pub owner_address: [u8; 20],
@@ -2115,9 +2115,9 @@ pub struct DMNState {
     #[serde(default, deserialize_with = "deserialize_address_optional")]
     pub operator_payout_address: Option<[u8; 20]>,
     #[serde(
-        default,
-        deserialize_with = "deserialize_hex_to_address_optional",
-        rename = "platformNodeID"
+    default,
+    deserialize_with = "deserialize_hex_to_address_optional",
+    rename = "platformNodeID"
     )]
     pub platform_node_id: Option<[u8; 20]>,
     #[serde(default, rename = "platformP2PPort")]
@@ -2135,7 +2135,7 @@ pub struct DMNStateDiff {
     pub consecutive_payments: Option<i32>,
     pub pose_penalty: Option<u32>,
     pub pose_revived_height: Option<u32>,
-    pub pose_ban_height: Option<u32>,
+    pub pose_ban_height: Option<Option<u32>>,
     pub revocation_reason: Option<u32>,
     pub owner_address: Option<[u8; 20]>,
     pub voting_address: Option<[u8; 20]>,
@@ -2345,12 +2345,11 @@ impl DMNState {
             platform_http_port,
             ..
         } = diff;
-        self.pose_ban_height = pose_ban_height;
         self.pose_revived_height = pose_revived_height;
+        self.pose_ban_height = pose_ban_height;
         if let Some(pub_key_operator) = pub_key_operator {
             self.pub_key_operator = pub_key_operator;
         }
-
         if let Some(service) = service {
             self.service = service
         }
@@ -2619,8 +2618,8 @@ pub struct ExtendedQuorumListResultIntermediate {
 
 impl<'de> Deserialize<'de> for QuorumType {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
-    where
-        D: Deserializer<'de>,
+        where
+            D: Deserializer<'de>,
     {
         let s = String::deserialize(deserializer)?;
         Ok(QuorumType::from(s.as_str()))
@@ -2895,8 +2894,12 @@ pub struct DMNStateDiffIntermediate {
     pub pose_penalty: Option<u32>,
     #[serde(default, rename = "PoSeRevivedHeight", deserialize_with = "deserialize_u32_opt")]
     pub pose_revived_height: Option<u32>,
-    #[serde(default, rename = "PoSeBanHeight", deserialize_with = "deserialize_u32_opt")]
-    pub pose_ban_height: Option<u32>,
+    // there are 3 possible states
+    // =-1: Some(None)
+    // >=0: Some(Some(u32))
+    // missing field: None
+    #[serde(default, rename = "PoSeBanHeight", deserialize_with = "deserialize_u32_2opt")]
+    pub pose_ban_height: Option<Option<u32>>,
     #[serde(default)]
     pub revocation_reason: Option<u32>,
     #[serde(default)]
@@ -3086,8 +3089,8 @@ impl From<FromHexError> for HexError {
 }
 
 fn deserialize_hex_opt<'de, D>(deserializer: D) -> Result<Option<Vec<u8>>, D::Error>
-where
-    D: Deserializer<'de>,
+    where
+        D: Deserializer<'de>,
 {
     match String::deserialize(deserializer) {
         Ok(s) => match hex::decode(s) {
@@ -3101,8 +3104,8 @@ where
 fn deserialize_hex_to_address_optional<'de, D>(
     deserializer: D,
 ) -> Result<Option<[u8; 20]>, D::Error>
-where
-    D: Deserializer<'de>,
+    where
+        D: Deserializer<'de>,
 {
     match String::deserialize(deserializer) {
         Ok(s) => match hex::decode(s) {
@@ -3143,9 +3146,10 @@ impl std::fmt::Display for ArrayConversionError {
 }
 
 impl Error for ArrayConversionError {}
+
 fn deserialize_address<'de, D>(deserializer: D) -> Result<[u8; 20], D::Error>
-where
-    D: Deserializer<'de>,
+    where
+        D: Deserializer<'de>,
 {
     match String::deserialize(deserializer) {
         Ok(s) => match Address::from_str(s.as_str()) {
@@ -3163,8 +3167,8 @@ where
 }
 
 fn deserialize_address_optional<'de, D>(deserializer: D) -> Result<Option<[u8; 20]>, D::Error>
-where
-    D: Deserializer<'de>,
+    where
+        D: Deserializer<'de>,
 {
     match Option::<String>::deserialize(deserializer) {
         Ok(Some(s)) => match Address::from_str(s.as_str()) {
@@ -3184,8 +3188,8 @@ where
 
 /// deserialize_outpoint deserializes a hex-encoded outpoint
 fn deserialize_outpoint<'de, D>(deserializer: D) -> Result<dashcore::OutPoint, D::Error>
-where
-    D: Deserializer<'de>,
+    where
+        D: Deserializer<'de>,
 {
     let str_sequence = String::deserialize(deserializer)?;
     let str_array: Vec<String> = str_sequence.split('-').map(|item| item.to_owned()).collect();
@@ -3202,8 +3206,8 @@ where
 
 /// deserialize_mn_state deserializes a masternode state
 fn deserialize_mn_state<'de, D>(deserializer: D) -> Result<MasternodeState, D::Error>
-where
-    D: Deserializer<'de>,
+    where
+        D: Deserializer<'de>,
 {
     let str_sequence = String::deserialize(deserializer)?;
 
@@ -3222,8 +3226,8 @@ where
 
 /// deserialize_quorum_type deserializes a quorum type
 fn deserialize_quorum_type<'de, D>(deserializer: D) -> Result<QuorumType, D::Error>
-where
-    D: Deserializer<'de>,
+    where
+        D: Deserializer<'de>,
 {
     match IntegerOrString::deserialize(deserializer)? {
         IntegerOrString::String(s) => {
@@ -3238,8 +3242,8 @@ where
 }
 
 fn deserialize_f32<'de, D>(deserializer: D) -> Result<f32, D::Error>
-where
-    D: Deserializer<'de>,
+    where
+        D: Deserializer<'de>,
 {
     Ok(match Value::deserialize(deserializer)? {
         Value::String(s) => s.parse().map_err(de::Error::custom)?,
@@ -3249,14 +3253,25 @@ where
 }
 
 fn deserialize_u32_opt<'de, D>(deserializer: D) -> Result<Option<u32>, D::Error>
-where
-    D: Deserializer<'de>,
+    where
+        D: Deserializer<'de>,
 {
     let val = i64::deserialize(deserializer)?;
     if val < 0 {
         return Ok(None);
     }
     Ok(Some(val as u32))
+}
+
+fn deserialize_u32_2opt<'de, D>(deserializer: D) -> Result<Option<Option<u32>>, D::Error>
+    where
+        D: Deserializer<'de>,
+{
+    let val = i64::deserialize(deserializer)?;
+    if val < 0 {
+        return Ok(Some(None));
+    }
+    Ok(Some(Some(val as u32)))
 }
 
 #[cfg(test)]
