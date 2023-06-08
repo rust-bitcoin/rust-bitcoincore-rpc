@@ -29,6 +29,7 @@ use std::fmt;
 use std::fmt::{Display, Formatter};
 use std::net::SocketAddr;
 use std::str::FromStr;
+use bincode::{Decode, Encode};
 
 use dashcore::consensus::encode;
 use dashcore::hashes::hex::Error::InvalidChar;
@@ -2028,7 +2029,7 @@ pub struct Masternode {
 
 // TODO: clean up the new structure + test deserialization
 
-#[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
+#[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize, Encode, Decode)]
 pub enum MasternodeType {
     Regular,
     HighPerformance,
@@ -2480,7 +2481,7 @@ pub struct BLS {
 
 // --------------------------- Quorum -------------------------------
 
-#[derive(Clone, Copy, PartialEq, Eq, Debug, Serialize_repr, Hash)]
+#[derive(Clone, Copy, PartialEq, Eq, Debug, Serialize_repr, Hash, Encode, Decode)]
 #[repr(u8)]
 pub enum QuorumType {
     Llmq50_60 = 1,
@@ -2567,11 +2568,12 @@ impl From<&str> for QuorumType {
     }
 }
 
-#[derive(Clone, PartialEq, Debug, Deserialize, Serialize)]
+#[derive(Clone, PartialEq, Debug, Deserialize, Serialize, Encode, Decode)]
 #[serde(rename_all = "camelCase")]
 pub struct ExtendedQuorumDetails {
     pub creation_height: u32,
     pub quorum_index: Option<u32>,
+    #[bincode(with_serde)]
     pub mined_block_hash: BlockHash,
     pub num_valid_members: u32,
     #[serde(deserialize_with = "deserialize_f32")]
