@@ -28,7 +28,7 @@ pub enum Error {
     BitcoinSerialization(dashcore::consensus::encode::Error),
     Secp256k1(secp256k1::Error),
     Io(io::Error),
-    InvalidAmount(dashcore::util::amount::ParseAmountError),
+    InvalidAmount(dashcore::amount::ParseAmountError),
     InvalidCookieFile,
     /// The JSON result had an unexpected structure.
     UnexpectedStructure,
@@ -70,8 +70,8 @@ impl From<io::Error> for Error {
     }
 }
 
-impl From<dashcore::util::amount::ParseAmountError> for Error {
-    fn from(e: dashcore::util::amount::ParseAmountError) -> Error {
+impl From<dashcore::amount::ParseAmountError> for Error {
+    fn from(e: dashcore::amount::ParseAmountError) -> Error {
         Error::InvalidAmount(e)
     }
 }

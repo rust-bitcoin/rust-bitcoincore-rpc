@@ -13,21 +13,26 @@ use std::fs::File;
 use std::iter::FromIterator;
 use std::path::PathBuf;
 use std::{fmt, result};
+use std::io::Read;
 
 use crate::dashcore;
 use jsonrpc;
 use serde;
 use serde_json::{self, Value};
 
-use dashcore::hashes::hex::{FromHex, ToHex};
+use dashcore::hashes::hex::{FromHex};
 use dashcore::secp256k1::ecdsa::Signature;
 use dashcore::{
-    Address, Amount, Block, BlockHeader, OutPoint, PrivateKey, ProTxHash, PublicKey, QuorumHash,
-    Script, Transaction,
+    Address, Amount, Block, OutPoint, PrivateKey, ProTxHash, PublicKey, QuorumHash,
+    Transaction,
 };
 use dashcore_rpc_json::dashcore::BlockHash;
 use dashcore_rpc_json::{ProTxInfo, ProTxListType, QuorumType};
 use log::Level::{Debug, Trace, Warn};
+use crate::dashcore::{block, ScriptBuf};
+use crate::dashcore::address::NetworkUnchecked;
+use crate::dashcore::amount::serde::SerdeAmount;
+use dashcore_private::hex::display::DisplayHex;
 
 use crate::error::*;
 use crate::json;
@@ -156,19 +161,19 @@ pub trait RawTx: Sized + Clone {
 
 impl<'a> RawTx for &'a Transaction {
     fn raw_hex(self) -> String {
-        dashcore::consensus::encode::serialize(self).to_hex()
+        self.txid().to_hex()
     }
 }
 
 impl<'a> RawTx for &'a [u8] {
     fn raw_hex(self) -> String {
-        self.to_hex()
+        self.to_lower_hex_string()
     }
 }
 
 impl<'a> RawTx for &'a Vec<u8> {
     fn raw_hex(self) -> String {
-        self.to_hex()
+        self.to_lower_hex_string()
     }
 }
 
@@ -332,7 +337,7 @@ pub trait RpcApi: Sized {
     }
     //TODO(stevenroose) add getblock_txs
 
-    fn get_block_header(&self, hash: &BlockHash) -> Result<BlockHeader> {
+    fn get_block_header(&self, hash: &BlockHash) -> Result<block::Header> {
         let hex: String = self.call("getblockheader", &[into_json(hash)?, false.into()])?;
         let bytes: Vec<u8> = FromHex::from_hex(&hex)?;
         Ok(dashcore::consensus::encode::deserialize(&bytes)?)
@@ -555,13 +560,13 @@ pub trait RpcApi: Sized {
 
     fn import_address_script(
         &self,
-        script: &Script,
+        script: &ScriptBuf,
         label: Option<&str>,
         rescan: Option<bool>,
         p2sh: Option<bool>,
     ) -> Result<()> {
         let mut args = [
-            script.to_hex().into(),
+            script.to_hex_string().into(),
             opt_into_json(label)?,
             opt_into_json(rescan)?,
             opt_into_json(p2sh)?,
@@ -660,7 +665,7 @@ pub trait RpcApi: Sized {
         replaceable: Option<bool>,
     ) -> Result<String> {
         let outs_converted = serde_json::Map::from_iter(
-            outs.iter().map(|(k, v)| (k.clone(), serde_json::Value::from(v.as_btc()))),
+            outs.iter().map(|(k, v)| (k.clone(), serde_json::Value::from(v.to_dash()))),
         );
         let mut args = [
             into_json(utxos)?,
@@ -746,7 +751,7 @@ pub trait RpcApi: Sized {
     }
 
     /// Generate new address under own control
-    fn get_new_address(&self, label: Option<&str>) -> Result<Address> {
+    fn get_new_address(&self, label: Option<&str>) -> Result<Address<NetworkUnchecked>> {
         self.call("getnewaddress", &[opt_into_json(label)?])
     }
 
@@ -806,7 +811,7 @@ pub trait RpcApi: Sized {
     ) -> Result<dashcore::Txid> {
         let mut args = [
             address.to_string().into(),
-            into_json(amount.as_btc())?,
+            into_json(amount.to_dash())?,
             opt_into_json(comment)?,
             opt_into_json(comment_to)?,
             opt_into_json(subtract_fee)?,
@@ -964,7 +969,7 @@ pub trait RpcApi: Sized {
         bip32derivs: Option<bool>,
     ) -> Result<json::WalletCreateFundedPsbtResult> {
         let outputs_converted = serde_json::Map::from_iter(
-            outputs.iter().map(|(k, v)| (k.clone(), serde_json::Value::from(v.as_btc()))),
+            outputs.iter().map(|(k, v)| (k.clone(), serde_json::Value::from(v.to_dash()))),
         );
         let mut args = [
             into_json(inputs)?,
@@ -1013,7 +1018,7 @@ pub trait RpcApi: Sized {
         self.call("finalizepsbt", handle_defaults(&mut args, &[true.into()]))
     }
 
-    fn derive_addresses(&self, descriptor: &str, range: Option<[u32; 2]>) -> Result<Vec<Address>> {
+    fn derive_addresses(&self, descriptor: &str, range: Option<[u32; 2]>) -> Result<Vec<Address<NetworkUnchecked>>> {
         let mut args = [into_json(descriptor)?, opt_into_json(range)?];
         self.call("deriveaddresses", handle_defaults(&mut args, &[null()]))
     }
