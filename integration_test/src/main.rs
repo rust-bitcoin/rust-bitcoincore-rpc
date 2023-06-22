@@ -13,6 +13,7 @@
 #[macro_use]
 extern crate lazy_static;
 
+use std::cmp::Ordering;
 use std::collections::HashMap;
 use std::str::FromStr;
 
@@ -32,7 +33,7 @@ use bitcoin::{
     Sequence, SignedAmount, Transaction, TxIn, TxOut, Txid, Witness,
 };
 use bitcoincore_rpc::bitcoincore_rpc_json::{
-    GetBlockTemplateModes, GetBlockTemplateRules, ScanTxOutRequest,
+    GetBlockTemplateModes, GetBlockTemplateRules, GetZmqNotificationsResult, ScanTxOutRequest,
 };
 
 lazy_static! {
@@ -226,6 +227,7 @@ fn main() {
     test_add_ban(&cl);
     test_set_network_active(&cl);
     test_get_index_info(&cl);
+    test_get_zmq_notifications(&cl);
     test_stop(cl);
 }
 
@@ -1420,6 +1422,38 @@ fn test_get_index_info(cl: &Client) {
         assert!(gii.coinstatsindex.is_none());
         assert!(gii.basic_block_filter_index.is_some());
     }
+}
+
+fn test_get_zmq_notifications(cl: &Client) {
+    let mut zmq_info = cl.get_zmq_notifications().unwrap();
+
+    // it doesn't matter in which order Bitcoin Core returns the result,
+    // but checking it is easier if it has a known order
+    zmq_info.sort_by(|a, b| {
+        if a.address < b.address {
+            Ordering::Less
+        } else if a.address == b.address {
+            Ordering::Equal
+        } else {
+            Ordering::Greater
+        }
+    });
+
+    assert!(
+        zmq_info
+            == vec![
+                GetZmqNotificationsResult {
+                    notification_type: "pubrawblock".to_owned(),
+                    address: "tcp://0.0.0.0:28332".to_owned(),
+                    hwm: 1000
+                },
+                GetZmqNotificationsResult {
+                    notification_type: "pubrawtx".to_owned(),
+                    address: "tcp://0.0.0.0:28333".to_owned(),
+                    hwm: 1000
+                },
+            ]
+    );
 }
 
 fn test_stop(cl: Client) {
