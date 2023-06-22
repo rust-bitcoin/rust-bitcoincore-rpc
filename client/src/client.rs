@@ -1261,6 +1261,11 @@ pub trait RpcApi: Sized {
     ) -> Result<json::ScanTxOutResult> {
         self.call("scantxoutset", &["start".into(), into_json(descriptors)?])
     }
+
+    /// Returns information about the active ZeroMQ notifications
+    fn get_zmq_notifications(&self) -> Result<Vec<json::GetZmqNotificationsResult>> {
+        self.call("getzmqnotifications", &[])
+    }
 }
 
 /// Client implements a JSON-RPC client for the Bitcoin Core daemon or compatible APIs.
