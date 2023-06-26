@@ -1078,7 +1078,17 @@ pub trait RpcApi: Sized {
     }
 
     fn send_raw_transaction<R: RawTx>(&self, tx: R) -> Result<bitcoin::Txid> {
-        self.call("sendrawtransaction", &[tx.raw_hex().into()])
+        let server_version=self.version()?;
+        if server_version < 250000 {
+            self.call("sendrawtransaction", &[tx.raw_hex().into()])
+        }
+        else {
+            // default max rate in bitcoin core is 0.1 COIN
+            let default_max_raw_tx_fee_rate : f64 = 0.1;
+            // default max burn set to max COIN supply to be compatible with pre-25.0 functionality
+            let default_max_burn : i64 = 21000000;
+            self.call("sendrawtransaction", &[tx.raw_hex().into(), into_json(default_max_raw_tx_fee_rate)?, into_json(default_max_burn)?])
+        }
     }
 
     fn estimate_smart_fee(
