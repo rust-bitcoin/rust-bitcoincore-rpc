@@ -881,15 +881,6 @@ pub struct SoftforkInfo {
     pub bip9: Option<Bip9SoftforkInfo>
 }
 
-// /// Status of a softfork
-// #[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
-// pub struct Softfork {
-//     pub id: String,
-//     pub version: u32,
-//     pub enforce: Option<SoftforkInfo>,
-//     pub reject: Option<SoftforkInfo>,
-// }
-
 #[allow(non_camel_case_types)]
 #[derive(Copy, Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
 #[serde(rename_all = "lowercase")]
@@ -999,8 +990,6 @@ pub struct GetBlockchainInfoResult {
     /// The target size used by pruning (only present if automatic pruning is enabled)
     pub prune_target_size: Option<u64>,
     /// Status of softforks in progress
-    // #[serde(default)]
-    // pub softforks: Vec<Softfork>,
     pub softforks: HashMap<String, SoftforkInfo>,
     /// Any network and blockchain warnings.
     pub warnings: String,
