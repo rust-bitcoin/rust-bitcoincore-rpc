@@ -5,3 +5,6 @@ members = [
     "client",
     "integration_test",
 ]
+
+[patch.crates-io.bitcoin]
+path = "../rust-bitcoin/bitcoin"

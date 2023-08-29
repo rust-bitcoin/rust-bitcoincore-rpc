@@ -28,7 +28,7 @@ use std::collections::HashMap;
 use bitcoin::address::NetworkUnchecked;
 use bitcoin::block::Version;
 use bitcoin::consensus::encode;
-use bitcoin::hashes::hex::FromHex;
+use bitcoin::hex::FromHex;
 use bitcoin::hashes::sha256;
 use bitcoin::{Address, Amount, PrivateKey, PublicKey, SignedAmount, Transaction, ScriptBuf, Script, bip158, bip32, Network};
 use serde::de::Error as SerdeError;
@@ -41,8 +41,7 @@ use std::fmt;
 ///
 /// The module is compatible with the serde attribute.
 pub mod serde_hex {
-    use bitcoin::hashes::hex::FromHex;
-    use bitcoin_private::hex::exts::DisplayHex;
+    use bitcoin::hex::{FromHex, DisplayHex};
     use serde::de::Error;
     use serde::{Deserializer, Serializer};
 
@@ -56,8 +55,7 @@ pub mod serde_hex {
     }
 
     pub mod opt {
-        use bitcoin::hashes::hex::FromHex;
-        use bitcoin_private::hex::exts::DisplayHex;
+        use bitcoin::hex::{FromHex, DisplayHex};
         use serde::de::Error;
         use serde::{Deserializer, Serializer};
 

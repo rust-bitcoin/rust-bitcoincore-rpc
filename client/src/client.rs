@@ -14,14 +14,14 @@ use std::iter::FromIterator;
 use std::path::PathBuf;
 use std::{fmt, result};
 
-use crate::{bitcoin, deserialize_hex};
-use bitcoin_private::hex::exts::DisplayHex;
+use crate::bitcoin::{self, consensus};
+use bitcoin::hex::DisplayHex;
 use jsonrpc;
 use serde;
 use serde_json;
 
 use crate::bitcoin::address::{NetworkUnchecked, NetworkChecked};
-use crate::bitcoin::hashes::hex::FromHex;
+use crate::bitcoin::hex::FromHex;
 use crate::bitcoin::secp256k1::ecdsa::Signature;
 use crate::bitcoin::{
     Address, Amount, Block, OutPoint, PrivateKey, PublicKey, Script, Transaction,
@@ -335,7 +335,7 @@ pub trait RpcApi: Sized {
 
     fn get_block(&self, hash: &bitcoin::BlockHash) -> Result<Block> {
         let hex: String = self.call("getblock", &[into_json(hash)?, 0.into()])?;
-        deserialize_hex(&hex)
+        Ok(consensus::deserialize_hex(&hex)?)
     }
 
     fn get_block_hex(&self, hash: &bitcoin::BlockHash) -> Result<String> {
@@ -349,7 +349,7 @@ pub trait RpcApi: Sized {
 
     fn get_block_header(&self, hash: &bitcoin::BlockHash) -> Result<bitcoin::block::Header> {
         let hex: String = self.call("getblockheader", &[into_json(hash)?, false.into()])?;
-        deserialize_hex(&hex)
+        Ok(consensus::deserialize_hex(&hex)?)
     }
 
     fn get_block_header_info(
@@ -493,7 +493,7 @@ pub trait RpcApi: Sized {
     ) -> Result<Transaction> {
         let mut args = [into_json(txid)?, into_json(false)?, opt_into_json(block_hash)?];
         let hex: String = self.call("getrawtransaction", handle_defaults(&mut args, &[null()]))?;
-        deserialize_hex(&hex)
+        Ok(consensus::deserialize_hex(&hex)?)
     }
 
     fn get_raw_transaction_hex(
@@ -790,7 +790,7 @@ pub trait RpcApi: Sized {
         replaceable: Option<bool>,
     ) -> Result<Transaction> {
         let hex: String = self.create_raw_transaction_hex(utxos, outs, locktime, replaceable)?;
-        deserialize_hex(&hex)
+        Ok(consensus::deserialize_hex(&hex)?)
     }
 
     fn decode_raw_transaction<R: RawTx>(

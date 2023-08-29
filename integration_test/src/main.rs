@@ -24,11 +24,12 @@ use bitcoincore_rpc::{Auth, Client, Error, RpcApi};
 
 use crate::json::BlockStatsFields as BsFields;
 use bitcoin::consensus::encode::{deserialize, serialize_hex};
-use bitcoin::hashes::hex::FromHex;
+use bitcoin::hex::FromHex;
 use bitcoin::hashes::Hash;
 use bitcoin::{secp256k1, ScriptBuf, sighash};
+use bitcoin::address::{Address, NetworkUnchecked};
 use bitcoin::{
-    Address, Amount, Network, OutPoint, PrivateKey,
+    Amount, Network, OutPoint, PrivateKey, 
     Sequence, SignedAmount, Transaction, TxIn, TxOut, Txid, Witness,
 };
 use bitcoincore_rpc::bitcoincore_rpc_json::{
@@ -596,7 +597,7 @@ fn test_sign_raw_transaction_with_send_raw_transaction(cl: &Client) {
             witness: Witness::new(),
         }],
         output: vec![TxOut {
-            value: (unspent.amount - *FEE).to_sat(),
+            value: (unspent.amount - *FEE),
             script_pubkey: addr.script_pubkey(),
         }],
     };
@@ -625,7 +626,7 @@ fn test_sign_raw_transaction_with_send_raw_transaction(cl: &Client) {
             witness: Witness::new(),
         }],
         output: vec![TxOut {
-            value: (unspent.amount - *FEE - *FEE).to_sat(),
+            value: (unspent.amount - *FEE - *FEE),
             script_pubkey: RANDOM_ADDRESS.script_pubkey(),
         }],
     };
@@ -1369,7 +1370,7 @@ fn test_add_multisig_address(cl: &Client) {
 
 fn test_derive_addresses(cl: &Client) {
     let descriptor = r"pkh(02e96fe52ef0e22d2f131dd425ce1893073a3c6ad20e8cac36726393dfb4856a4c)#62k9sn4x";
-    assert_eq!(cl.derive_addresses(descriptor, None).unwrap(), vec!["mrkwtj5xpYQjHeJe5wsweNjVeTKkvR5fCr".parse().unwrap()]);
+    assert_eq!(cl.derive_addresses(descriptor, None).unwrap(), vec!["mrkwtj5xpYQjHeJe5wsweNjVeTKkvR5fCr".parse::<Address<NetworkUnchecked>>().unwrap()]);
     assert!(cl.derive_addresses(descriptor, Some([0, 1])).is_err()); // Range should not be specified for an unranged descriptor
 
     let descriptor = std::concat!(
@@ -1377,8 +1378,8 @@ fn test_derive_addresses(cl: &Client) {
         r"tvaRmVyr8Ddf7SjZ2ZfMx9RicjYAXhuh3fmLiVLPodPEqnQQURUfrBKiiVZc8/0/*)#g8l47ngv",
     );
     assert_eq!(cl.derive_addresses(descriptor, Some([0, 1])).unwrap(), vec![
-        "bcrt1q5n5tjkpva8v5s0uadu2y5f0g7pn4h5eqaq2ux2".parse().unwrap(),
-        "bcrt1qcgl303ht03ja2e0hudpwk7ypcxk5t478wspzlt".parse().unwrap(),
+        "bcrt1q5n5tjkpva8v5s0uadu2y5f0g7pn4h5eqaq2ux2".parse::<Address<NetworkUnchecked>>().unwrap(),
+        "bcrt1qcgl303ht03ja2e0hudpwk7ypcxk5t478wspzlt".parse::<Address<NetworkUnchecked>>().unwrap(),
     ]);
     assert!(cl.derive_addresses(descriptor, None).is_err()); // Range must be specified for a ranged descriptor
 }
