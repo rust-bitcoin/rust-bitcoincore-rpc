@@ -877,7 +877,7 @@ pub struct SoftforkInfo {
     #[serde(rename = "type")]
     pub softfork_type: SoftforkType,
     pub active: bool,
-    pub height: u32,
+    pub height: Option<u32>,
     pub bip9: Option<Bip9SoftforkInfo>
 }
 
