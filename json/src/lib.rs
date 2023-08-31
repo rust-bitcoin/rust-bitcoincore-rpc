@@ -2022,7 +2022,7 @@ pub struct Masternode {
 #[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize, Encode, Decode)]
 pub enum MasternodeType {
     Regular,
-    HighPerformance,
+    Evo,
 }
 
 #[serde_as]
@@ -3357,7 +3357,7 @@ mod tests {
                   }
                 },
                 {
-                  "type": "HighPerformance",
+                  "type": "Evo",
                   "proTxHash": "c560a9be2be9db79e1aaa16e4dd3cd22bddcb0155f88aba68aa4797d375ef370",
                   "collateralHash": "ff6226e6c97bfcf40b6d04e12e3f75678024988823bfba28cde2a9ac11b1a765",
                   "collateralIndex": 1,
@@ -3382,7 +3382,7 @@ mod tests {
                   }
                 },
                 {
-                  "type": "HighPerformance",
+                  "type": "Evo",
                   "proTxHash": "9a8cfd0e5fa3a7467b81a5a2fa41e40f7981591cfb62d86e35db37962c128bb0",
                   "collateralHash": "35215134107b5e423d327cab12d2b4c60a9b769301096e05a95916676d2f7867",
                   "collateralIndex": 0,
