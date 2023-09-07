@@ -871,19 +871,11 @@ pub enum SoftforkType {
 
 #[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
 pub struct SoftforkInfo {
-    pub status: Option<bool>,
-    pub found: Option<u32>,
-    pub required: Option<u32>,
-    pub window: Option<u32>,
-}
-
-/// Status of a softfork
-#[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
-pub struct Softfork {
-    pub id: String,
-    pub version: u32,
-    pub enforce: Option<SoftforkInfo>,
-    pub reject: Option<SoftforkInfo>,
+    #[serde(rename = "type")]
+    pub softfork_type: SoftforkType,
+    pub active: bool,
+    pub height: Option<u32>,
+    pub bip9: Option<Bip9SoftforkInfo>
 }
 
 #[allow(non_camel_case_types)]
@@ -995,9 +987,7 @@ pub struct GetBlockchainInfoResult {
     /// The target size used by pruning (only present if automatic pruning is enabled)
     pub prune_target_size: Option<u64>,
     /// Status of softforks in progress
-    #[serde(default)]
-    pub softforks: Vec<Softfork>,
-    pub bip9_softforks: HashMap<String, Bip9SoftforkInfo>,
+    pub softforks: HashMap<String, SoftforkInfo>,
     /// Any network and blockchain warnings.
     pub warnings: String,
 }
@@ -2029,11 +2019,11 @@ pub struct Masternode {
 #[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize, Encode, Decode)]
 pub enum MasternodeType {
     Regular,
-    HighPerformance,
+    Evo,
 }
 
 #[serde_as]
-#[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
+#[derive(Clone, PartialEq, Debug, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct MasternodeListItem {
     #[serde(rename = "type")]
@@ -2043,7 +2033,7 @@ pub struct MasternodeListItem {
     pub collateral_index: u32,
     #[serde(deserialize_with = "deserialize_address")]
     pub collateral_address: [u8; 20],
-    pub operator_reward: u32,
+    pub operator_reward: f32,
     pub state: DMNState,
 }
 
@@ -2924,7 +2914,7 @@ pub struct DMNStateDiffIntermediate {
     pub pub_key_operator: Option<Vec<u8>>,
 }
 
-#[derive(Clone, PartialEq, Eq, Debug, Deserialize)]
+#[derive(Clone, PartialEq, Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
 #[serde(from = "MasternodeListDiffIntermediate")]
 pub struct MasternodeListDiff {
@@ -2938,7 +2928,7 @@ pub struct MasternodeListDiff {
     pub updated_mns: Vec<(ProTxHash, DMNStateDiff)>,
 }
 
-#[derive(Clone, PartialEq, Eq, Debug, Deserialize)]
+#[derive(Clone, PartialEq, Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
 struct MasternodeListDiffIntermediate {
     base_height: u32,
@@ -3364,7 +3354,7 @@ mod tests {
                   }
                 },
                 {
-                  "type": "HighPerformance",
+                  "type": "Evo",
                   "proTxHash": "c560a9be2be9db79e1aaa16e4dd3cd22bddcb0155f88aba68aa4797d375ef370",
                   "collateralHash": "ff6226e6c97bfcf40b6d04e12e3f75678024988823bfba28cde2a9ac11b1a765",
                   "collateralIndex": 1,
@@ -3389,7 +3379,7 @@ mod tests {
                   }
                 },
                 {
-                  "type": "HighPerformance",
+                  "type": "Evo",
                   "proTxHash": "9a8cfd0e5fa3a7467b81a5a2fa41e40f7981591cfb62d86e35db37962c128bb0",
                   "collateralHash": "35215134107b5e423d327cab12d2b4c60a9b769301096e05a95916676d2f7867",
                   "collateralIndex": 0,
