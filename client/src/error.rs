@@ -10,11 +10,11 @@
 
 use std::{error, fmt, io};
 
+use jsonrpc;
+use serde_json;
 use crate::bitcoin;
 use crate::bitcoin::hashes::hex;
 use crate::bitcoin::secp256k1;
-use jsonrpc;
-use serde_json;
 
 /// The error type for errors produced in this library.
 #[derive(Debug)]
@@ -27,6 +27,7 @@ pub enum Error {
     Io(io::Error),
     InvalidAmount(bitcoin::amount::ParseAmountError),
     InvalidCookieFile,
+    InvalidArguments(String),
     /// The JSON result had an unexpected structure.
     UnexpectedStructure,
     /// The daemon returned an error string.
@@ -86,6 +87,7 @@ impl fmt::Display for Error {
             Error::Io(ref e) => write!(f, "I/O error: {}", e),
             Error::InvalidAmount(ref e) => write!(f, "invalid amount: {}", e),
             Error::InvalidCookieFile => write!(f, "invalid cookie file"),
+            Error::InvalidArguments(ref e) => write!(f, "invalid arguments: {}", e),
             Error::UnexpectedStructure => write!(f, "the JSON result had an unexpected structure"),
             Error::ReturnedError(ref s) => write!(f, "the daemon returned an error string: {}", s),
         }

@@ -1,6 +1,6 @@
 [package]
 name = "bitcoincore-rpc"
-version = "0.17.0"
+version = "1.0.0-rc0"
 authors = [
     "Steven Roose <steven@stevenroose.org>",
     "Jean Pierre Dudey <jeandudey@hotmail.com>",
@@ -18,13 +18,18 @@ edition = "2018"
 name = "bitcoincore_rpc"
 path = "src/lib.rs"
 
+[features]
+default = [ "async" ]
+async = [ "async-trait" ]
+
 [dependencies]
-bitcoincore-rpc-json = { version = "0.17.0", path = "../json" }
+bitcoincore-rpc-json = { version = "1.0.0-rc0", path = "../json" }
 
 log = "0.4.5"
-jsonrpc = "0.14.0"
+jsonrpc = { git = "https://github.com/stevenroose/rust-jsonrpc", branch = "request" }
 
 # Used for deserialization of JSON.
 serde = "1"
 serde_json = "1"
-bitcoin-private = "0.1.0"
+
+async-trait = { version = "0.1.53", optional = true }

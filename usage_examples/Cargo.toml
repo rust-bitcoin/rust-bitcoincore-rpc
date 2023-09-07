@@ -1,0 +1,9 @@
+[package]
+name = "usage_examples"
+version = "0.0.0"
+edition = "2021"
+
+[dependencies]
+bitcoincore_rpc = { path = "../client" }
+jsonrpc = { git = "https://github.com/stevenroose/rust-jsonrpc", branch = "request", features = [ "tp-hyper" ] }
+hyper = { version = "0.14.0", features = [ "client", "http1", "tcp" ] }

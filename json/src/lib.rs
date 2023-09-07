@@ -22,55 +22,133 @@ pub extern crate bitcoin;
 extern crate serde;
 extern crate serde_json;
 
+use std::fmt;
+use std::borrow::Cow;
 use std::collections::HashMap;
 
 
 use bitcoin::address::NetworkUnchecked;
 use bitcoin::block::Version;
-use bitcoin::consensus::encode;
-use bitcoin::hashes::hex::FromHex;
+use bitcoin::consensus::encode::{self, Decodable};
+use bitcoin::hashes::hex::HexIterator;
 use bitcoin::hashes::sha256;
-use bitcoin::{Address, Amount, PrivateKey, PublicKey, SignedAmount, Transaction, ScriptBuf, Script, bip158, bip32, Network};
-use serde::de::Error as SerdeError;
-use serde::{Deserialize, Serialize};
-use std::fmt;
+use bitcoin::psbt::{PartiallySignedTransaction, PsbtParseError};
+use bitcoin::{bip158, bip32};
+use bitcoin::{
+    Address, Amount, PrivateKey, PublicKey, Script, ScriptBuf, SignedAmount,
+    Transaction, FeeRate, Network,
+};
+use bitcoin::blockdata::fee_rate::serde as serde_feerate;
+use serde::{de, Deserialize, Deserializer, Serialize, Serializer};
+use serde::ser::SerializeMap;
 
 //TODO(stevenroose) consider using a Time type
+
+/// Outputs hex into an object implementing `fmt::Write`.
+///
+/// This is usually more efficient than going through a `String` using [`ToHex`].
+// NB taken from bitcoin_hashes::hex
+fn format_hex(data: &[u8], f: &mut fmt::Formatter) -> fmt::Result {
+    let prec = f.precision().unwrap_or(2 * data.len());
+    let width = f.width().unwrap_or(2 * data.len());
+    for _ in (2 * data.len())..width {
+        f.write_str("0")?;
+    }
+    for ch in data.iter().take(prec / 2) {
+        write!(f, "{:02x}", *ch)?;
+    }
+    if prec < 2 * data.len() && prec % 2 == 1 {
+        write!(f, "{:x}", data[prec / 2] / 16)?;
+    }
+    Ok(())
+}
+
+/// A wrapper for an argument to be serialized as hex.
+struct HexSerializeWrapper<'a>(pub &'a [u8]);
+
+impl<'a> fmt::Display for HexSerializeWrapper<'a> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        format_hex(self.0, f)
+    }
+}
+
+impl<'a> Serialize for HexSerializeWrapper<'a> {
+    fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
+        serializer.collect_str(&self)
+    }
+}
 
 /// A module used for serde serialization of bytes in hexadecimal format.
 ///
 /// The module is compatible with the serde attribute.
 pub mod serde_hex {
     use bitcoin::hashes::hex::FromHex;
-    use bitcoin_private::hex::exts::DisplayHex;
-    use serde::de::Error;
-    use serde::{Deserializer, Serializer};
+    use serde::de::{Error as SerdeError, Deserialize, Deserializer};
+    use serde::ser::Serializer;
+
+    use super::HexSerializeWrapper;
+
+    struct HexVisitor;
+
+    impl<'de> serde::de::Visitor<'de> for HexVisitor {
+        type Value = Vec<u8>;
+
+        fn expecting(&self, formatter: &mut core::fmt::Formatter) -> core::fmt::Result {
+            formatter.write_str("an ASCII hex string")
+        }
+
+        fn visit_str<E: serde::de::Error>(self, s: &str) -> Result<Self::Value, E> {
+            FromHex::from_hex(s).map_err(E::custom)
+        }
+
+        fn visit_string<E: serde::de::Error>(self, s: String) -> Result<Self::Value, E> {
+            FromHex::from_hex(&s).map_err(E::custom)
+        }
+    }
 
     pub fn serialize<S: Serializer>(b: &Vec<u8>, s: S) -> Result<S::Ok, S::Error> {
-        s.serialize_str(&b.to_lower_hex_string())
+        s.collect_str(&HexSerializeWrapper(&b[..]))
     }
 
     pub fn deserialize<'de, D: Deserializer<'de>>(d: D) -> Result<Vec<u8>, D::Error> {
-        let hex_str: String = ::serde::Deserialize::deserialize(d)?;
-        Ok(FromHex::from_hex(&hex_str).map_err(D::Error::custom)?)
+        d.deserialize_any(HexVisitor)
     }
 
     pub mod opt {
-        use bitcoin::hashes::hex::FromHex;
-        use bitcoin_private::hex::exts::DisplayHex;
-        use serde::de::Error;
-        use serde::{Deserializer, Serializer};
+        use super::*;
 
         pub fn serialize<S: Serializer>(b: &Option<Vec<u8>>, s: S) -> Result<S::Ok, S::Error> {
             match *b {
                 None => s.serialize_none(),
-                Some(ref b) => s.serialize_str(&b.to_lower_hex_string()),
+                Some(ref b) => s.collect_str(&HexSerializeWrapper(&b[..])),
             }
         }
 
         pub fn deserialize<'de, D: Deserializer<'de>>(d: D) -> Result<Option<Vec<u8>>, D::Error> {
-            let hex_str: String = ::serde::Deserialize::deserialize(d)?;
-            Ok(Some(FromHex::from_hex(&hex_str).map_err(D::Error::custom)?))
+            Ok(Some(d.deserialize_any(HexVisitor)?))
+        }
+    }
+
+    pub mod vec {
+        use super::*;
+
+        pub mod opt {
+            use super::*;
+
+            pub fn deserialize<'de, D>(d: D) -> Result<Option<Vec<Vec<u8>>>, D::Error>
+            where
+                D: serde::Deserializer<'de>,
+            {
+                //TODO(stevenroose) Revisit when issue is fixed:
+                // https://github.com/serde-rs/serde/issues/723
+
+                let v: Vec<String> = Vec::deserialize(d)?;
+                let mut res = Vec::new();
+                for h in v.into_iter() {
+                    res.push(FromHex::from_hex(&h).map_err(D::Error::custom)?);
+                }
+                Ok(Some(res))
+            }
         }
     }
 }
@@ -135,9 +213,53 @@ pub struct LoadWalletResult {
     pub warning: Option<String>,
 }
 
-#[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
+#[derive(Clone, PartialEq, Eq, Debug, Serialize)]
 pub struct UnloadWalletResult {
     pub warning: Option<String>,
+}
+
+// implement custom parsing to support legacy result that was just a string or null
+impl<'de> Deserialize<'de> for UnloadWalletResult {
+    fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
+        struct Visitor;
+        impl<'de> de::Visitor<'de> for Visitor {
+            type Value = UnloadWalletResult;
+
+            fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+                write!(formatter, "result for unloadwallet rpc")
+            }
+
+            fn visit_unit<E: de::Error>(self) -> Result<Self::Value, E> {
+                Ok(UnloadWalletResult {
+                    warning: None,
+                })
+            }
+
+            fn visit_string<E: de::Error>(self, v: String) -> Result<Self::Value, E> {
+                Ok(UnloadWalletResult {
+                    warning: Some(v),
+                })
+            }
+
+            fn visit_str<E: de::Error>(self, v: &str) -> Result<Self::Value, E> {
+                Ok(UnloadWalletResult {
+                    warning: Some(v.to_owned()),
+                })
+            }
+
+            fn visit_map<A: de::MapAccess<'de>>(self, mut map: A) -> Result<Self::Value, A::Error> {
+                // only look for the "warning" field
+                let mut warning = None;
+                while let Some(key) = map.next_key::<&str>()? {
+                    if key == "warning" {
+                        warning = Some(map.next_value()?);
+                    }
+                }
+                Ok(UnloadWalletResult { warning })
+            }
+        }
+        deserializer.deserialize_any(Visitor)
+    }
 }
 
 #[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
@@ -249,8 +371,8 @@ pub struct GetBlockHeaderResult {
 pub struct GetBlockStatsResult {
     #[serde(rename = "avgfee", with = "bitcoin::amount::serde::as_sat")]
     pub avg_fee: Amount,
-    #[serde(rename = "avgfeerate", with = "bitcoin::amount::serde::as_sat")]
-    pub avg_fee_rate: Amount,
+    #[serde(rename = "avgfeerate", with = "serde_feerate::sat_per_vb")]
+    pub avg_fee_rate: FeeRate,
     #[serde(rename = "avgtxsize")]
     pub avg_tx_size: u32,
     #[serde(rename = "blockhash")]
@@ -261,8 +383,8 @@ pub struct GetBlockStatsResult {
     pub ins: usize,
     #[serde(rename = "maxfee", with = "bitcoin::amount::serde::as_sat")]
     pub max_fee: Amount,
-    #[serde(rename = "maxfeerate", with = "bitcoin::amount::serde::as_sat")]
-    pub max_fee_rate: Amount,
+    #[serde(rename = "maxfeerate", with = "serde_feerate::sat_per_vb")]
+    pub max_fee_rate: FeeRate,
     #[serde(rename = "maxtxsize")]
     pub max_tx_size: u32,
     #[serde(rename = "medianfee", with = "bitcoin::amount::serde::as_sat")]
@@ -273,8 +395,8 @@ pub struct GetBlockStatsResult {
     pub median_tx_size: u32,
     #[serde(rename = "minfee", with = "bitcoin::amount::serde::as_sat")]
     pub min_fee: Amount,
-    #[serde(rename = "minfeerate", with = "bitcoin::amount::serde::as_sat")]
-    pub min_fee_rate: Amount,
+    #[serde(rename = "minfeerate", with = "serde_feerate::sat_per_vb")]
+    pub min_fee_rate: FeeRate,
     #[serde(rename = "mintxsize")]
     pub min_tx_size: u32,
     pub outs: usize,
@@ -310,10 +432,10 @@ pub struct GetBlockStatsResultPartial {
     #[serde(
         default,
         rename = "avgfeerate",
-        with = "bitcoin::amount::serde::as_sat::opt",
+        with = "serde_feerate::sat_per_vb::opt",
         skip_serializing_if = "Option::is_none"
     )]
-    pub avg_fee_rate: Option<Amount>,
+    pub avg_fee_rate: Option<FeeRate>,
     #[serde(default, rename = "avgtxsize", skip_serializing_if = "Option::is_none")]
     pub avg_tx_size: Option<u32>,
     #[serde(default, rename = "blockhash", skip_serializing_if = "Option::is_none")]
@@ -334,10 +456,10 @@ pub struct GetBlockStatsResultPartial {
     #[serde(
         default,
         rename = "maxfeerate",
-        with = "bitcoin::amount::serde::as_sat::opt",
+        with = "serde_feerate::sat_per_vb::opt",
         skip_serializing_if = "Option::is_none"
     )]
-    pub max_fee_rate: Option<Amount>,
+    pub max_fee_rate: Option<FeeRate>,
     #[serde(default, rename = "maxtxsize", skip_serializing_if = "Option::is_none")]
     pub max_tx_size: Option<u32>,
     #[serde(
@@ -361,10 +483,10 @@ pub struct GetBlockStatsResultPartial {
     #[serde(
         default,
         rename = "minfeerate",
-        with = "bitcoin::amount::serde::as_sat::opt",
+        with = "serde_feerate::sat_per_vb::opt",
         skip_serializing_if = "Option::is_none"
     )]
-    pub min_fee_rate: Option<Amount>,
+    pub min_fee_rate: Option<FeeRate>,
     #[serde(default, rename = "mintxsize", skip_serializing_if = "Option::is_none")]
     pub min_tx_size: Option<u32>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -410,16 +532,16 @@ pub struct GetBlockStatsResultPartial {
 
 #[derive(Clone, PartialEq, Debug, Deserialize, Serialize)]
 pub struct FeeRatePercentiles {
-    #[serde(with = "bitcoin::amount::serde::as_sat")]
-    pub fr_10th: Amount,
-    #[serde(with = "bitcoin::amount::serde::as_sat")]
-    pub fr_25th: Amount,
-    #[serde(with = "bitcoin::amount::serde::as_sat")]
-    pub fr_50th: Amount,
-    #[serde(with = "bitcoin::amount::serde::as_sat")]
-    pub fr_75th: Amount,
-    #[serde(with = "bitcoin::amount::serde::as_sat")]
-    pub fr_90th: Amount,
+    #[serde(with = "serde_feerate::sat_per_vb")]
+    pub fr_10th: FeeRate,
+    #[serde(with = "serde_feerate::sat_per_vb")]
+    pub fr_25th: FeeRate,
+    #[serde(with = "serde_feerate::sat_per_vb")]
+    pub fr_50th: FeeRate,
+    #[serde(with = "serde_feerate::sat_per_vb")]
+    pub fr_75th: FeeRate,
+    #[serde(with = "serde_feerate::sat_per_vb")]
+    pub fr_90th: FeeRate,
 }
 
 #[derive(Clone)]
@@ -497,9 +619,9 @@ impl fmt::Display for BlockStatsFields {
     }
 }
 
-impl From<BlockStatsFields> for serde_json::Value {
-    fn from(bsf: BlockStatsFields) -> Self {
-        Self::from(bsf.to_string())
+impl Serialize for BlockStatsFields {
+    fn serialize<S: Serializer>(&self, s: S) -> Result<S::Ok, S::Error> {
+        s.collect_str(&self)
     }
 }
 
@@ -535,7 +657,7 @@ impl GetRawTransactionResultVinScriptSig {
     }
 }
 
-#[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
+#[derive(Clone, PartialEq, Eq, Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct GetRawTransactionResultVin {
     pub sequence: u32,
@@ -549,7 +671,7 @@ pub struct GetRawTransactionResultVin {
     /// The scriptSig in case of a non-coinbase tx.
     pub script_sig: Option<GetRawTransactionResultVinScriptSig>,
     /// Not provided for coinbase txs.
-    #[serde(default, deserialize_with = "deserialize_hex_array_opt")]
+    #[serde(default, with = "serde_hex::vec::opt")]
     pub txinwitness: Option<Vec<Vec<u8>>>,
 }
 
@@ -594,7 +716,7 @@ pub struct GetRawTransactionResultVout {
     pub script_pub_key: GetRawTransactionResultVoutScriptPubKey,
 }
 
-#[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
+#[derive(Clone, PartialEq, Eq, Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct GetRawTransactionResult {
     #[serde(rename = "in_active_chain")]
@@ -1231,7 +1353,6 @@ impl<'de> serde::Deserialize<'de> for Timestamp {
     where
         D: serde::Deserializer<'de>,
     {
-        use serde::de;
         struct Visitor;
         impl<'de> de::Visitor<'de> for Visitor {
             type Value = Timestamp;
@@ -1480,10 +1601,10 @@ pub struct EstimateSmartFeeResult {
     #[serde(
         default,
         rename = "feerate",
-        skip_serializing_if = "Option::is_none",
-        with = "bitcoin::amount::serde::as_btc::opt"
+        with = "serde_feerate::btc_per_kvb::opt",
+        skip_serializing_if = "Option::is_none"
     )]
-    pub fee_rate: Option<Amount>,
+    pub fee_rate: Option<FeeRate>,
     /// Errors encountered during processing.
     pub errors: Option<Vec<String>>,
     /// Block number where estimate was found.
@@ -1712,11 +1833,23 @@ pub struct WalletCreateFundedPsbtResult {
     pub change_position: i32,
 }
 
+impl WalletCreateFundedPsbtResult {
+    pub fn psbt(&self) -> Result<PartiallySignedTransaction, PsbtParseError> {
+        self.psbt.parse()
+    }
+}
+
 /// Models the result of "walletprocesspsbt"
 #[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
 pub struct WalletProcessPsbtResult {
     pub psbt: String,
     pub complete: bool,
+}
+
+impl WalletProcessPsbtResult {
+    pub fn psbt(&self) -> Result<PartiallySignedTransaction, PsbtParseError> {
+        self.psbt.parse()
+    }
 }
 
 /// Models the request for "walletcreatefundedpsbt"
@@ -1737,11 +1870,10 @@ pub struct WalletCreateFundedPsbtOptions {
     #[serde(rename = "lockUnspents", skip_serializing_if = "Option::is_none")]
     pub lock_unspent: Option<bool>,
     #[serde(
-        rename = "feeRate",
         skip_serializing_if = "Option::is_none",
-        with = "bitcoin::amount::serde::as_btc::opt"
+        with = "serde_feerate::sat_per_vb::opt"
     )]
-    pub fee_rate: Option<Amount>,
+    pub fee_rate: Option<FeeRate>,
     #[serde(rename = "subtractFeeFromOutputs", skip_serializing_if = "Vec::is_empty")]
     pub subtract_fee_from_outputs: Vec<u16>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -1756,13 +1888,20 @@ pub struct WalletCreateFundedPsbtOptions {
 #[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
 pub struct FinalizePsbtResult {
     pub psbt: Option<String>,
-    #[serde(default, with = "crate::serde_hex::opt")]
-    pub hex: Option<Vec<u8>>,
+    pub hex: Option<String>,
     pub complete: bool,
 }
 
+impl FinalizePsbtResult {
+    pub fn transaction(&self) -> Option<Result<Transaction, encode::Error>> {
+        self.hex.as_ref().map(|h| Transaction::consensus_decode(
+            &mut HexIterator::new(h).map_err(|_| encode::Error::ParseFailed("invalid hex"))?
+        ))
+    }
+}
+
 /// Model for decode transaction
-#[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
+#[derive(Clone, PartialEq, Eq, Debug, Deserialize)]
 pub struct DecodeRawTransactionResult {
     pub txid: bitcoin::Txid,
     pub hash: bitcoin::Wtxid,
@@ -1810,12 +1949,6 @@ pub enum GetChainTipsResultStatus {
     Active,
 }
 
-impl FinalizePsbtResult {
-    pub fn transaction(&self) -> Option<Result<Transaction, encode::Error>> {
-        self.hex.as_ref().map(|h| encode::deserialize(h))
-    }
-}
-
 // Custom types for input arguments.
 
 #[derive(Serialize, Deserialize, Debug, Clone, Copy, Eq, PartialEq, Hash)]
@@ -1828,7 +1961,8 @@ pub enum EstimateMode {
 
 /// A wrapper around bitcoin::EcdsaSighashType that will be serialized
 /// according to what the RPC expects.
-pub struct SigHashType(bitcoin::sighash::EcdsaSighashType);
+#[derive(Debug, Clone, Copy, Eq, PartialEq)]
+pub struct SigHashType(pub bitcoin::sighash::EcdsaSighashType);
 
 impl From<bitcoin::sighash::EcdsaSighashType> for SigHashType {
     fn from(sht: bitcoin::sighash::EcdsaSighashType) -> SigHashType {
@@ -1852,7 +1986,7 @@ impl serde::Serialize for SigHashType {
     }
 }
 
-// Used for createrawtransaction argument.
+/// Used for createrawtransaction input arguments.
 #[derive(Serialize, Clone, PartialEq, Eq, Debug)]
 #[serde(rename_all = "camelCase")]
 pub struct CreateRawTransactionInput {
@@ -1860,6 +1994,55 @@ pub struct CreateRawTransactionInput {
     pub vout: u32,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub sequence: Option<u32>,
+}
+
+/// Used for createrawtransaction output arguments.
+///
+/// Has implementations of [From] for the following types:
+/// - `(Address, Amount)` for regular outputs
+/// - `Vec<u8>` for nulldata/OP_RETURN outputs
+#[derive(Clone, PartialEq, Eq, Debug)]
+pub enum CreateRawTransactionOutput<'a> {
+    Address(Address, Amount),
+    Data(Cow<'a, [u8]>),
+}
+
+impl<'a> From<(Address, Amount)> for CreateRawTransactionOutput<'a> {
+    fn from(pair: (Address, Amount)) -> CreateRawTransactionOutput<'a> {
+        CreateRawTransactionOutput::Address(pair.0, pair.1)
+    }
+}
+
+impl<'a> From<&'a [u8]> for CreateRawTransactionOutput<'a> {
+    fn from(data: &'a [u8]) -> CreateRawTransactionOutput<'a> {
+        CreateRawTransactionOutput::Data(Cow::Borrowed(data))
+    }
+}
+
+impl<'a> From<Vec<u8>> for CreateRawTransactionOutput<'a> {
+    fn from(data: Vec<u8>) -> CreateRawTransactionOutput<'a> {
+        CreateRawTransactionOutput::Data(Cow::Owned(data))
+    }
+}
+
+impl<'a> serde::Serialize for CreateRawTransactionOutput<'a> {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        let mut map = serializer.serialize_map(None)?;
+        match self {
+            CreateRawTransactionOutput::Address(addr, amt) => {
+                map.serialize_key(addr)?;
+                map.serialize_value(&amt.to_btc())?;
+            }
+            CreateRawTransactionOutput::Data(data) => {
+                map.serialize_key("data")?;
+                map.serialize_value(&HexSerializeWrapper(data.as_ref()))?;
+            }
+        }
+        map.end()
+    }
 }
 
 #[derive(Serialize, Clone, PartialEq, Eq, Debug, Default)]
@@ -1880,10 +2063,11 @@ pub struct FundRawTransactionOptions {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub lock_unspents: Option<bool>,
     #[serde(
-        with = "bitcoin::amount::serde::as_btc::opt",
+        rename = "feeRate",
+        with = "serde_feerate::btc_per_kvb::opt",
         skip_serializing_if = "Option::is_none"
     )]
-    pub fee_rate: Option<Amount>,
+    pub fee_rate: Option<FeeRate>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub subtract_fee_from_outputs: Option<Vec<u32>>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -1952,14 +2136,6 @@ pub enum TxOutSetHashType {
     HashSerialized2,
     Muhash,
     None,
-}
-
-/// Used to specify a block hash or a height
-#[derive(Clone, Serialize, PartialEq, Eq, Debug)]
-#[serde(untagged)]
-pub enum HashOrHeight {
-    BlockHash(bitcoin::BlockHash),
-    Height(u64),
 }
 
 #[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
@@ -2155,22 +2331,6 @@ impl<'a> serde::Serialize for PubKeyOrAddress<'a> {
 }
 
 // Custom deserializer functions.
-
-/// deserialize_hex_array_opt deserializes a vector of hex-encoded byte arrays.
-fn deserialize_hex_array_opt<'de, D>(deserializer: D) -> Result<Option<Vec<Vec<u8>>>, D::Error>
-where
-    D: serde::Deserializer<'de>,
-{
-    //TODO(stevenroose) Revisit when issue is fixed:
-    // https://github.com/serde-rs/serde/issues/723
-
-    let v: Vec<String> = Vec::deserialize(deserializer)?;
-    let mut res = Vec::new();
-    for h in v.into_iter() {
-        res.push(FromHex::from_hex(&h).map_err(D::Error::custom)?);
-    }
-    Ok(Some(res))
-}
 
 /// deserialize_bip70_network deserializes a Bitcoin Core network according to BIP70
 /// The accepted input variants are: {"main", "test", "signet", "regtest"}

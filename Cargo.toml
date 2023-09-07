@@ -5,3 +5,7 @@ members = [
     "client",
     "integration_test",
 ]
+
+[patch."crates-io"]
+bitcoin = { git = "https://github.com/stevenroose/rust-bitcoin", branch = "dev" }
+bitcoin_hashes = { git = "https://github.com/stevenroose/rust-bitcoin", branch = "dev" }
