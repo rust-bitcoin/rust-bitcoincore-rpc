@@ -28,8 +28,8 @@ use dashcore_rpc::{
     Auth, Client, Error, RpcApi,
 };
 
-use dashcore_rpc::dashcore::{BlockHash, ProTxHash, QuorumHash};
 use dashcore_rpc::dashcore::network::message::NetworkMessage::Block;
+use dashcore_rpc::dashcore::{BlockHash, ProTxHash, QuorumHash};
 use dashcore_rpc::dashcore_rpc_json::{
     GetBlockTemplateModes, GetBlockTemplateRules, ProTxInfo, ProTxRevokeReason, QuorumType,
     ScanTxOutRequest,

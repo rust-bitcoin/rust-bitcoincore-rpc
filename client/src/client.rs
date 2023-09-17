@@ -10,29 +10,28 @@
 
 use std::collections::HashMap;
 use std::fs::File;
+use std::io::Read;
 use std::iter::FromIterator;
 use std::path::PathBuf;
 use std::{fmt, result};
-use std::io::Read;
 
 use crate::dashcore;
 use jsonrpc;
 use serde;
 use serde_json::{self, Value};
 
-use dashcore::hashes::hex::{FromHex};
+use crate::dashcore::address::NetworkUnchecked;
+use crate::dashcore::amount::serde::SerdeAmount;
+use crate::dashcore::{block, ScriptBuf};
+use dashcore::hashes::hex::FromHex;
 use dashcore::secp256k1::ecdsa::Signature;
 use dashcore::{
-    Address, Amount, Block, OutPoint, PrivateKey, ProTxHash, PublicKey, QuorumHash,
-    Transaction,
+    Address, Amount, Block, OutPoint, PrivateKey, ProTxHash, PublicKey, QuorumHash, Transaction,
 };
+use dashcore_private::hex::display::DisplayHex;
 use dashcore_rpc_json::dashcore::BlockHash;
 use dashcore_rpc_json::{ProTxInfo, ProTxListType, QuorumType};
 use log::Level::{Debug, Trace, Warn};
-use crate::dashcore::{block, ScriptBuf};
-use crate::dashcore::address::NetworkUnchecked;
-use crate::dashcore::amount::serde::SerdeAmount;
-use dashcore_private::hex::display::DisplayHex;
 
 use crate::error::*;
 use crate::json;
@@ -474,6 +473,18 @@ pub trait RpcApi: Sized {
     ) -> Result<json::GetTransactionResult> {
         let mut args = [into_json(txid)?, opt_into_json(include_watchonly)?];
         self.call("gettransaction", handle_defaults(&mut args, &[null()]))
+    }
+
+    fn get_transaction_are_locked(
+        &self,
+        tx_ids: Vec<dashcore::Txid>,
+    ) -> Result<Vec<json::GetTransactionLockedResult>> {
+        let transaction_ids_json = tx_ids
+            .into_iter()
+            .map(|tx_id| Ok(into_json(tx_id)?))
+            .collect::<Result<Vec<Value>>>()?;
+        let args = [transaction_ids_json.into()];
+        self.call("gettransactionsarelocked", &args)
     }
 
     fn list_transactions(
@@ -1018,7 +1029,11 @@ pub trait RpcApi: Sized {
         self.call("finalizepsbt", handle_defaults(&mut args, &[true.into()]))
     }
 
-    fn derive_addresses(&self, descriptor: &str, range: Option<[u32; 2]>) -> Result<Vec<Address<NetworkUnchecked>>> {
+    fn derive_addresses(
+        &self,
+        descriptor: &str,
+        range: Option<[u32; 2]>,
+    ) -> Result<Vec<Address<NetworkUnchecked>>> {
         let mut args = [into_json(descriptor)?, opt_into_json(range)?];
         self.call("deriveaddresses", handle_defaults(&mut args, &[null()]))
     }
