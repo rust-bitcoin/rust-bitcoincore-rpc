@@ -477,7 +477,7 @@ pub trait RpcApi: Sized {
 
     fn get_transaction_are_locked(
         &self,
-        tx_ids: Vec<dashcore::Txid>,
+        tx_ids: &Vec<dashcore::Txid>,
     ) -> Result<Vec<json::GetTransactionLockedResult>> {
         let transaction_ids_json = tx_ids
             .into_iter()
