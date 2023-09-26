@@ -2486,7 +2486,7 @@ pub struct BLS {
 
 // --------------------------- Quorum -------------------------------
 
-#[derive(Clone, Copy, PartialEq, Eq, Debug, Serialize_repr, Hash, Encode, Decode)]
+#[derive(Clone, Copy, PartialEq, Eq, Debug, Serialize_repr, Hash, Encode, Decode, Ord, PartialOrd)]
 #[repr(u8)]
 pub enum QuorumType {
     Llmq50_60 = 1,
