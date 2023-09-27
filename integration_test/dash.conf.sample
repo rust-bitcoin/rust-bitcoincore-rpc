@@ -1,0 +1,77 @@
+# general
+daemon=0  # leave this set to 0 for Docker
+logtimestamps=1
+maxconnections=256
+reindex=0
+
+
+debug=1
+
+debuglogfile=/home/dash/core.log
+logips=0
+fallbackfee=0.00001
+
+# JSONRPC
+server=1
+rpcuser=rpcuser
+rpcpassword=rpcpassword
+rpcwallet=main
+deprecatedrpc=hpmn
+
+
+rpcallowip=127.0.0.1
+rpcallowip=172.16.0.0/12
+rpcallowip=192.168.0.0/16
+
+rpcworkqueue=64
+rpcthreads=16
+
+# external network
+listen=1
+dnsseed=0
+allowprivatenet=0
+
+#; externalip=192.168.65.2
+
+
+#; whitelist=192.168.65.2
+
+
+# Indices
+txindex=1
+addressindex=1
+timestampindex=1
+spentindex=1
+
+
+# ZeroMQ notifications
+zmqpubrawtx=tcp://0.0.0.0:29998
+zmqpubrawtxlock=tcp://0.0.0.0:29998
+zmqpubrawblock=tcp://0.0.0.0:29998
+zmqpubhashblock=tcp://0.0.0.0:29998
+zmqpubrawchainlocksig=tcp://0.0.0.0:29998
+zmqpubrawchainlock=tcp://0.0.0.0:29998
+zmqpubrawtxlocksig=tcp://0.0.0.0:29998
+
+
+
+
+fallbackfee=0.00001
+
+
+
+regtest=1
+[regtest]
+# sporkaddr=yjBXSbvbgyqWpMtHfE9qLgJEBzvGaJVTG6
+# sporkkey=cRVVVh9jbCY266QeTfiUK1EJYwR1prcw4YGcQWEonpCUzRu39zxb
+
+llmqinstantsend=llmq_test
+llmqinstantsenddip0024=llmq_test_instantsend
+
+
+# network
+port=9999
+bind=0.0.0.0
+rpcbind=0.0.0.0
+rpcport=9998
+
