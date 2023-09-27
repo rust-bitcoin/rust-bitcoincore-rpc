@@ -3283,6 +3283,7 @@ where
 
 #[cfg(test)]
 mod tests {
+    use dashcore::hashes::Hash;
     use serde_json::json;
 
     use crate::{
@@ -3439,7 +3440,7 @@ mod tests {
         let result: MasternodeListDiff =
             serde_json::from_str(&json).expect("expected to deserialize json");
         println!("{:#?}", result);
-        assert_eq!(32, result.added_mns[0].pro_tx_hash.len());
+        assert_eq!(32, result.added_mns[0].pro_tx_hash.as_byte_array().len());
 
         assert_eq!(
             "8ed3f0c208efbcfc815cbfb94490dc68cf2e29d44dd9f8a91e20e06057aa110d7062c8ab7ccc85a9ff0c88760157f563".to_string(),
