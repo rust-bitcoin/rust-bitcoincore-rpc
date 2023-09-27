@@ -43,8 +43,8 @@ lazy_static! {
     /// A random address not owned by the node.
     static ref RANDOM_ADDRESS: Address = Address::from_str("XmzfivrzYQ7B7oBMZKwPRdhjB1iNvX71XZ")
             .unwrap()
-            .require_network(Network::Dash)
-            .expect("mainnet");
+            .require_network(*NET)
+            .unwrap();
     /// The default fee amount to use when needed.
     static ref FEE: Amount = Amount::from_btc(0.001).unwrap();
 }
@@ -141,11 +141,6 @@ fn main() {
     unsafe { VERSION = cl.version().unwrap() };
     println!("Version: {}", version());
 
-    // TODO: run two nodes for that?
-    // test_get_best_chain_lock(&cl);
-    // test_get_quorum_listextended(&cl);
-    // test_get_quorum_list(&cl);
-
     let blockchain_info = cl.get_blockchain_info().unwrap();
 
     // Chain is empty, create wallet and generate blocks
@@ -156,7 +151,7 @@ fn main() {
 
         // Generate blocks
         let address = cl.get_new_address(None).unwrap()
-            .require_network(Network::Devnet).expect("devnet");
+            .require_network(*NET).unwrap();
         cl.generate_to_address(100, &address)
             .expect("generate_to_address");
     }
@@ -164,15 +159,17 @@ fn main() {
     test_get_mining_info(&cl);
     test_get_blockchain_info(&cl);
     test_get_new_address(&cl);
-    // test_dump_private_key(&cl);
-    // test_generate(&cl);
+    test_dump_private_key(&cl);
+    // TODO(test): restore, too slow
     // test_get_balance_generate_to_address(&cl);
     // test_get_balances_generate_to_address(&cl);
-    // test_get_best_block_hash(&cl);
+    test_get_best_block_hash(&cl);
+    // TODO: run multiple nodes to test this?
     // test_get_best_chain_lock(&cl);
-    // test_get_block_count(&cl);
-    // test_get_block_hash(&cl);
-    // // test_get_block(&cl);
+    test_get_block_count(&cl);
+    test_get_block_hash(&cl);
+    // TODO: fix - dashcore fails to parse block coming from Core
+    // test_get_block(&cl);
     // test_get_block_header_get_block_header_info(&cl);
     // // test_get_block_stats(&cl);
     // // test_get_block_stats_fields(&cl);
@@ -288,58 +285,50 @@ fn test_get_blockchain_info(cl: &Client) {
 
 fn test_get_new_address(cl: &Client) {
     let addr = cl.get_new_address(None).unwrap()
-        .require_network(Network::Devnet)
-        .expect("devnet");
+        .require_network(*NET)
+        .unwrap();
     assert_eq!(addr.address_type(), Some(AddressType::P2pkh));
 
     let addr = cl.get_new_address(Some("test")).unwrap()
-        .require_network(Network::Devnet)
-        .expect("devnet");
+        .require_network(*NET)
+        .unwrap();
     assert_eq!(addr.address_type(), Some(AddressType::P2pkh));
 }
 
-// fn test_dump_private_key(cl: &Client) {
-//     let addr = cl.get_new_address(None).unwrap()
-//         .require_network(Network::Devnet).expect("devnet");
-//     let sk = cl.dump_private_key(&addr).unwrap();
-//     assert_eq!(addr, Address::p2pkh(&sk.public_key(&SECP), *NET));
-// }
+fn test_dump_private_key(cl: &Client) {
+    let addr = cl.get_new_address(None).unwrap()
+        .require_network(*NET).unwrap();
+    let sk = cl.dump_private_key(&addr).unwrap();
+    assert_eq!(
+        addr.to_string(),
+        Address::p2pkh(&sk.public_key(&SECP), *NET).to_string()
+    );
+}
 
-// fn test_generate(cl: &Client) {
-//     if version() < 180000 {
-//         let blocks = cl.generate(4, None).unwrap();
-//         assert_eq!(blocks.len(), 4);
-//         let blocks = cl.generate(6, Some(45)).unwrap();
-//         assert_eq!(blocks.len(), 6);
-//     } else if version() < 190000 {
-//         assert_deprecated!(cl.generate(5, None));
-//     } else if version() < 210000 {
-//         assert_not_found!(cl.generate(5, None));
-//     } else {
-//         // Bitcoin Core v0.21 appears to return this with a generic -1 error code,
-//         // rather than the expected -32601 code (RPC_METHOD_NOT_FOUND).
-//         assert_error_message!(cl.generate(5, None), -1, "replaced by the -generate cli option");
-//     }
-// }
-//
-// fn test_get_balance_generate_to_address(cl: &Client) {
-//     let initial = cl.get_balance(None, None).unwrap();
-//
-//     let blocks = cl.generate_to_address(500, &cl.get_new_address(None).unwrap()).unwrap();
-//     assert_eq!(blocks.len(), 500);
-//     assert_ne!(cl.get_balance(None, None).unwrap(), initial);
-// }
-//
-// fn test_get_balances_generate_to_address(cl: &Client) {
-//     if version() >= 190000 {
-//         let initial = cl.get_balances().unwrap();
-//
-//         let blocks = cl.generate_to_address(500, &cl.get_new_address(None).unwrap()).unwrap();
-//         assert_eq!(blocks.len(), 500);
-//         assert_ne!(cl.get_balances().unwrap(), initial);
-//     }
-// }
-//
+fn test_get_balance_generate_to_address(cl: &Client) {
+    let initial = cl.get_balance(None, None).unwrap();
+
+    let address = cl.get_new_address(None).unwrap()
+        .require_network(*NET).unwrap();
+
+    let blocks = cl.generate_to_address(500, &address).unwrap();
+    assert_eq!(blocks.len(), 500);
+    assert_ne!(cl.get_balance(None, None).unwrap(), initial);
+}
+
+fn test_get_balances_generate_to_address(cl: &Client) {
+    if version() >= 190000 {
+        let initial = cl.get_balances().unwrap();
+
+        let address = cl.get_new_address(None).unwrap()
+            .require_network(*NET).unwrap();
+
+        let blocks = cl.generate_to_address(500, &address).unwrap();
+        assert_eq!(blocks.len(), 500);
+        assert_ne!(cl.get_balances().unwrap(), initial);
+    }
+}
+
 fn test_get_best_block_hash(cl: &Client) {
     let _ = cl.get_best_block_hash().unwrap();
 }
@@ -348,29 +337,29 @@ fn test_get_best_chain_lock(cl: &Client) {
     let _ = cl.get_best_chain_lock().unwrap();
 }
 
-// fn test_get_block_count(cl: &Client) {
-//     let height = cl.get_block_count().unwrap();
-//     assert!(height > 0);
-// }
-//
-// fn test_get_block_hash(cl: &Client) {
-//     let h = cl.get_block_count().unwrap();
-//     assert_eq!(cl.get_block_hash(h).unwrap(), cl.get_best_block_hash().unwrap());
-// }
-//
-// fn test_get_block(cl: &Client) {
-//     let tip = cl.get_best_block_hash().unwrap();
-//     let block = cl.get_block(&tip).unwrap();
-//     let hex = cl.get_block_hex(&tip).unwrap();
-//     assert_eq!(block, deserialize(&Vec::<u8>::from_hex(&hex).unwrap()).unwrap());
-//     assert_eq!(hex, serialize(&block).to_hex());
-//
-//     let tip = cl.get_best_block_hash().unwrap();
-//     let info = cl.get_block_info(&tip).unwrap();
-//     assert_eq!(info.hash, tip);
-//     assert_eq!(info.confirmations, 1);
-// }
-//
+fn test_get_block_count(cl: &Client) {
+    let height = cl.get_block_count().unwrap();
+    assert!(height > 0);
+}
+
+fn test_get_block_hash(cl: &Client) {
+    let h = cl.get_block_count().unwrap();
+    assert_eq!(cl.get_block_hash(h).unwrap(), cl.get_best_block_hash().unwrap());
+}
+
+fn test_get_block(cl: &Client) {
+    let tip = cl.get_best_block_hash().unwrap();
+    let block = cl.get_block(&tip).unwrap();
+    let hex = cl.get_block_hex(&tip).unwrap();
+    assert_eq!(block, deserialize(&Vec::<u8>::from_hex(&hex).unwrap()).unwrap());
+    assert_eq!(hex, hex::encode(serialize(&block)));
+
+    let tip = cl.get_best_block_hash().unwrap();
+    let info = cl.get_block_info(&tip).unwrap();
+    assert_eq!(info.hash, tip);
+    assert_eq!(info.confirmations, 1);
+}
+
 // fn test_get_block_header_get_block_header_info(cl: &Client) {
 //     let tip = cl.get_best_block_hash().unwrap();
 //     let header = cl.get_block_header(&tip).unwrap();
