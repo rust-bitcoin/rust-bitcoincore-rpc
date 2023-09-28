@@ -29,6 +29,7 @@ use dashcore_rpc::{
 };
 
 use dashcore_rpc::dashcore::{BlockHash, ProTxHash, QuorumHash, ScriptBuf};
+use dashcore_rpc::dashcore::address::NetworkUnchecked;
 use dashcore_rpc::dashcore_rpc_json::{
     GetBlockTemplateModes, GetBlockTemplateRules, ProTxInfo, ProTxRevokeReason, QuorumType,
     ScanTxOutRequest,
@@ -929,546 +930,573 @@ fn test_import_public_key(cl: &Client) {
     cl.import_public_key(&sk.public_key(&SECP), None, Some(false)).unwrap();
 }
 
-// fn test_import_priv_key(cl: &Client) {
-//     let sk = PrivateKey {
-//         network: Network::Regtest,
-//         inner: secp256k1::SecretKey::new(&mut secp256k1::rand::thread_rng()),
-//         compressed: true,
-//     };
-//     cl.import_private_key(&sk, None, None).unwrap();
-//     cl.import_private_key(&sk, Some("l"), None).unwrap();
-//     cl.import_private_key(&sk, None, Some(false)).unwrap();
-// }
-//
-// fn test_import_address(cl: &Client) {
-//     let sk = PrivateKey {
-//         network: Network::Regtest,
-//         inner: secp256k1::SecretKey::new(&mut secp256k1::rand::thread_rng()),
-//         compressed: true,
-//     };
-//     let addr = Address::p2pkh(&sk.public_key(&SECP), Network::Regtest);
-//     cl.import_address(&addr, None, None).unwrap();
-//     cl.import_address(&addr, Some("l"), None).unwrap();
-//     cl.import_address(&addr, None, Some(false)).unwrap();
-// }
-//
-// fn test_import_address_script(cl: &Client) {
-//     let sk = PrivateKey {
-//         network: Network::Regtest,
-//         inner: secp256k1::SecretKey::new(&mut secp256k1::rand::thread_rng()),
-//         compressed: true,
-//     };
-//     let addr = Address::p2pkh(&sk.public_key(&SECP), Network::Regtest);
-//     cl.import_address_script(&addr.script_pubkey(), None, None, None).unwrap();
-//     cl.import_address_script(&addr.script_pubkey(), Some("l"), None, None).unwrap();
-//     cl.import_address_script(&addr.script_pubkey(), None, Some(false), None).unwrap();
-//     cl.import_address_script(&addr.script_pubkey(), None, None, Some(true)).unwrap();
-// }
-//
-// fn test_estimate_smart_fee(cl: &Client) {
-//     let mode = json::EstimateMode::Unset;
-//     let res = cl.estimate_smart_fee(3, Some(mode)).unwrap();
-//
-//     // With a fresh node, we can't get fee estimates.
-//     if let Some(errors) = res.errors {
-//         if errors == &["Insufficient data or no feerate found"] {
-//             println!("Cannot test estimate_smart_fee because no feerate found!");
-//             return;
-//         } else {
-//             panic!("Unexpected error(s) for estimate_smart_fee: {:?}", errors);
-//         }
-//     }
-//
-//     assert!(res.fee_rate.is_some(), "no fee estimate available: {:?}", res.errors);
-//     assert!(res.fee_rate.unwrap() >= btc(0));
-// }
-//
-// fn test_ping(cl: &Client) {
-//     let _ = cl.ping().unwrap();
-// }
-//
-// fn test_get_peer_info(cl: &Client) {
-//     let info = cl.get_peer_info().unwrap();
-//     if info.is_empty() {
-//         panic!("No peers are connected so we can't test get_peer_info");
-//     }
-// }
-//
-// fn test_rescan_blockchain(cl: &Client) {
-//     let count = cl.get_block_count().unwrap() as usize;
-//     assert!(count > 21);
-//     let (start, stop) = cl.rescan_blockchain(Some(count - 20), Some(count - 1)).unwrap();
-//     assert_eq!(start, count - 20);
-//     assert_eq!(stop, Some(count - 1));
-// }
-//
-// fn test_create_wallet(cl: &Client) {
-//     let wallet_names = vec!["alice", "bob", "carol", "denise", "emily"];
-//
-//     struct WalletParams<'a> {
-//         name: &'a str,
-//         disable_private_keys: Option<bool>,
-//         blank: Option<bool>,
-//         passphrase: Option<&'a str>,
-//         avoid_reuse: Option<bool>,
-//     }
-//
-//     let mut wallet_params = vec![
-//         WalletParams {
-//             name: wallet_names[0],
-//             disable_private_keys: None,
-//             blank: None,
-//             passphrase: None,
-//             avoid_reuse: None,
-//         },
-//         WalletParams {
-//             name: wallet_names[1],
-//             disable_private_keys: Some(true),
-//             blank: None,
-//             passphrase: None,
-//             avoid_reuse: None,
-//         },
-//         WalletParams {
-//             name: wallet_names[2],
-//             disable_private_keys: None,
-//             blank: Some(true),
-//             passphrase: None,
-//             avoid_reuse: None,
-//         },
-//     ];
-//
-//     if version() >= 190000 {
-//         wallet_params.push(WalletParams {
-//             name: wallet_names[3],
-//             disable_private_keys: None,
-//             blank: None,
-//             passphrase: Some("pass"),
-//             avoid_reuse: None,
-//         });
-//         wallet_params.push(WalletParams {
-//             name: wallet_names[4],
-//             disable_private_keys: None,
-//             blank: None,
-//             passphrase: None,
-//             avoid_reuse: Some(true),
-//         });
-//     }
-//
-//     for wallet_param in wallet_params {
-//         let result = cl
-//             .create_wallet(
-//                 wallet_param.name,
-//                 wallet_param.disable_private_keys,
-//                 wallet_param.blank,
-//                 wallet_param.passphrase,
-//                 wallet_param.avoid_reuse,
-//             )
-//             .unwrap();
-//
-//         assert_eq!(result.name, wallet_param.name);
-//         let expected_warning = match (wallet_param.passphrase, wallet_param.avoid_reuse) {
-//             (None, Some(true)) => {
-//                 Some("Empty string given as passphrase, wallet will not be encrypted.".to_string())
-//             }
-//             _ => Some("".to_string()),
-//         };
-//         assert_eq!(result.warning, expected_warning);
-//
-//         let wallet_client_url = format!("{}{}{}", get_rpc_url(), "/wallet/", wallet_param.name);
-//         let wallet_client = Client::new(&wallet_client_url, get_auth()).unwrap();
-//         let wallet_info = wallet_client.get_wallet_info().unwrap();
-//
-//         assert_eq!(wallet_info.wallet_name, wallet_param.name);
-//
-//         // let has_private_keys = !wallet_param.disable_private_keys.unwrap_or(false);
-//         // assert_eq!(wallet_info.private_keys_enabled, has_private_keys);
-//         // let has_hd_seed = has_private_keys && !wallet_param.blank.unwrap_or(false);
-//         // assert_eq!(wallet_info.hd_seed_id.is_some(), has_hd_seed);
-//         // let has_avoid_reuse = wallet_param.avoid_reuse.unwrap_or(false);
-//         // assert_eq!(wallet_info.avoid_reuse.unwrap_or(false), has_avoid_reuse);
-//         assert_eq!(
-//             wallet_info.scanning.unwrap_or(json::ScanningDetails::NotScanning(false)),
-//             json::ScanningDetails::NotScanning(false)
-//         );
-//     }
-//
-//     let mut wallet_list = cl.list_wallets().unwrap();
-//
-//     wallet_list.sort();
-//
-//     // Main wallet created for tests
-//     assert!(wallet_list.iter().any(|w| w == "testwallet"));
-//     wallet_list.retain(|w| w != "testwallet" && w != "");
-//
-//     // Created wallets
-//     assert!(wallet_list.iter().zip(wallet_names).all(|(a, b)| a == b));
-// }
-//
-// fn test_get_tx_out_set_info(cl: &Client) {
-//     cl.get_tx_out_set_info().unwrap();
-// }
-//
-// fn test_get_chain_tips(cl: &Client) {
-//     let tips = cl.get_chain_tips().unwrap();
-//     assert_eq!(tips.len(), 1);
-// }
-//
-// fn test_add_node(cl: &Client) {
-//     cl.add_node("127.0.0.1:1234").unwrap();
-//     assert_error_message!(cl.add_node("127.0.0.1:1234"), -23, "Error: Node already added");
-//     cl.remove_node("127.0.0.1:1234").unwrap();
-//     cl.onetry_node("127.0.0.1:1234").unwrap();
-// }
-//
-// fn test_get_added_node_info(cl: &Client) {
-//     cl.add_node("127.0.0.1:1234").unwrap();
-//     let added_info = cl.get_added_node_info(None).unwrap();
-//     assert_eq!(added_info.len(), 1);
-// }
-//
-// fn test_get_node_addresses(cl: &Client) {
-//     cl.get_node_addresses(None).unwrap();
-// }
-//
-// fn test_disconnect_node(cl: &Client) {
-//     assert_error_message!(
-//         cl.disconnect_node("127.0.0.1:1234"),
-//         -29,
-//         "Node not found in connected nodes"
-//     );
-//     assert_error_message!(cl.disconnect_node_by_id(1), -29, "Node not found in connected nodes");
-// }
-//
-// fn test_add_ban(cl: &Client) {
-//     cl.add_ban("127.0.0.1", 0, false).unwrap();
-//     let res = cl.list_banned().unwrap();
-//     assert_eq!(res.len(), 1);
-//
-//     cl.remove_ban("127.0.0.1").unwrap();
-//     let res = cl.list_banned().unwrap();
-//     assert_eq!(res.len(), 0);
-//
-//     cl.add_ban("127.0.0.1", 0, false).unwrap();
-//     let res = cl.list_banned().unwrap();
-//     assert_eq!(res.len(), 1);
-//
-//     cl.clear_banned().unwrap();
-//     let res = cl.list_banned().unwrap();
-//     assert_eq!(res.len(), 0);
-//
-//     assert_error_message!(cl.add_ban("INVALID_STRING", 0, false), -30, "Error: Invalid IP/Subnet");
-// }
-//
-// fn test_set_network_active(cl: &Client) {
-//     cl.set_network_active(false).unwrap();
-//     cl.set_network_active(true).unwrap();
-// }
-//
-// fn test_get_net_totals(cl: &Client) {
-//     cl.get_net_totals().unwrap();
-// }
-//
-// fn test_get_network_hash_ps(cl: &Client) {
-//     cl.get_network_hash_ps(None, None).unwrap();
-// }
-//
-// fn test_uptime(cl: &Client) {
-//     cl.uptime().unwrap();
-// }
-//
-// fn test_scantxoutset(cl: &Client) {
-//     let addr = cl.get_new_address(None).unwrap();
-//
-//     cl.generate_to_address(2, &addr).unwrap();
-//     cl.generate_to_address(7, &cl.get_new_address(None).unwrap()).unwrap();
-//
-//     let utxos = cl
-//         .scan_tx_out_set_blocking(&[ScanTxOutRequest::Single(format!("addr({})", addr))])
-//         .unwrap();
-//
-//     assert_eq!(utxos.unspents.len(), 2);
-//     assert_eq!(utxos.success, Some(true));
-// }
-//
-// fn test_getblocktemplate(cl: &Client) {
-//     // We want to have a transaction in the mempool so the GetBlockTemplateResult
-//     // contains an entry in the vector of GetBlockTemplateResultTransaction.
-//     // Otherwise the GetBlockTemplateResultTransaction deserialization wouldn't
-//     // be tested.
-//     cl.send_to_address(&RANDOM_ADDRESS, btc(1), None, None, None, None, None, None).unwrap();
-//
-//     cl.get_block_template(GetBlockTemplateModes::Template, &[GetBlockTemplateRules::SegWit], &[])
-//         .unwrap();
-//
-//     // let pop: &Address = &RANDOM_ADDRESS;
-//
-//     // cleanup mempool transaction
-//     cl.generate_to_address(2, &RANDOM_ADDRESS).unwrap();
-// }
-//
-// fn test_stop(cl: &Client) {
-//     println!("Stopping: '{}'", cl.stop().unwrap());
-// }
-//
-// // ---------------------- Masternode RPC tests---------------------
-//
-// fn test_get_masternode_count(cl: &Client) {
-//     let masternode_count = cl.get_masternode_count().unwrap();
-//     assert!(masternode_count.total > 0);
-//     assert!(masternode_count.enabled > 0);
-//     assert!(masternode_count.total >= masternode_count.enabled);
-// }
-//
-// fn test_get_masternode_list(cl: &Client) {
-//     let _masternode_list = cl.get_masternode_list(Some("json"), None).unwrap();
-// }
-//
-// fn test_get_masternode_outputs(cl: &Client) {
-//     let _masternode_outputs = cl.get_masternode_outputs().unwrap();
-// }
-//
-// fn test_get_masternode_payments(cl: &Client) {
-//     let masternode_payments = cl.get_masternode_payments(None, None).unwrap();
-//     assert!(masternode_payments[0].height > 0);
-//     assert!(masternode_payments[0].amount > 0);
-//     assert!(masternode_payments[0].masternodes[0].amount > 0);
-//     assert!(masternode_payments[0].masternodes[0].payees[0].amount > 0);
-//     assert_eq!(masternode_payments[0].amount, masternode_payments[0].masternodes[0].amount);
-//     assert_eq!(
-//         masternode_payments[0].amount,
-//         masternode_payments[0].masternodes[0].payees[0].amount
-//     );
-// }
-//
-// fn test_get_masternode_status(cl: &Client) {
-//     let _masternode_status = cl.get_masternode_status().unwrap();
-// }
-//
-// fn test_get_masternode_winners(cl: &Client) {
-//     let _masternode_winners = cl.get_masternode_winners(None, None).unwrap();
-// }
-//
-// // ---------------------- Quorum RPC tests---------------------
-//
-// fn test_get_quorum_list(cl: &Client) {
-//     let _quorum_list = cl.get_quorum_list(Some(b'1')).unwrap();
-// }
-//
-// fn test_get_quorum_listextended(cl: &Client) {
-//     let _quorum_list = cl.get_quorum_listextended(None).unwrap();
-//     let _quorum_list = cl.get_quorum_listextended(Some(1000)).unwrap();
-// }
-//
-// fn test_get_quorum_info(cl: &Client) {
-//     let qh =
-//         QuorumHash::from_str("000000000c9eddd5d2a707281b7e30d5aac974dac600ff10f01937e1ca36066f")
-//             .unwrap();
-//     let quorum_info = cl.get_quorum_info(QuorumType::Llmq50_60, &qh, None).unwrap();
-//     assert!(quorum_info.height > 0);
-//     // assert!(quorum_info.members.len() >= 0);
-// }
-//
-// fn test_get_quorum_dkgstatus(cl: &Client) {
-//     let _quorum_dkgstatus = cl.get_quorum_dkgstatus(None).unwrap();
-//     // assert!(quorum_dkgstatus.time >= 0);
-//     // assert!(quorum_dkgstatus.session.len() >= 0);
-//     // assert!(quorum_dkgstatus.quorum_connections.len() >= 0);
-//     // assert!(quorum_dkgstatus.minable_commitments.len() >= 0);
-// }
-//
-// fn test_get_quorum_sign(cl: &Client) {
-//     let _quorum_dkgstatus = cl
-//         .get_quorum_sign(
-//             LlmqTest,
-//             "abcd1234abcd1234abcd1234abcd1234abcd1234abcd1234abcd1234abcd1234",
-//             "51c11d287dfa85aef3eebb5420834c8e443e01d15c0b0a8e397d67e2e51aa239",
-//             None,
-//             None,
-//         )
-//         .unwrap();
-// }
-//
-// fn test_get_quorum_getrecsig(cl: &Client) {
-//     let _quorum_getrecsig = cl
-//         .get_quorum_getrecsig(
-//             LlmqTest,
-//             "abcd1234abcd1234abcd1234abcd1234abcd1234abcd1234abcd1234abcd1234",
-//             "51c11d287dfa85aef3eebb5420834c8e443e01d15c0b0a8e397d67e2e51aa239",
-//         )
-//         .unwrap();
-// }
-//
-// fn test_get_quorum_hasrecsig(cl: &Client) {
-//     let _quorum_hasrecsig = cl
-//         .get_quorum_hasrecsig(
-//             LlmqTest,
-//             "abcd1234abcd1234abcd1234abcd1234abcd1234abcd1234abcd1234abcd1234",
-//             "51c11d287dfa85aef3eebb5420834c8e443e01d15c0b0a8e397d67e2e51aa239",
-//         )
-//         .unwrap();
-// }
-//
-// fn test_get_quorum_isconflicting(cl: &Client) {
-//     let _quorum_isconflicting = cl
-//         .get_quorum_isconflicting(
-//             LlmqTest,
-//             "abcd1234abcd1234abcd1234abcd1234abcd1234abcd1234abcd1234abcd1234",
-//             "51c11d287dfa85aef3eebb5420834c8e443e01d15c0b0a8e397d67e2e51aa239",
-//         )
-//         .unwrap();
-// }
-//
-// fn test_get_quorum_memberof(cl: &Client) {
-//     let pro_tx_hash =
-//         ProTxHash::from_str("39c07d2c9c6d0ead56f52726b63c15e295cb5c3ecf7fe1fefcfb23b2e3cfed1f")
-//             .unwrap();
-//     let quorum_memberof = cl.get_quorum_memberof(&pro_tx_hash, Some(1)).unwrap();
-//     assert!(quorum_memberof.0[0].height > 0);
-// }
-//
-// fn test_get_quorum_rotationinfo(cl: &Client) {
-//     let block_hash =
-//         BlockHash::from_hex("0000012197b7ca6360af3756c6a49c217dbbdf8b595fd55e0fcef7ffcd546044")
-//             .unwrap();
-//     let _quorum_rotationinfo = cl.get_quorum_rotationinfo(&block_hash, None, None).unwrap();
-// }
-//
-// fn test_get_quorum_selectquorum(cl: &Client) {
-//     let _quorum_selectquorum = cl
-//         .get_quorum_selectquorum(
-//             LlmqTest,
-//             "b95205c3bba72e9edfbe7380ec91fe5a97e16a189e28f39b03c6822757ad1a34",
-//         )
-//         .unwrap();
-// }
-//
-// fn test_get_quorum_verify(cl: &Client) {
-//     let _quorum_verify = cl.get_quorum_verify(
-//         LlmqTest,
-//         "2ceeaa7ff20de327ef65b14de692199d15b67b9458d0ded7d68735cce98dd039",
-//         "8b5174d0e95b5642ebec23c3fe8f0bbf8f6993502f4210322871bba0e818ff3b",
-//         "99cf2a0deb08286a2d1ffdd2564b35522fd748c8802e561abed330dea20df5cb5a5dffeddbe627ea32cb36de13d5b4a516fdfaebae9886b2f7969a5d112416cf8d1983ebcbf1463a64f7522505627e08b9c76c036616fbb1649271a2773a1653",
-//         Some(QuorumHash::from_str("000000583a348d1a0a5f753ef98e6a69f9bcd9b27919f10eb1a1c3edb6c79182").unwrap()),
-//         None,
-//     ).unwrap();
-// }
-//
-// // ---------------------- BLS cl tests---------------------
-//
-// fn test_get_bls_fromsecret(cl: &Client) {
-//     let _bls_fromsecret = cl
-//         .get_bls_fromsecret("52f35cd3d977a505485f2474e7e71ef3f60f859603d72ad6b0fa7f7bd163e144")
-//         .unwrap();
-// }
-//
-// fn test_get_bls_generate(cl: &Client) {
-//     let _bls_generate = cl.get_bls_generate().unwrap();
-//     // assert!(bls_generate.secret[0] >= 0);
-//     // assert!(bls_generate.public[0] >= 0);
-// }
-//
-// // ---------------------- ProTx cl tests---------------------
-//
-// fn test_get_protx_diff(cl: &Client) {
-//     let _protx_diff = cl.get_protx_diff(75000, 76000).unwrap();
-// }
-//
-// fn test_get_protx_info(cl: &Client) {
-//     let pro_tx_hash =
-//         ProTxHash::from_str("000000000c9eddd5d2a707281b7e30d5aac974dac600ff10f01937e1ca36066f")
-//             .unwrap();
-//     let protx_info = cl.get_protx_info(&pro_tx_hash).unwrap();
-//
-//     match protx_info {
-//         ProTxInfo {
-//             pro_tx_hash: _,
-//             collateral_hash: _,
-//             collateral_index,
-//             collateral_address: _,
-//             operator_reward,
-//             state: _,
-//             confirmations: _,
-//             wallet: _,
-//             meta_info: _,
-//             ..
-//         } => {
-//             // assert!(collateral_index >= 0);
-//             // assert!(operator_reward >= 0);
-//         }
-//     }
-// }
-//
-// fn test_get_protx_list(cl: &Client) {
-//     let _protx_list =
-//         cl.get_protx_list(Some(ProTxListType::Valid), Some(true), Some(7090)).unwrap();
-// }
-//
-// fn test_get_protx_register(cl: &Client) {
-//     let _protx_register = cl.get_protx_register("8b2eab3413abb6e04d17d1defe2b71039ba6b6f72ea1e5dab29bb10e7b745948", 1, "2.3.4.5:2345", "yNLuVTXJbjbxgrQX5LSMi7hV19We8hT2d6", "88d719278eef605d9c19037366910b59bc28d437de4a8db4d76fda6d6985dbdf10404fb9bb5cd0e8c22f4a914a6c5566", "yNLuVTXJbjbxgrQX5LSMi7hV19We8hT2d6", 5, "yjJJLkYDUN6X8gWjXbCoKEXoiLeKxxMMRt", None, Some(false)).unwrap();
-// }
-//
-// fn test_get_protx_register_fund(cl: &Client) {
-//     let _protx_register_fund = cl.get_protx_register_fund("yakx4mMRptKhgfjedNzX5FGQq7kSSBF2e7", "3.4.5.6:3456", "yURczr3qY31xkQZfFu8eZvKz19eAEPQxsd", "0e02146e9c34cfbcb3f3037574a1abb35525e2ca0c3c6901dbf82ac591e30218d1711223b7ca956edf39f3d984d06d51", "yURczr3qY31xkQZfFu8eZvKz19eAEPQxsd", 5, "yUYTxqjpCfAAK4vgxXtBPywRBtZqsxN7Vy", Some("yRMFHxcJ2aS2vfo5whhE2Gg73dfQVm8LAF"), Some(false)).unwrap();
-// }
-//
-// fn test_get_protx_register_prepare(cl: &Client) {
-//     let _protx_register_prepare = cl.get_protx_register_prepare(
-//         "df41e398bb245e973340d434d386f431dbd69735a575721b0b6833856e7d31ec",
-//         1,
-//         "9.8.7.6:9876",
-//         "yemjhGQ99V5ayJMjoyGGPtxteahii6G1Jz".parse().unwrap(),
-//         "06849865d01e4f73a6d5a025117e48f50b897e14235800501c8bfb8a6365cc8dbf5ddb67a3635d0f1dcc7d46a7ee280c",
-//         "yemjhGQ99V5ayJMjoyGGPtxteahii6G1Jz".parse().unwrap(),
-//         1, //1.2,
-//         "yjJJLkYDUN6X8gWjXbCoKEXoiLeKxxMMRt".parse().unwrap(),
-//         None,
-//     ).unwrap();
-// }
-//
-// fn test_get_protx_register_submit(cl: &Client) {
-//     let _protx_register_submit = cl.get_protx_register_submit(
-//         "03000100012d988526d5d1efd32320023c92eff09c2963dcb021b0de9761",
-//         "H90IvqVtFjZkwLJb08yMEgGixs0/FpcdvwImBcir4cYLJhD3pdX+lKD2GsPl6KNxghVXNk5/HpOdBoWAHo9u++Y=",
-//     ).unwrap();
-// }
-//
-// fn test_get_protx_revoke(cl: &Client) {
-//     let _protx_revoke = cl
-//         .get_protx_revoke(
-//             "ba1b3330e16a0876b7a186e7ceb689f03ec646e611e91d7139de021bbf13afdd",
-//             "4da7e1ea30fb9e55c73ad23df0b9d3d34342acb24facf4b19420e1a26ae272d1",
-//             ProTxRevokeReason::NotSpecified,
-//             None,
-//         )
-//         .unwrap();
-// }
-//
-// fn test_get_protx_update_registrar(cl: &Client) {
-//     let _protx_update_registrar = cl.get_protx_update_registrar(
-//         "ba1b3330e16a0876b7a186e7ceb689f03ec646e611e91d7139de021bbf13afdd",
-//         "0e02146e9c34cfbcb3f3037574a1abb35525e2ca0c3c6901dbf82ac591e30218d1711223b7ca956edf39f3d984d06d51",
-//         "yX2cDS4kcJ4LK4uq9Hd4TG7kURV3sGLZrw".parse().unwrap(),
-//         "yX2cDS4kcJ4LK4uq9Hd4TG7kURV3sGLZrw".parse().unwrap(),
-//         None,
-//     ).unwrap();
-// }
-//
-// fn test_get_protx_update_service(cl: &Client) {
-//     let _protx_update_service = cl
-//         .get_protx_update_service(
-//             "ba1b3330e16a0876b7a186e7ceb689f03ec646e611e91d7139de021bbf13afdd",
-//             "4.3.2.1:4321",
-//             "4da7e1ea30fb9e55c73ad23df0b9d3d34342acb24facf4b19420e1a26ae272d1",
-//             None,
-//             None,
-//         )
-//         .unwrap();
-// }
-//
-// fn test_get_verifychainlock(cl: &Client) {
-//     let _verifychainlock = cl.get_verifychainlock("00000036d5c520be6e9a32d3829efc983a7b5e88052bf138f80a2b3988689a24", "97ec34efd1615b84af62495e54024880752f57790cf450ae974b80002440963592d96826e24f109e6c149411b70bb9a0035443752368590adae60365cf4251464e0423c1263e9c56a33eae9be9e9c79a117151b2173bcee93497008cace8d793", None).unwrap();
-// }
-//
-// fn test_get_verifyislock(cl: &Client) {
-//     let _verifychainlock = cl.get_verifyislock("d0b1a9c70fdfff6bf7f6cbe3d1fe33a4ca44ceb17059b6381a4ac25d9c9b6495", "8b5174d0e95b5642ebec23c3fe8f0bbf8f6993502f4210322871bba0e818ff3b", "97ec34efd1615b84af62495e54024880752f57790cf450ae974b80002440963592d96826e24f109e6c149411b70bb9a0035443752368590adae60365cf4251464e0423c1263e9c56a33eae9be9e9c79a117151b2173bcee93497008cace8d793", None).unwrap();
-// }
+fn test_import_priv_key(cl: &Client) {
+    let sk = PrivateKey {
+        network: Network::Regtest,
+        inner: secp256k1::SecretKey::new(&mut secp256k1::rand::thread_rng()),
+        compressed: true,
+    };
+    cl.import_private_key(&sk, None, None).unwrap();
+    cl.import_private_key(&sk, Some("l"), None).unwrap();
+    cl.import_private_key(&sk, None, Some(false)).unwrap();
+}
+
+fn test_import_address(cl: &Client) {
+    let sk = PrivateKey {
+        network: Network::Regtest,
+        inner: secp256k1::SecretKey::new(&mut secp256k1::rand::thread_rng()),
+        compressed: true,
+    };
+    let addr = Address::p2pkh(&sk.public_key(&SECP), Network::Regtest);
+    cl.import_address(&addr, None, None).unwrap();
+    cl.import_address(&addr, Some("l"), None).unwrap();
+    cl.import_address(&addr, None, Some(false)).unwrap();
+}
+
+fn test_import_address_script(cl: &Client) {
+    let sk = PrivateKey {
+        network: Network::Regtest,
+        inner: secp256k1::SecretKey::new(&mut secp256k1::rand::thread_rng()),
+        compressed: true,
+    };
+    let addr = Address::p2pkh(&sk.public_key(&SECP), Network::Regtest);
+    cl.import_address_script(&addr.script_pubkey(), None, None, None).unwrap();
+    cl.import_address_script(&addr.script_pubkey(), Some("l"), None, None).unwrap();
+    cl.import_address_script(&addr.script_pubkey(), None, Some(false), None).unwrap();
+    cl.import_address_script(&addr.script_pubkey(), None, None, Some(true)).unwrap();
+}
+
+fn test_estimate_smart_fee(cl: &Client) {
+    let mode = json::EstimateMode::Unset;
+    let res = cl.estimate_smart_fee(3, Some(mode)).unwrap();
+
+    // With a fresh node, we can't get fee estimates.
+    if let Some(errors) = res.errors {
+        if errors == &["Insufficient data or no feerate found"] {
+            println!("Cannot test estimate_smart_fee because no feerate found!");
+            return;
+        } else {
+            panic!("Unexpected error(s) for estimate_smart_fee: {:?}", errors);
+        }
+    }
+
+    assert!(res.fee_rate.is_some(), "no fee estimate available: {:?}", res.errors);
+    assert!(res.fee_rate.unwrap() >= btc(0));
+}
+
+fn test_ping(cl: &Client) {
+    let _ = cl.ping().unwrap();
+}
+
+fn test_get_peer_info(cl: &Client) {
+    let info = cl.get_peer_info().unwrap();
+    if info.is_empty() {
+        panic!("No peers are connected so we can't test get_peer_info");
+    }
+}
+
+fn test_rescan_blockchain(cl: &Client) {
+    let count = cl.get_block_count().unwrap() as usize;
+    assert!(count > 21);
+    let (start, stop) = cl.rescan_blockchain(Some(count - 20), Some(count - 1)).unwrap();
+    assert_eq!(start, count - 20);
+    assert_eq!(stop, Some(count - 1));
+}
+
+fn test_create_wallet(cl: &Client) {
+    let wallet_names = vec!["alice", "bob", "carol", "denise", "emily"];
+
+    struct WalletParams<'a> {
+        name: &'a str,
+        disable_private_keys: Option<bool>,
+        blank: Option<bool>,
+        passphrase: Option<&'a str>,
+        avoid_reuse: Option<bool>,
+    }
+
+    let mut wallet_params = vec![
+        WalletParams {
+            name: wallet_names[0],
+            disable_private_keys: None,
+            blank: None,
+            passphrase: None,
+            avoid_reuse: None,
+        },
+        WalletParams {
+            name: wallet_names[1],
+            disable_private_keys: Some(true),
+            blank: None,
+            passphrase: None,
+            avoid_reuse: None,
+        },
+        WalletParams {
+            name: wallet_names[2],
+            disable_private_keys: None,
+            blank: Some(true),
+            passphrase: None,
+            avoid_reuse: None,
+        },
+    ];
+
+    if version() >= 190000 {
+        wallet_params.push(WalletParams {
+            name: wallet_names[3],
+            disable_private_keys: None,
+            blank: None,
+            passphrase: Some("pass"),
+            avoid_reuse: None,
+        });
+        wallet_params.push(WalletParams {
+            name: wallet_names[4],
+            disable_private_keys: None,
+            blank: None,
+            passphrase: None,
+            avoid_reuse: Some(true),
+        });
+    }
+
+    for wallet_param in wallet_params {
+        let result = cl
+            .create_wallet(
+                wallet_param.name,
+                wallet_param.disable_private_keys,
+                wallet_param.blank,
+                wallet_param.passphrase,
+                wallet_param.avoid_reuse,
+            )
+            .unwrap();
+
+        assert_eq!(result.name, wallet_param.name);
+        let expected_warning = match (wallet_param.passphrase, wallet_param.avoid_reuse) {
+            (None, Some(true)) => {
+                Some("Empty string given as passphrase, wallet will not be encrypted.".to_string())
+            }
+            _ => Some("".to_string()),
+        };
+        assert_eq!(result.warning, expected_warning);
+
+        let wallet_client_url = format!("{}{}{}", get_rpc_url(), "/wallet/", wallet_param.name);
+        let wallet_client = Client::new(&wallet_client_url, get_auth()).unwrap();
+        let wallet_info = wallet_client.get_wallet_info().unwrap();
+
+        assert_eq!(wallet_info.wallet_name, wallet_param.name);
+
+        // let has_private_keys = !wallet_param.disable_private_keys.unwrap_or(false);
+        // assert_eq!(wallet_info.private_keys_enabled, has_private_keys);
+        // let has_hd_seed = has_private_keys && !wallet_param.blank.unwrap_or(false);
+        // assert_eq!(wallet_info.hd_seed_id.is_some(), has_hd_seed);
+        // let has_avoid_reuse = wallet_param.avoid_reuse.unwrap_or(false);
+        // assert_eq!(wallet_info.avoid_reuse.unwrap_or(false), has_avoid_reuse);
+        assert_eq!(
+            wallet_info.scanning.unwrap_or(json::ScanningDetails::NotScanning(false)),
+            json::ScanningDetails::NotScanning(false)
+        );
+    }
+
+    let mut wallet_list = cl.list_wallets().unwrap();
+
+    wallet_list.sort();
+
+    // Main wallet created for tests
+    assert!(wallet_list.iter().any(|w| w == "testwallet"));
+    wallet_list.retain(|w| w != "testwallet" && w != "");
+
+    // Created wallets
+    assert!(wallet_list.iter().zip(wallet_names).all(|(a, b)| a == b));
+}
+
+fn test_get_tx_out_set_info(cl: &Client) {
+    cl.get_tx_out_set_info().unwrap();
+}
+
+fn test_get_chain_tips(cl: &Client) {
+    let tips = cl.get_chain_tips().unwrap();
+    assert_eq!(tips.len(), 1);
+}
+
+fn test_add_node(cl: &Client) {
+    cl.add_node("127.0.0.1:1234").unwrap();
+    assert_error_message!(cl.add_node("127.0.0.1:1234"), -23, "Error: Node already added");
+    cl.remove_node("127.0.0.1:1234").unwrap();
+    cl.onetry_node("127.0.0.1:1234").unwrap();
+}
+
+fn test_get_added_node_info(cl: &Client) {
+    cl.add_node("127.0.0.1:1234").unwrap();
+    let added_info = cl.get_added_node_info(None).unwrap();
+    assert_eq!(added_info.len(), 1);
+}
+
+fn test_get_node_addresses(cl: &Client) {
+    cl.get_node_addresses(None).unwrap();
+}
+
+fn test_disconnect_node(cl: &Client) {
+    assert_error_message!(
+        cl.disconnect_node("127.0.0.1:1234"),
+        -29,
+        "Node not found in connected nodes"
+    );
+    assert_error_message!(cl.disconnect_node_by_id(1), -29, "Node not found in connected nodes");
+}
+
+fn test_add_ban(cl: &Client) {
+    cl.add_ban("127.0.0.1", 0, false).unwrap();
+    let res = cl.list_banned().unwrap();
+    assert_eq!(res.len(), 1);
+
+    cl.remove_ban("127.0.0.1").unwrap();
+    let res = cl.list_banned().unwrap();
+    assert_eq!(res.len(), 0);
+
+    cl.add_ban("127.0.0.1", 0, false).unwrap();
+    let res = cl.list_banned().unwrap();
+    assert_eq!(res.len(), 1);
+
+    cl.clear_banned().unwrap();
+    let res = cl.list_banned().unwrap();
+    assert_eq!(res.len(), 0);
+
+    assert_error_message!(cl.add_ban("INVALID_STRING", 0, false), -30, "Error: Invalid IP/Subnet");
+}
+
+fn test_set_network_active(cl: &Client) {
+    cl.set_network_active(false).unwrap();
+    cl.set_network_active(true).unwrap();
+}
+
+fn test_get_net_totals(cl: &Client) {
+    cl.get_net_totals().unwrap();
+}
+
+fn test_get_network_hash_ps(cl: &Client) {
+    cl.get_network_hash_ps(None, None).unwrap();
+}
+
+fn test_uptime(cl: &Client) {
+    cl.uptime().unwrap();
+}
+
+fn test_scantxoutset(cl: &Client) {
+    let addr = cl.get_new_address(None).unwrap()
+        .require_network(*NET).unwrap();
+
+    cl.generate_to_address(2, &addr).unwrap();
+    let addr = &cl.get_new_address(None).unwrap()
+        .require_network(*NET).unwrap();
+    cl.generate_to_address(7, addr).unwrap();
+
+    let utxos = cl
+        .scan_tx_out_set_blocking(&[ScanTxOutRequest::Single(format!("addr({})", addr))])
+        .unwrap();
+
+    assert_eq!(utxos.unspents.len(), 2);
+    assert_eq!(utxos.success, Some(true));
+}
+
+fn test_getblocktemplate(cl: &Client) {
+    // We want to have a transaction in the mempool so the GetBlockTemplateResult
+    // contains an entry in the vector of GetBlockTemplateResultTransaction.
+    // Otherwise the GetBlockTemplateResultTransaction deserialization wouldn't
+    // be tested.
+    cl.send_to_address(&RANDOM_ADDRESS, btc(1), None, None, None, None, None, None).unwrap();
+
+    cl.get_block_template(GetBlockTemplateModes::Template, &[GetBlockTemplateRules::SegWit], &[])
+        .unwrap();
+
+    // let pop: &Address = &RANDOM_ADDRESS;
+
+    // cleanup mempool transaction
+    cl.generate_to_address(2, &RANDOM_ADDRESS).unwrap();
+}
+
+fn test_stop(cl: &Client) {
+    println!("Stopping: '{}'", cl.stop().unwrap());
+}
+
+// ---------------------- Masternode RPC tests---------------------
+
+fn test_get_masternode_count(cl: &Client) {
+    let masternode_count = cl.get_masternode_count().unwrap();
+    assert!(masternode_count.total > 0);
+    assert!(masternode_count.enabled > 0);
+    assert!(masternode_count.total >= masternode_count.enabled);
+}
+
+fn test_get_masternode_list(cl: &Client) {
+    let _masternode_list = cl.get_masternode_list(Some("json"), None).unwrap();
+}
+
+fn test_get_masternode_outputs(cl: &Client) {
+    let _masternode_outputs = cl.get_masternode_outputs().unwrap();
+}
+
+fn test_get_masternode_payments(cl: &Client) {
+    let masternode_payments = cl.get_masternode_payments(None, None).unwrap();
+    assert!(masternode_payments[0].height > 0);
+    assert!(masternode_payments[0].amount > 0);
+    assert!(masternode_payments[0].masternodes[0].amount > 0);
+    assert!(masternode_payments[0].masternodes[0].payees[0].amount > 0);
+    assert_eq!(masternode_payments[0].amount, masternode_payments[0].masternodes[0].amount);
+    assert_eq!(
+        masternode_payments[0].amount,
+        masternode_payments[0].masternodes[0].payees[0].amount
+    );
+}
+
+fn test_get_masternode_status(cl: &Client) {
+    let _masternode_status = cl.get_masternode_status().unwrap();
+}
+
+fn test_get_masternode_winners(cl: &Client) {
+    let _masternode_winners = cl.get_masternode_winners(None, None).unwrap();
+}
+
+// ---------------------- Quorum RPC tests---------------------
+
+fn test_get_quorum_list(cl: &Client) {
+    let _quorum_list = cl.get_quorum_list(Some(b'1')).unwrap();
+}
+
+fn test_get_quorum_listextended(cl: &Client) {
+    let _quorum_list = cl.get_quorum_listextended(None).unwrap();
+    let _quorum_list = cl.get_quorum_listextended(Some(1000)).unwrap();
+}
+
+fn test_get_quorum_info(cl: &Client) {
+    let qh =
+        QuorumHash::from_str("000000000c9eddd5d2a707281b7e30d5aac974dac600ff10f01937e1ca36066f")
+            .unwrap();
+    let quorum_info = cl.get_quorum_info(QuorumType::Llmq50_60, &qh, None).unwrap();
+    assert!(quorum_info.height > 0);
+    // assert!(quorum_info.members.len() >= 0);
+}
+
+fn test_get_quorum_dkgstatus(cl: &Client) {
+    let _quorum_dkgstatus = cl.get_quorum_dkgstatus(None).unwrap();
+    // assert!(quorum_dkgstatus.time >= 0);
+    // assert!(quorum_dkgstatus.session.len() >= 0);
+    // assert!(quorum_dkgstatus.quorum_connections.len() >= 0);
+    // assert!(quorum_dkgstatus.minable_commitments.len() >= 0);
+}
+
+fn test_get_quorum_sign(cl: &Client) {
+    let _quorum_dkgstatus = cl
+        .get_quorum_sign(
+            LlmqTest,
+            "abcd1234abcd1234abcd1234abcd1234abcd1234abcd1234abcd1234abcd1234",
+            "51c11d287dfa85aef3eebb5420834c8e443e01d15c0b0a8e397d67e2e51aa239",
+            None,
+            None,
+        )
+        .unwrap();
+}
+
+fn test_get_quorum_getrecsig(cl: &Client) {
+    let _quorum_getrecsig = cl
+        .get_quorum_getrecsig(
+            LlmqTest,
+            "abcd1234abcd1234abcd1234abcd1234abcd1234abcd1234abcd1234abcd1234",
+            "51c11d287dfa85aef3eebb5420834c8e443e01d15c0b0a8e397d67e2e51aa239",
+        )
+        .unwrap();
+}
+
+fn test_get_quorum_hasrecsig(cl: &Client) {
+    let _quorum_hasrecsig = cl
+        .get_quorum_hasrecsig(
+            LlmqTest,
+            "abcd1234abcd1234abcd1234abcd1234abcd1234abcd1234abcd1234abcd1234",
+            "51c11d287dfa85aef3eebb5420834c8e443e01d15c0b0a8e397d67e2e51aa239",
+        )
+        .unwrap();
+}
+
+fn test_get_quorum_isconflicting(cl: &Client) {
+    let _quorum_isconflicting = cl
+        .get_quorum_isconflicting(
+            LlmqTest,
+            "abcd1234abcd1234abcd1234abcd1234abcd1234abcd1234abcd1234abcd1234",
+            "51c11d287dfa85aef3eebb5420834c8e443e01d15c0b0a8e397d67e2e51aa239",
+        )
+        .unwrap();
+}
+
+fn test_get_quorum_memberof(cl: &Client) {
+    let pro_tx_hash =
+        ProTxHash::from_str("39c07d2c9c6d0ead56f52726b63c15e295cb5c3ecf7fe1fefcfb23b2e3cfed1f")
+            .unwrap();
+    let quorum_memberof = cl.get_quorum_memberof(&pro_tx_hash, Some(1)).unwrap();
+    assert!(quorum_memberof.0[0].height > 0);
+}
+
+fn test_get_quorum_rotationinfo(cl: &Client) {
+    let block_hash =
+        BlockHash::from_str("0000012197b7ca6360af3756c6a49c217dbbdf8b595fd55e0fcef7ffcd546044")
+            .unwrap();
+    let _quorum_rotationinfo = cl.get_quorum_rotationinfo(&block_hash, None, None).unwrap();
+}
+
+fn test_get_quorum_selectquorum(cl: &Client) {
+    let _quorum_selectquorum = cl
+        .get_quorum_selectquorum(
+            LlmqTest,
+            "b95205c3bba72e9edfbe7380ec91fe5a97e16a189e28f39b03c6822757ad1a34",
+        )
+        .unwrap();
+}
+
+fn test_get_quorum_verify(cl: &Client) {
+    let _quorum_verify = cl.get_quorum_verify(
+        LlmqTest,
+        "2ceeaa7ff20de327ef65b14de692199d15b67b9458d0ded7d68735cce98dd039",
+        "8b5174d0e95b5642ebec23c3fe8f0bbf8f6993502f4210322871bba0e818ff3b",
+        "99cf2a0deb08286a2d1ffdd2564b35522fd748c8802e561abed330dea20df5cb5a5dffeddbe627ea32cb36de13d5b4a516fdfaebae9886b2f7969a5d112416cf8d1983ebcbf1463a64f7522505627e08b9c76c036616fbb1649271a2773a1653",
+        Some(QuorumHash::from_str("000000583a348d1a0a5f753ef98e6a69f9bcd9b27919f10eb1a1c3edb6c79182").unwrap()),
+        None,
+    ).unwrap();
+}
+
+// ---------------------- BLS cl tests---------------------
+
+fn test_get_bls_fromsecret(cl: &Client) {
+    let _bls_fromsecret = cl
+        .get_bls_fromsecret("52f35cd3d977a505485f2474e7e71ef3f60f859603d72ad6b0fa7f7bd163e144")
+        .unwrap();
+}
+
+fn test_get_bls_generate(cl: &Client) {
+    let _bls_generate = cl.get_bls_generate().unwrap();
+    // assert!(bls_generate.secret[0] >= 0);
+    // assert!(bls_generate.public[0] >= 0);
+}
+
+// ---------------------- ProTx cl tests---------------------
+
+fn test_get_protx_diff(cl: &Client) {
+    let _protx_diff = cl.get_protx_diff(75000, 76000).unwrap();
+}
+
+fn test_get_protx_info(cl: &Client) {
+    let pro_tx_hash =
+        ProTxHash::from_str("000000000c9eddd5d2a707281b7e30d5aac974dac600ff10f01937e1ca36066f")
+            .unwrap();
+    let protx_info = cl.get_protx_info(&pro_tx_hash).unwrap();
+
+    match protx_info {
+        ProTxInfo {
+            pro_tx_hash: _,
+            collateral_hash: _,
+            collateral_index,
+            collateral_address: _,
+            operator_reward,
+            state: _,
+            confirmations: _,
+            wallet: _,
+            meta_info: _,
+            ..
+        } => {
+            // assert!(collateral_index >= 0);
+            // assert!(operator_reward >= 0);
+        }
+    }
+}
+
+fn test_get_protx_list(cl: &Client) {
+    let _protx_list =
+        cl.get_protx_list(Some(ProTxListType::Valid), Some(true), Some(7090)).unwrap();
+}
+
+fn test_get_protx_register(cl: &Client) {
+    let _protx_register = cl.get_protx_register(
+        "8b2eab3413abb6e04d17d1defe2b71039ba6b6f72ea1e5dab29bb10e7b745948",
+        1,
+        "2.3.4.5:2345",
+        "yNLuVTXJbjbxgrQX5LSMi7hV19We8hT2d6",
+        "88d719278eef605d9c19037366910b59bc28d437de4a8db4d76fda6d6985dbdf10404fb9bb5cd0e8c22f4a914a6c5566",
+        "yNLuVTXJbjbxgrQX5LSMi7hV19We8hT2d6",
+        5.0,
+        "yjJJLkYDUN6X8gWjXbCoKEXoiLeKxxMMRt",
+        None,
+        Some(false)
+    ).unwrap();
+}
+
+fn test_get_protx_register_fund(cl: &Client) {
+    let _protx_register_fund = cl.get_protx_register_fund("yakx4mMRptKhgfjedNzX5FGQq7kSSBF2e7", "3.4.5.6:3456", "yURczr3qY31xkQZfFu8eZvKz19eAEPQxsd", "0e02146e9c34cfbcb3f3037574a1abb35525e2ca0c3c6901dbf82ac591e30218d1711223b7ca956edf39f3d984d06d51", "yURczr3qY31xkQZfFu8eZvKz19eAEPQxsd",
+                                                          5.0, "yUYTxqjpCfAAK4vgxXtBPywRBtZqsxN7Vy", Some("yRMFHxcJ2aS2vfo5whhE2Gg73dfQVm8LAF"), Some(false)).unwrap();
+}
+
+fn test_get_protx_register_prepare(cl: &Client) {
+    let owner_address = Address::<NetworkUnchecked>::from_str("yemjhGQ99V5ayJMjoyGGPtxteahii6G1Jz").unwrap()
+        .require_network(*NET).unwrap();
+
+    let voting_address = Address::<NetworkUnchecked>::from_str("yemjhGQ99V5ayJMjoyGGPtxteahii6G1Jz").unwrap()
+        .require_network(*NET).unwrap();
+
+    let payout_address = Address::<NetworkUnchecked>::from_str("yjJJLkYDUN6X8gWjXbCoKEXoiLeKxxMMRt").unwrap()
+        .require_network(*NET).unwrap();
+
+    let _protx_register_prepare = cl.get_protx_register_prepare(
+        "df41e398bb245e973340d434d386f431dbd69735a575721b0b6833856e7d31ec",
+        1,
+        "9.8.7.6:9876",
+        owner_address,
+        "06849865d01e4f73a6d5a025117e48f50b897e14235800501c8bfb8a6365cc8dbf5ddb67a3635d0f1dcc7d46a7ee280c",
+        voting_address,
+        1.0, //1.2,
+        payout_address,
+        None,
+    ).unwrap();
+}
+
+fn test_get_protx_register_submit(cl: &Client) {
+    let _protx_register_submit = cl.get_protx_register_submit(
+        "03000100012d988526d5d1efd32320023c92eff09c2963dcb021b0de9761",
+        "H90IvqVtFjZkwLJb08yMEgGixs0/FpcdvwImBcir4cYLJhD3pdX+lKD2GsPl6KNxghVXNk5/HpOdBoWAHo9u++Y=",
+    ).unwrap();
+}
+
+fn test_get_protx_revoke(cl: &Client) {
+    let _protx_revoke = cl
+        .get_protx_revoke(
+            "ba1b3330e16a0876b7a186e7ceb689f03ec646e611e91d7139de021bbf13afdd",
+            "4da7e1ea30fb9e55c73ad23df0b9d3d34342acb24facf4b19420e1a26ae272d1",
+            ProTxRevokeReason::NotSpecified,
+            None,
+        )
+        .unwrap();
+}
+
+fn test_get_protx_update_registrar(cl: &Client) {
+    let voting_address = Address::<NetworkUnchecked>::from_str("yX2cDS4kcJ4LK4uq9Hd4TG7kURV3sGLZrw").unwrap()
+        .require_network(*NET).unwrap();
+
+    let _protx_update_registrar = cl.get_protx_update_registrar(
+        "ba1b3330e16a0876b7a186e7ceb689f03ec646e611e91d7139de021bbf13afdd",
+        "0e02146e9c34cfbcb3f3037574a1abb35525e2ca0c3c6901dbf82ac591e30218d1711223b7ca956edf39f3d984d06d51",
+        voting_address.clone(),
+        voting_address,
+        None,
+    ).unwrap();
+}
+
+fn test_get_protx_update_service(cl: &Client) {
+    let _protx_update_service = cl
+        .get_protx_update_service(
+            "ba1b3330e16a0876b7a186e7ceb689f03ec646e611e91d7139de021bbf13afdd",
+            "4.3.2.1:4321",
+            "4da7e1ea30fb9e55c73ad23df0b9d3d34342acb24facf4b19420e1a26ae272d1",
+            None,
+            None,
+        )
+        .unwrap();
+}
+
+fn test_get_verifychainlock(cl: &Client) {
+    let _verifychainlock = cl.get_verifychainlock("00000036d5c520be6e9a32d3829efc983a7b5e88052bf138f80a2b3988689a24", "97ec34efd1615b84af62495e54024880752f57790cf450ae974b80002440963592d96826e24f109e6c149411b70bb9a0035443752368590adae60365cf4251464e0423c1263e9c56a33eae9be9e9c79a117151b2173bcee93497008cace8d793", None).unwrap();
+}
+
+fn test_get_verifyislock(cl: &Client) {
+    let _verifychainlock = cl.get_verifyislock("d0b1a9c70fdfff6bf7f6cbe3d1fe33a4ca44ceb17059b6381a4ac25d9c9b6495", "8b5174d0e95b5642ebec23c3fe8f0bbf8f6993502f4210322871bba0e818ff3b", "97ec34efd1615b84af62495e54024880752f57790cf450ae974b80002440963592d96826e24f109e6c149411b70bb9a0035443752368590adae60365cf4251464e0423c1263e9c56a33eae9be9e9c79a117151b2173bcee93497008cace8d793", None).unwrap();
+}
