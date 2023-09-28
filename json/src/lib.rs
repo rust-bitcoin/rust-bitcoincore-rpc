@@ -40,6 +40,7 @@ use dashcore::{
     bip158, bip32, Address, Amount, BlockHash, PrivateKey, ProTxHash, PublicKey, QuorumHash,
     Script, ScriptBuf, SignedAmount, Transaction, TxMerkleNode, Txid,
 };
+use dashcore::block::Version;
 use hex::FromHexError;
 use serde::de::Error as SerdeError;
 use serde::{de, Deserialize, Deserializer, Serialize, Serializer};
@@ -223,7 +224,7 @@ pub struct GetBlockHeaderResult {
     pub hash: dashcore::BlockHash,
     pub confirmations: i32,
     pub height: usize,
-    pub version: i32,
+    pub version: Version,
     #[serde(default, with = "hex")]
     pub version_hex: Vec<u8>,
     #[serde(rename = "merkleroot")]
