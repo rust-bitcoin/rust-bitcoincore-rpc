@@ -218,22 +218,28 @@ fn main() {
     // test_finalize_psbt(&cl);
     // test_list_received_by_address(&cl);
 
+    // TODO: fix - falinig
     // test_scantxoutset(&cl);
-    // test_import_public_key(&cl);
-    // test_import_priv_key(&cl);
-    // test_import_address(&cl);
-    // test_import_address_script(&cl);
-    // test_estimate_smart_fee(&cl);
-    // test_ping(&cl);
+    test_import_public_key(&cl);
+    test_import_priv_key(&cl);
+    test_import_address(&cl);
+    test_import_address_script(&cl);
+    test_estimate_smart_fee(&cl);
+    test_ping(&cl);
+
+    // TODO(multiple nodes): enable when there is actually a network
     // test_get_peer_info(&cl);
-    // test_rescan_blockchain(&cl);
+    test_rescan_blockchain(&cl);
+    // TODO: fix - falinig
     // test_create_wallet(&cl);
-    // test_get_tx_out_set_info(&cl);
-    // test_get_chain_tips(&cl);
-    // test_get_net_totals(&cl);
-    // test_get_network_hash_ps(&cl);
-    // test_uptime(&cl);
+    test_get_tx_out_set_info(&cl);
+    test_get_chain_tips(&cl);
+    test_get_net_totals(&cl);
+    test_get_network_hash_ps(&cl);
+    test_uptime(&cl);
+    // TODO: fix - falinig
     // test_getblocktemplate(&cl);
+
     // //TODO import_multi(
     // //TODO verify_message(
     // //TODO wait_for_new_block(&self, timeout: u64) -> Result<json::BlockRef> {
@@ -246,45 +252,77 @@ fn main() {
     // //TODO load_wallet(&self, wallet: &str) -> Result<json::LoadWalletResult> {
     // //TODO unload_wallet(&self, wallet: Option<&str>) -> Result<()> {
     // //TODO backup_wallet(&self, destination: Option<&str>) -> Result<()> {
+
+    // TODO: fix - falinig
     // test_add_node(&cl);
+    // TODO: fix - falinig
     // test_get_added_node_info(&cl);
-    // test_get_node_addresses(&cl);
+    test_get_node_addresses(&cl);
+    // TODO: fix - falinig
     // test_disconnect_node(&cl);
+    // TODO: fix - falinig
     // test_add_ban(&cl);
-    // test_set_network_active(&cl);
-    // test_stop(&cl);
+    test_set_network_active(&cl);
+    // TODO: fix - run masternode
     // test_get_masternode_count(&cl);
-    // test_get_masternode_list(&cl);
+    test_get_masternode_list(&cl);
+    // TODO: fix - run masternode
     // test_get_masternode_outputs(&cl);
+    // TODO: fix - run masternode
     // test_get_masternode_payments(&cl);
+    // TODO: fix - run masternode
     // test_get_masternode_status(&cl);
-    // test_get_masternode_winners(&cl);
-    // test_get_quorum_list(&cl);
-    // test_get_quorum_listextended(&cl);
+    test_get_masternode_winners(&cl);
+    test_get_quorum_list(&cl);
+    test_get_quorum_listextended(&cl);
+    // TODO: fix - run masternode
     // test_get_quorum_info(&cl);
-    // test_get_quorum_dkgstatus(&cl);
-    // test_get_quorum_sign(&cl);
+    test_get_quorum_dkgstatus(&cl);
+    test_get_quorum_sign(&cl);
     // test_get_quorum_getrecsig(&cl);
+    // TODO: fix - run masternode
     // test_get_quorum_hasrecsig(&cl);
+    // TODO: fix - run masternode
     // test_get_quorum_isconflicting(&cl);
+    // TODO: fix - run masternode
     // test_get_quorum_memberof(&cl);
+    // TODO: fix - run masternode
     // test_get_quorum_rotationinfo(&cl);
+    // TODO: fix - run masternode
     // test_get_quorum_selectquorum(&cl);
+    // TODO: fix - run masternode
     // test_get_quorum_verify(&cl);
+    // TODO: fix - run masternode
     // test_get_bls_fromsecret(&cl);
+    // TODO: fix - run masternode
     // test_get_bls_generate(&cl);
+    // TODO: fix - run masternode
     // test_get_protx_diff(&cl);
+    // TODO: fix - run masternode
     // test_get_protx_info(&cl);
+    // TODO: fix - run masternode
     // test_get_protx_list(&cl);
+    // TODO: fix - run masternode
     // test_get_protx_register(&cl);
+    // TODO: fix - run masternode
     // test_get_protx_register_fund(&cl);
+    // TODO: fix - run masternode
     // test_get_protx_register_prepare(&cl);
+    // TODO: fix - run masternode
     // test_get_protx_register_submit(&cl);
-    // test_get_protx_revoke(&cl);
+    // TODO: fix - run masternode
+    // test_get_protx_revoke(&cl)
+    // TODO: fix - run masternode
     // test_get_protx_update_registrar(&cl);
+    // TODO: fix - run masternode
     // test_get_protx_update_service(&cl);
+    // TODO: fix - run masternode
     // test_get_verifychainlock(&cl);
+    // TODO: fix - run masternode
     // test_get_verifyislock(&cl);
+
+    // TODO: enable when running container in detached mode
+    // test_stop(&cl);
 }
 
 fn test_get_network_info(cl: &Client) {
@@ -1260,7 +1298,7 @@ fn test_get_quorum_list(cl: &Client) {
 
 fn test_get_quorum_listextended(cl: &Client) {
     let _quorum_list = cl.get_quorum_listextended(None).unwrap();
-    let _quorum_list = cl.get_quorum_listextended(Some(1000)).unwrap();
+    let _quorum_list = cl.get_quorum_listextended(Some(200)).unwrap();
 }
 
 fn test_get_quorum_info(cl: &Client) {
