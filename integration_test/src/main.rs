@@ -182,7 +182,7 @@ fn main() {
     // TODO: fix - failing
     // test_set_label(&cl);
     // TODO: fix - failing
-    // test_send_to_address(&cl);
+    test_send_to_address(&cl);
     test_get_received_by_address(&cl);
     // TODO: fix - failing
     // test_list_unspent(&cl);
@@ -488,18 +488,22 @@ fn test_send_to_address(cl: &Client) {
     let addr = cl.get_new_address(None).unwrap()
         .require_network(*NET).unwrap();
     let est = json::EstimateMode::Conservative;
-    let _ = cl.send_to_address(&addr, btc(1), Some("cc"), None, None, None, None, None).unwrap();
-    let _ = cl.send_to_address(&addr, btc(1), None, Some("tt"), None, None, None, None).unwrap();
-    let _ = cl.send_to_address(&addr, btc(1), None, None, Some(true), None, None, None).unwrap();
-    let _ = cl.send_to_address(&addr, btc(1), None, None, None, Some(true), None, None).unwrap();
-    let _ = cl.send_to_address(&addr, btc(1), None, None, None, None, Some(3), None).unwrap();
-    let _ = cl.send_to_address(&addr, btc(1), None, None, None, None, None, Some(est)).unwrap();
+    let _ = cl.send_to_address(&addr, btc(1), Some("cc"), None, None, None, None, None, None, None).unwrap();
+    let _ = cl.send_to_address(&addr, btc(1), None, Some("tt"), None, None, None, None, None, None).unwrap();
+    let _ = cl.send_to_address(&addr, btc(1), None, None, Some(true), None, None, None, None, None).unwrap();
+    let _ = cl.send_to_address(&addr, btc(1), None, None, None, Some(true), None, None, None, None).unwrap();
+    let _ = cl.send_to_address(&addr, btc(1), None, None, None, None, Some(false), None, None, None).unwrap();
+    let _ = cl.send_to_address(&addr, btc(1), None, None, None, None, None, Some(3), None, None).unwrap();
+    let _ = cl.send_to_address(&addr, btc(1), None, None, None, None, None, None,Some(est), None).unwrap();
+    // TODO: restore when wallet have "avoid reuse" feature enabled
+    // let _ = cl.send_to_address(&addr, btc(1), None, None, None, None, None, None,None, Some(true)).unwrap();
 }
 
 fn test_get_received_by_address(cl: &Client) {
     let addr = cl.get_new_address(None).unwrap()
         .require_network(*NET).unwrap();
-    let _ = cl.send_to_address(&addr, btc(1), None, None, None, None, None, None).unwrap();
+    let _ = cl.
+        send_to_address(&addr, btc(1), None, None, None, None, None, None, None, None).unwrap();
     assert_eq!(cl.get_received_by_address(&addr, Some(0)).unwrap(), btc(1));
     assert_eq!(cl.get_received_by_address(&addr, Some(1)).unwrap(), btc(0));
 
@@ -514,13 +518,15 @@ fn test_list_unspent(cl: &Client) {
     let addr_unchecked = cl.get_new_address(None).unwrap();
     let addr = addr_unchecked.clone()
         .require_network(*NET).unwrap();
-    let txid = cl.send_to_address(&addr, btc(1), None, None, None, None, None, None).unwrap();
+    let txid = cl.
+        send_to_address(&addr, btc(1), None, None, None, None, None, None, None, None).unwrap();
     let unspent = cl.list_unspent(Some(0), None, Some(&[&addr]), None, None).unwrap();
     assert_eq!(unspent[0].txid, txid);
     assert_eq!(unspent[0].address.as_ref(), Some(&addr_unchecked));
     assert_eq!(unspent[0].amount, btc(1));
 
-    let txid = cl.send_to_address(&addr, btc(7), None, None, None, None, None, None).unwrap();
+    let txid = cl.
+        send_to_address(&addr, btc(7), None, None, None, None, None, None, None, None).unwrap();
     let options = json::ListUnspentQueryOptions {
         minimum_amount: Some(btc(7)),
         maximum_amount: Some(btc(7)),
@@ -544,7 +550,8 @@ fn test_get_connection_count(cl: &Client) {
 fn test_get_raw_transaction(cl: &Client) {
     let addr = cl.get_new_address(None).unwrap()
         .require_network(*NET).unwrap();
-    let txid = cl.send_to_address(&addr, btc(1), None, None, None, None, None, None).unwrap();
+    let txid = cl.
+        send_to_address(&addr, btc(1), None, None, None, None, None, None, None, None).unwrap();
     let tx = cl.get_raw_transaction(&txid, None).unwrap();
     let hex = cl.get_raw_transaction_hex(&txid, None).unwrap();
     assert_eq!(tx, deserialize(&hex::decode(&hex).unwrap()).unwrap());
@@ -565,7 +572,7 @@ fn test_get_raw_mempool(cl: &Client) {
 
 fn test_get_transaction(cl: &Client) {
     let txid =
-        cl.send_to_address(&RANDOM_ADDRESS, btc(1), None, None, None, None, None, None).unwrap();
+        cl.send_to_address(&RANDOM_ADDRESS, btc(1), None, None, None, None, None, None, None, None).unwrap();
     let tx = cl.get_transaction(&txid, None).unwrap();
     assert_eq!(tx.amount, sbtc(-1.0));
     // assert_eq!(tx.txid, txid);
@@ -590,7 +597,7 @@ fn test_list_since_block(cl: &Client) {
 
 fn test_get_tx_out(cl: &Client) {
     let txid =
-        cl.send_to_address(&RANDOM_ADDRESS, btc(1), None, None, None, None, None, None).unwrap();
+        cl.send_to_address(&RANDOM_ADDRESS, btc(1), None, None, None, None, None, None, None, None).unwrap();
     let out = cl.get_tx_out(&txid, 0, Some(false)).unwrap();
     assert!(out.is_none());
     let out = cl.get_tx_out(&txid, 0, Some(true)).unwrap();
@@ -600,9 +607,9 @@ fn test_get_tx_out(cl: &Client) {
 
 fn test_get_tx_out_proof(cl: &Client) {
     let txid1 =
-        cl.send_to_address(&RANDOM_ADDRESS, btc(1), None, None, None, None, None, None).unwrap();
+        cl.send_to_address(&RANDOM_ADDRESS, btc(1), None, None, None, None, None, None, None, None).unwrap();
     let txid2 =
-        cl.send_to_address(&RANDOM_ADDRESS, btc(1), None, None, None, None, None, None).unwrap();
+        cl.send_to_address(&RANDOM_ADDRESS, btc(1), None, None, None, None, None, None, None, None).unwrap();
     let addr = &cl.get_new_address(None).unwrap()
         .require_network(*NET).unwrap();
     let blocks = cl.generate_to_address(7, &addr).unwrap();
@@ -612,7 +619,7 @@ fn test_get_tx_out_proof(cl: &Client) {
 
 fn test_get_mempool_entry(cl: &Client) {
     let txid =
-        cl.send_to_address(&RANDOM_ADDRESS, btc(1), None, None, None, None, None, None).unwrap();
+        cl.send_to_address(&RANDOM_ADDRESS, btc(1), None, None, None, None, None, None, None, None).unwrap();
     let entry = cl.get_mempool_entry(&txid).unwrap();
     assert!(entry.spent_by.is_empty());
 
@@ -623,7 +630,7 @@ fn test_get_mempool_entry(cl: &Client) {
 fn test_lock_unspent_unlock_unspent(cl: &Client) {
     let addr = cl.get_new_address(None).unwrap()
         .require_network(*NET).unwrap();
-    let txid = cl.send_to_address(&addr, btc(1), None, None, None, None, None, None).unwrap();
+    let txid = cl.send_to_address(&addr, btc(1), None, None, None, None, None, None, None, None).unwrap();
 
     assert!(cl.lock_unspent(&[OutPoint::new(txid, 0)]).unwrap());
     assert!(cl.unlock_unspent(&[OutPoint::new(txid, 0)]).unwrap());
@@ -946,7 +953,7 @@ fn test_finalize_psbt(cl: &Client) {
 fn test_list_received_by_address(cl: &Client) {
     let addr = cl.get_new_address(None).unwrap()
         .require_network(*NET).unwrap();
-    let txid = cl.send_to_address(&addr, btc(1), None, None, None, None, None, None).unwrap();
+    let txid = cl.send_to_address(&addr, btc(1), None, None, None, None, None, None, None, None).unwrap();
 
     let _ = cl.list_received_by_address(Some(&addr), None, None, None).unwrap();
     let _ = cl.list_received_by_address(Some(&addr), None, Some(true), None).unwrap();
@@ -1237,7 +1244,7 @@ fn test_getblocktemplate(cl: &Client) {
     // contains an entry in the vector of GetBlockTemplateResultTransaction.
     // Otherwise the GetBlockTemplateResultTransaction deserialization wouldn't
     // be tested.
-    cl.send_to_address(&RANDOM_ADDRESS, btc(1), None, None, None, None, None, None).unwrap();
+    cl.send_to_address(&RANDOM_ADDRESS, btc(1), None, None, None, None, None, None, None, None).unwrap();
 
     cl.get_block_template(GetBlockTemplateModes::Template, &[GetBlockTemplateRules::SegWit], &[])
         .unwrap();

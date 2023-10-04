@@ -816,9 +816,11 @@ pub trait RpcApi: Sized {
         comment: Option<&str>,
         comment_to: Option<&str>,
         subtract_fee: Option<bool>,
-        replaceable: Option<bool>,
+        use_instant_send: Option<bool>,
+        use_coinjoin: Option<bool>,
         confirmation_target: Option<u32>,
         estimate_mode: Option<json::EstimateMode>,
+        avoid_reuse: Option<bool>,
     ) -> Result<dashcore::Txid> {
         let mut args = [
             address.to_string().into(),
@@ -826,15 +828,27 @@ pub trait RpcApi: Sized {
             opt_into_json(comment)?,
             opt_into_json(comment_to)?,
             opt_into_json(subtract_fee)?,
-            opt_into_json(replaceable)?,
+            opt_into_json(use_instant_send)?,
+            opt_into_json(use_coinjoin)?,
             opt_into_json(confirmation_target)?,
             opt_into_json(estimate_mode)?,
+            opt_into_json(avoid_reuse)?,
         ];
+
         self.call(
             "sendtoaddress",
             handle_defaults(
                 &mut args,
-                &["".into(), "".into(), false.into(), false.into(), 6.into(), null()],
+                &[
+                    "".into(),
+                    "".into(),
+                    false.into(),
+                    true.into(),
+                    false.into(),
+                    6.into(),
+                    "UNSET".into(),
+                    true.into(),
+                ],
             ),
         )
     }
