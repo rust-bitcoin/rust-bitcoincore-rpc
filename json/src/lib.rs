@@ -933,14 +933,14 @@ pub struct GetAddressInfoResult {
     #[serde(rename = "iswatchonly")]
     pub is_watchonly: bool,
     pub solvable: bool,
-    pub desc: Option<bool>,
+    pub desc: Option<String>,
     #[serde(rename = "isscript")]
     pub is_script: bool,
     #[serde(rename = "ischange")]
     pub is_change: bool,
     pub script: Option<ScriptPubkeyType>,
     /// The redeemscript for the p2sh address.
-    #[serde(deserialize_with = "deserialize_hex_opt")]
+    #[serde(default, deserialize_with = "deserialize_hex_opt")]
     pub hex: Option<Vec<u8>>,
     pub pubkeys: Option<Vec<PublicKey>>,
     pub pubkey: Option<PublicKey>,
@@ -3105,7 +3105,9 @@ where
             Ok(v) => Ok(Some(v)),
             Err(err) => Err(D::Error::custom(HexError::from(err))),
         },
-        Err(e) => Err(e),
+        Err(e) => {
+            Err(e)
+        },
     }
 }
 

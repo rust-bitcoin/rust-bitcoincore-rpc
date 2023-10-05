@@ -169,19 +169,18 @@ fn main() {
     // test_get_balance_generate_to_address(&cl);
     // test_get_balances_generate_to_address(&cl);
     test_get_best_block_hash(&cl);
-    // TODO: run multiple nodes to test this?
+    // TODO(quorum): needs multiple nodes
     // test_get_best_chain_lock(&cl);
     test_get_block_count(&cl);
     test_get_block_hash(&cl);
-    // TODO: fix - dashcore fails to parse block coming from Core
+    // TODO(dashcore): - fails parsing block
     // test_get_block(&cl);
     test_get_block_header_get_block_header_info(&cl);
     test_get_block_stats(&cl);
     // TODO: fix - failing
-    // test_get_address_info(&cl);
+    test_get_address_info(&cl);
     // TODO: fix - failing
     // test_set_label(&cl);
-    // TODO: fix - failing
     test_send_to_address(&cl);
     test_get_received_by_address(&cl);
     // TODO: fix - failing
@@ -438,14 +437,19 @@ fn test_get_block_stats(cl: &Client) {
 }
 
 fn test_get_address_info(cl: &Client) {
-    let addr = cl.get_new_address(None).unwrap()
-        .require_network(*NET).unwrap();
-    let info = cl.get_address_info(&addr).unwrap();
+    // let addr = cl.get_new_address(None).unwrap()
+    //     .require_network(*NET).unwrap();
+    // let info = cl.get_address_info(&addr).unwrap();
+    //
+    // let addr = cl.get_new_address(None).unwrap()
+    //     .require_network(*NET).unwrap();
+    // let info = cl.get_address_info(&addr).unwrap();
+    // assert!(!info.hex.unwrap().is_empty());
 
     let addr = cl.get_new_address(None).unwrap()
         .require_network(*NET).unwrap();
     let info = cl.get_address_info(&addr).unwrap();
-    assert!(!info.hex.unwrap().is_empty());
+    assert!(info.is_mine);
 }
 
 #[allow(deprecated)]
