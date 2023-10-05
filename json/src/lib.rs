@@ -788,7 +788,6 @@ pub struct ListUnspentQueryOptions {
 }
 
 #[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
-#[serde(rename_all = "camelCase")]
 pub struct ListUnspentResultEntry {
     pub txid: Txid,
     pub vout: u32,
@@ -806,7 +805,7 @@ pub struct ListUnspentResultEntry {
     pub descriptor: Option<String>,
     pub reused: Option<bool>,
     pub safe: bool,
-    pub coinjoin_rounds: u32,
+    pub coinjoin_rounds: i32,
 }
 
 #[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]

@@ -161,6 +161,8 @@ fn main() {
             .expect("generate_to_address");
     }
 
+    /***
+     * Fixed
     test_get_mining_info(&cl);
     test_get_blockchain_info(&cl);
     test_get_new_address(&cl);
@@ -177,14 +179,13 @@ fn main() {
     // test_get_block(&cl);
     test_get_block_header_get_block_header_info(&cl);
     test_get_block_stats(&cl);
-    // TODO: fix - failing
     test_get_address_info(&cl);
-    // TODO: fix - failing
-    // test_set_label(&cl);
+    test_set_label(&cl);
     test_send_to_address(&cl);
     test_get_received_by_address(&cl);
-    // TODO: fix - failing
-    // test_list_unspent(&cl);
+    */
+
+    test_list_unspent(&cl);
     test_get_difficulty(&cl);
     test_get_connection_count(&cl);
     // TODO: fix - failing
