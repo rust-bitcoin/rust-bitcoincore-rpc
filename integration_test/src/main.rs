@@ -183,13 +183,12 @@ fn main() {
     test_set_label(&cl);
     test_send_to_address(&cl);
     test_get_received_by_address(&cl);
-    */
-
     test_list_unspent(&cl);
     test_get_difficulty(&cl);
     test_get_connection_count(&cl);
-    // TODO: fix - failing
-    // test_get_raw_transaction(&cl);
+    test_get_raw_transaction(&cl);
+    */
+    return;
     test_get_raw_mempool(&cl);
     // TODO: fix - failing
     // test_get_transaction(&cl);

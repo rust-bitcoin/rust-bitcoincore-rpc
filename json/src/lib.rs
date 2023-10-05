@@ -522,16 +522,16 @@ impl GetRawTransactionResultVinScriptSig {
 #[serde(rename_all = "camelCase")]
 pub struct GetRawTransactionResultVin {
     pub txid: Option<String>,
-    pub vout: Option<u32>,
-    pub script_sig: Option<GetRawTransactionResultVinScriptSig>,
-    #[serde(deserialize_with = "deserialize_hex_opt")]
+    // pub vout: Option<u32>,
+    // pub script_sig: Option<GetRawTransactionResultVinScriptSig>,
+    #[serde(default, deserialize_with = "deserialize_hex_opt")]
     pub coinbase: Option<Vec<u8>>,
-    #[serde(with = "dashcore::amount::serde::as_btc::opt")]
-    pub value: Option<Amount>,
-    #[serde(rename = "valueSat")]
-    pub value_sat: Option<u32>,
-    pub addresses: Vec<String>,
-    pub sequence: u32,
+    // #[serde(with = "dashcore::amount::serde::as_btc::opt")]
+    // pub value: Option<Amount>,
+    // #[serde(rename = "valueSat")]
+    // pub value_sat: Option<u32>,
+    // pub addresses: Vec<String>,
+    // pub sequence: u32,
 }
 
 impl GetRawTransactionResultVin {
@@ -577,7 +577,7 @@ pub struct GetRawTransactionResultVout {
 #[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct GetRawTransactionResult {
-    #[serde(rename = "in_active_chain")]
+    #[serde(default, rename = "in_active_chain")]
     pub in_active_chain: bool,
     pub txid: dashcore::Txid,
     pub size: usize,
@@ -587,18 +587,18 @@ pub struct GetRawTransactionResult {
     pub locktime: u32,
     pub vin: Vec<GetRawTransactionResultVin>,
     pub vout: Vec<GetRawTransactionResultVout>,
-    #[serde(rename = "extraPayloadSize")]
-    pub extra_payload_size: u32,
-    #[serde(rename = "extraPayload", deserialize_with = "deserialize_hex_opt")]
+    pub extra_payload_size: Option<u32>,
+    #[serde(default, deserialize_with = "deserialize_hex_opt")]
     pub extra_payload: Option<Vec<u8>>,
     #[serde(with = "hex")]
     pub hex: Vec<u8>,
     pub blockhash: Option<dashcore::BlockHash>,
-    pub height: Option<u32>,
-    pub confirmations: u32,
+    pub height: Option<i32>,
+    pub confirmations: Option<u32>,
     pub time: Option<usize>,
     pub blocktime: Option<usize>,
     pub instantlock: bool,
+    #[serde(rename = "instantlock_internal")]
     pub instantlock_internal: bool,
     pub chainlock: bool,
 }
