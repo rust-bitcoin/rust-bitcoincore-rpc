@@ -187,11 +187,12 @@ fn main() {
     test_get_difficulty(&cl);
     test_get_connection_count(&cl);
     test_get_raw_transaction(&cl);
-    */
-    return;
     test_get_raw_mempool(&cl);
+    */
+
     // TODO: fix - failing
-    // test_get_transaction(&cl);
+    test_get_transaction(&cl);
+    return;
     // TODO: fix - failing
     // test_list_transactions(&cl);
     // TODO: fix - failing
@@ -579,7 +580,7 @@ fn test_get_transaction(cl: &Client) {
         cl.send_to_address(&RANDOM_ADDRESS, btc(1), None, None, None, None, None, None, None, None).unwrap();
     let tx = cl.get_transaction(&txid, None).unwrap();
     assert_eq!(tx.amount, sbtc(-1.0));
-    // assert_eq!(tx.txid, txid);
+    assert_eq!(tx.txid, Some(txid));
 
     let fake = Txid::hash(&[1, 2]);
     assert!(cl.get_transaction(&fake, Some(true)).is_err());

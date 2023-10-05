@@ -660,7 +660,7 @@ pub enum GetTransactionResultDetailCategory {
 #[derive(Clone, PartialEq, Eq, Debug, Deserialize)]
 pub struct GetTransactionResultDetail {
     #[serde(rename = "involvesWatchonly")]
-    pub involves_watchonly: bool,
+    pub involves_watchonly: Option<bool>,
     pub address: Option<Address<NetworkUnchecked>>,
     pub category: GetTransactionResultDetailCategory,
     #[serde(with = "dashcore::amount::serde::as_btc")]
@@ -699,12 +699,13 @@ pub struct GetTransactionResult {
     pub instantlock: bool,
     pub instantlock_internal: bool,
     pub chainlock: bool,
-    pub generated: bool,
+    pub generated: Option<bool>,
     pub blockhash: Option<BlockHash>,
     pub blockindex: Option<u32>,
     pub blocktime: Option<u32>,
     pub txid: Option<dashcore::Txid>,
-
+    #[serde(rename = "walletConflicts")]
+    pub wallet_conflicts: Option<Vec<dashcore::Txid>>,
     pub time: u32,
     pub timereceived: u32,
     pub abandoned: Option<bool>,
