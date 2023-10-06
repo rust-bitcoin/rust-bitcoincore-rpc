@@ -682,8 +682,6 @@ pub struct WalletTxInfo {
     pub txid: dashcore::Txid,
     pub time: u64,
     pub timereceived: u64,
-    #[serde(rename = "bip125-replaceable")]
-    pub bip125_replaceable: Bip125Replaceable,
     /// Conflicting transaction ids
     #[serde(rename = "walletconflicts")]
     pub wallet_conflicts: Vec<dashcore::Txid>,

@@ -188,13 +188,11 @@ fn main() {
     test_get_connection_count(&cl);
     test_get_raw_transaction(&cl);
     test_get_raw_mempool(&cl);
+    test_get_transaction(&cl);
     */
 
-    // TODO: fix - failing
-    test_get_transaction(&cl);
+    test_list_transactions(&cl);
     return;
-    // TODO: fix - failing
-    // test_list_transactions(&cl);
     // TODO: fix - failing
     // test_list_since_block(&cl);
     test_get_tx_out(&cl);
