@@ -15,7 +15,7 @@ extern crate log;
 use std::collections::HashMap;
 use std::str::FromStr;
 
-use dashcore_rpc::json;
+use dashcore_rpc::{json, RawTx};
 use dashcore_rpc::jsonrpc::error::Error as JsonRpcError;
 use dashcore_rpc::{
     dashcore::{
@@ -189,25 +189,22 @@ fn main() {
     test_get_raw_transaction(&cl);
     test_get_raw_mempool(&cl);
     test_get_transaction(&cl);
-    */
-
     test_list_transactions(&cl);
-    return;
-    // TODO: fix - failing
-    // test_list_since_block(&cl);
+    test_list_since_block(&cl);
     test_get_tx_out(&cl);
     test_get_tx_out_proof(&cl);
-    // TODO: fix - failing
-    // test_get_mempool_entry(&cl);
+    test_get_mempool_entry(&cl);
     test_lock_unspent_unlock_unspent(&cl);
-    // TODO: fix - failing
+    // TODO: fix? Fails with "Index is not enabled for filtertype basic"
     // test_get_block_filter(&cl);
-    // TODO: fix - failing
-    // test_sign_raw_transaction_with_send_raw_transaction(&cl);
+
     test_invalidate_block_reconsider_block(&cl);
     test_key_pool_refill(&cl);
-    // TODO: fix - failing
-    // test_create_raw_transaction(&cl);
+    test_sign_raw_transaction_with_send_raw_transaction(&cl);
+    */
+
+    test_create_raw_transaction(&cl);
+    return;
     // test_fund_raw_transaction(&cl);
     // test_test_mempool_accept(&cl);
     // test_wallet_create_funded_psbt(&cl);
@@ -659,7 +656,7 @@ fn test_sign_raw_transaction_with_send_raw_transaction(cl: &Client) {
         inner: secp256k1::SecretKey::new(&mut secp256k1::rand::thread_rng()),
         compressed: true,
     };
-    let addr = Address::p2wpkh(&sk.public_key(&SECP), Network::Regtest).unwrap();
+    let addr = Address::p2pkh(&sk.public_key(&SECP), Network::Regtest);
 
     let options = json::ListUnspentQueryOptions {
         minimum_amount: Some(btc(2)),
@@ -752,8 +749,8 @@ fn test_create_raw_transaction(cl: &Client) {
     output.insert(RANDOM_ADDRESS.to_string(), btc(1));
 
     let tx =
-        cl.create_raw_transaction(&[input.clone()], &output, Some(500_000), Some(true)).unwrap();
-    let hex = cl.create_raw_transaction_hex(&[input], &output, Some(500_000), Some(true)).unwrap();
+        cl.create_raw_transaction(&[input.clone()], &output, Some(500_000)).unwrap();
+    let hex = cl.create_raw_transaction_hex(&[input], &output, Some(500_000)).unwrap();
     assert_eq!(tx, deserialize(&hex::decode(&hex).unwrap()).unwrap());
     assert_eq!(hex, hex::encode(serialize(&tx)));
 }
@@ -777,7 +774,7 @@ fn test_fund_raw_transaction(cl: &Client) {
         conf_target: None,
         estimate_mode: None,
     };
-    let tx = cl.create_raw_transaction_hex(&[], &output, Some(500_000), Some(true)).unwrap();
+    let tx = cl.create_raw_transaction_hex(&[], &output, Some(500_000)).unwrap();
     let funded = cl.fund_raw_transaction(tx, Some(&options), Some(false)).unwrap();
     let _ = funded.transaction().unwrap();
 
@@ -794,7 +791,7 @@ fn test_fund_raw_transaction(cl: &Client) {
         conf_target: Some(2),
         estimate_mode: Some(json::EstimateMode::Conservative),
     };
-    let tx = cl.create_raw_transaction_hex(&[], &output, Some(500_000), Some(true)).unwrap();
+    let tx = cl.create_raw_transaction_hex(&[], &output, Some(500_000)).unwrap();
     let funded = cl.fund_raw_transaction(tx, Some(&options), Some(false)).unwrap();
     let _ = funded.transaction().unwrap();
 }
@@ -816,7 +813,7 @@ fn test_test_mempool_accept(cl: &Client) {
     output.insert(RANDOM_ADDRESS.to_string(), unspent.amount - *FEE);
 
     let tx =
-        cl.create_raw_transaction(&[input.clone()], &output, Some(500_000), Some(false)).unwrap();
+        cl.create_raw_transaction(&[input.clone()], &output, Some(500_000)).unwrap();
     let res = cl.test_mempool_accept(&[&tx]).unwrap();
     assert!(!res[0].allowed);
     // assert!(res[0].reject_reason.is_some());

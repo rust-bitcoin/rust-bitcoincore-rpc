@@ -22,7 +22,7 @@ use serde_json::{self, Value};
 
 use crate::dashcore::address::NetworkUnchecked;
 use crate::dashcore::amount::serde::SerdeAmount;
-use crate::dashcore::{block, ScriptBuf};
+use crate::dashcore::{block, consensus, ScriptBuf};
 use dashcore::hashes::hex::FromHex;
 use dashcore::secp256k1::ecdsa::Signature;
 use dashcore::{
@@ -160,7 +160,7 @@ pub trait RawTx: Sized + Clone {
 
 impl<'a> RawTx for &'a Transaction {
     fn raw_hex(self) -> String {
-        self.txid().to_hex()
+        hex::encode(consensus::encode::serialize(&self))
     }
 }
 
@@ -673,7 +673,6 @@ pub trait RpcApi: Sized {
         utxos: &[json::CreateRawTransactionInput],
         outs: &HashMap<String, Amount>,
         locktime: Option<i64>,
-        replaceable: Option<bool>,
     ) -> Result<String> {
         let outs_converted = serde_json::Map::from_iter(
             outs.iter().map(|(k, v)| (k.clone(), serde_json::Value::from(v.to_dash()))),
@@ -682,7 +681,6 @@ pub trait RpcApi: Sized {
             into_json(utxos)?,
             into_json(outs_converted)?,
             opt_into_json(locktime)?,
-            opt_into_json(replaceable)?,
         ];
         let defaults = [into_json(0i64)?, null()];
         self.call("createrawtransaction", handle_defaults(&mut args, &defaults))
@@ -693,9 +691,8 @@ pub trait RpcApi: Sized {
         utxos: &[json::CreateRawTransactionInput],
         outs: &HashMap<String, Amount>,
         locktime: Option<i64>,
-        replaceable: Option<bool>,
     ) -> Result<Transaction> {
-        let hex: String = self.create_raw_transaction_hex(utxos, outs, locktime, replaceable)?;
+        let hex: String = self.create_raw_transaction_hex(utxos, outs, locktime)?;
         let bytes: Vec<u8> = FromHex::from_hex(&hex)?;
         Ok(dashcore::consensus::encode::deserialize(&bytes)?)
     }

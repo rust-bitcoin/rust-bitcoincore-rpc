@@ -1012,7 +1012,7 @@ pub enum ImportMultiRequestScriptPubkey<'a> {
 pub struct GetMempoolEntryResult {
     /// Virtual transaction size as defined in BIP 141. This is different from actual serialized
     /// size for witness transactions as witness data is discounted.
-    #[serde(alias = "size")]
+    #[serde(alias = "vsize")]
     pub size: u64,
     /// Transaction weight as defined in BIP 141. Added in Core v0.19.0.
     pub weight: Option<u64>,
@@ -1032,8 +1032,6 @@ pub struct GetMempoolEntryResult {
     /// Virtual transaction size of in-mempool ancestors (including this one)
     #[serde(rename = "ancestorsize")]
     pub ancestor_size: u64,
-    /// Hash of serialized transaction, including witness data
-    pub wtxid: dashcore::Txid,
     /// Fee information
     pub fees: GetMempoolEntryResultFees,
     /// Unconfirmed transactions used as inputs for this transaction
@@ -1041,9 +1039,6 @@ pub struct GetMempoolEntryResult {
     /// Unconfirmed transactions spending outputs from this transaction
     #[serde(rename = "spentby")]
     pub spent_by: Vec<dashcore::Txid>,
-    /// Whether this transaction could be replaced due to BIP125 (replace-by-fee)
-    #[serde(rename = "bip125-replaceable")]
-    pub bip125_replaceable: bool,
     /// Whether this transaction is currently unbroadcast (initial broadcast not yet acknowledged by any peers)
     /// Added in dashcore Core v0.21
     pub unbroadcast: Option<bool>,
