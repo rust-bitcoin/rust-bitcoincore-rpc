@@ -202,10 +202,10 @@ fn main() {
     test_key_pool_refill(&cl);
     test_sign_raw_transaction_with_send_raw_transaction(&cl);
     test_create_raw_transaction(&cl);
+    test_fund_raw_transaction(&cl);
     */
 
-    test_fund_raw_transaction(&cl);
-    // test_test_mempool_accept(&cl);
+    test_test_mempool_accept(&cl);
     // test_wallet_create_funded_psbt(&cl);
     // test_wallet_process_psbt(&cl);
     // test_combine_psbt(&cl);

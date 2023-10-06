@@ -839,7 +839,7 @@ pub struct TestMempoolAcceptResult {
     pub txid: dashcore::Txid,
     pub allowed: bool,
     #[serde(rename = "reject-reason")]
-    pub reject_reason: String,
+    pub reject_reason: Option<String>,
 }
 
 #[derive(Copy, Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
