@@ -1886,6 +1886,7 @@ pub enum PubKeyOrAddress<'a> {
 }
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, Eq, Debug)]
+#[serde(untagged)]
 /// Start a scan of the UTXO set for an [output descriptor](https://github.com/bitcoin/bitcoin/blob/master/doc/descriptors.md).
 pub enum ScanTxOutRequest {
     /// Scan for a single descriptor

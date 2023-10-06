@@ -208,12 +208,10 @@ fn main() {
     test_wallet_process_psbt(&cl);
     test_combine_psbt(&cl);
     test_finalize_psbt(&cl);
+    test_list_received_by_address(&cl);
     */
 
-    test_list_received_by_address(&cl);
-
-    // TODO: fix - falinig
-    // test_scantxoutset(&cl);
+    test_scantxoutset(&cl);
     test_import_public_key(&cl);
     test_import_priv_key(&cl);
     test_import_address(&cl);
@@ -1213,9 +1211,9 @@ fn test_scantxoutset(cl: &Client) {
         .require_network(*NET).unwrap();
 
     cl.generate_to_address(2, &addr).unwrap();
-    let addr = &cl.get_new_address(None).unwrap()
+    let other_addr = &cl.get_new_address(None).unwrap()
         .require_network(*NET).unwrap();
-    cl.generate_to_address(7, addr).unwrap();
+    cl.generate_to_address(7, other_addr).unwrap();
 
     let utxos = cl
         .scan_tx_out_set_blocking(&[ScanTxOutRequest::Single(format!("addr({})", addr))])
