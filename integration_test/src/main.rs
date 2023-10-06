@@ -12,7 +12,7 @@
 extern crate lazy_static;
 extern crate log;
 
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::str::FromStr;
 
 use dashcore_rpc::{json, RawTx};
@@ -222,8 +222,7 @@ fn main() {
     // TODO(multiple nodes): enable when there is actually a network
     // test_get_peer_info(&cl);
     test_rescan_blockchain(&cl);
-    // TODO: fix - falinig
-    // test_create_wallet(&cl);
+    test_create_wallet(&cl);
     test_get_tx_out_set_info(&cl);
     test_get_chain_tips(&cl);
     test_get_net_totals(&cl);
@@ -1084,25 +1083,32 @@ fn test_create_wallet(cl: &Client) {
         });
     }
 
-    for wallet_param in wallet_params {
-        let result = cl
-            .create_wallet(
-                wallet_param.name,
-                wallet_param.disable_private_keys,
-                wallet_param.blank,
-                wallet_param.passphrase,
-                wallet_param.avoid_reuse,
-            )
-            .unwrap();
+    let existing_wallets = cl.list_wallets().unwrap()
+        .into_iter()
+        .map(|w| w)
+        .collect::<HashSet<String>>();
 
-        assert_eq!(result.name, wallet_param.name);
-        let expected_warning = match (wallet_param.passphrase, wallet_param.avoid_reuse) {
-            (None, Some(true)) => {
-                Some("Empty string given as passphrase, wallet will not be encrypted.".to_string())
-            }
-            _ => Some("".to_string()),
-        };
-        assert_eq!(result.warning, expected_warning);
+    for wallet_param in wallet_params {
+        if !existing_wallets.contains(wallet_param.name) {
+            let result = cl
+                .create_wallet(
+                    wallet_param.name,
+                    wallet_param.disable_private_keys,
+                    wallet_param.blank,
+                    wallet_param.passphrase,
+                    wallet_param.avoid_reuse,
+                )
+                .unwrap();
+
+            assert_eq!(result.name, wallet_param.name);
+            let expected_warning = match (wallet_param.passphrase, wallet_param.avoid_reuse) {
+                (None, Some(true)) => {
+                    Some("Empty string given as passphrase, wallet will not be encrypted.".to_string())
+                }
+                _ => Some("".to_string()),
+            };
+            assert_eq!(result.warning, expected_warning);
+        }
 
         let wallet_client_url = format!("{}{}{}", get_rpc_url(), "/wallet/", wallet_param.name);
         let wallet_client = Client::new(&wallet_client_url, get_auth()).unwrap();

@@ -119,7 +119,7 @@ pub struct LoadWalletResult {
     pub warning: Option<String>,
 }
 
-#[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
+#[derive(Clone, PartialEq, Debug, Deserialize, Serialize)]
 pub struct GetWalletInfoResult {
     #[serde(rename = "walletname")]
     pub wallet_name: String,
@@ -146,8 +146,8 @@ pub struct GetWalletInfoResult {
     pub keys_left: usize,
     pub unlocked_until: Option<u64>,
     #[serde(rename = "paytxfee")]
-    pub pay_tx_fee: u32,
-    #[serde(rename = "hdchainid", deserialize_with = "deserialize_hex_opt")]
+    pub pay_tx_fee: f32,
+    #[serde(default, rename = "hdchainid", deserialize_with = "deserialize_hex_opt")]
     pub hd_chainid: Option<Vec<u8>>,
     #[serde(rename = "hdaccountcount")]
     pub hd_account_count: Option<u32>,
@@ -162,6 +162,7 @@ pub struct GetWalletInfoResult {
 }
 
 #[derive(Clone, PartialEq, Debug, Deserialize, Serialize)]
+#[serde(untagged)]
 pub enum ScanningDetails {
     Scanning {
         duration: usize,
