@@ -813,7 +813,6 @@ pub struct ListReceivedByAddressResult {
     #[serde(default, rename = "involvesWatchonly")]
     pub involved_watch_only: bool,
     pub address: Address<NetworkUnchecked>,
-    pub account: String,
     #[serde(with = "dashcore::amount::serde::as_btc")]
     pub amount: Amount,
     pub confirmations: u32,
@@ -1634,8 +1633,6 @@ pub struct WalletCreateFundedPsbtOptions {
     pub change_address: Option<Address<NetworkUnchecked>>,
     #[serde(rename = "changePosition", skip_serializing_if = "Option::is_none")]
     pub change_position: Option<u16>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub change_type: Option<AddressType>,
     #[serde(rename = "includeWatching", skip_serializing_if = "Option::is_none")]
     pub include_watching: Option<bool>,
     #[serde(rename = "lockUnspents", skip_serializing_if = "Option::is_none")]
@@ -1649,8 +1646,6 @@ pub struct WalletCreateFundedPsbtOptions {
     #[serde(rename = "subtractFeeFromOutputs", skip_serializing_if = "Vec::is_empty")]
     pub subtract_fee_from_outputs: Vec<u16>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub replaceable: Option<bool>,
-    #[serde(skip_serializing_if = "Option::is_none")]
     pub conf_target: Option<u16>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub estimate_mode: Option<EstimateMode>,
@@ -1660,7 +1655,7 @@ pub struct WalletCreateFundedPsbtOptions {
 #[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
 pub struct FinalizePsbtResult {
     pub psbt: String,
-    pub hex: String,
+    pub hex: Option<String>,
     pub complete: bool,
 }
 

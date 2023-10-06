@@ -655,16 +655,18 @@ pub trait RpcApi: Sized {
         &self,
         address_filter: Option<&Address>,
         minconf: Option<u32>,
+        add_locked: Option<bool>,
         include_empty: Option<bool>,
         include_watchonly: Option<bool>,
     ) -> Result<Vec<json::ListReceivedByAddressResult>> {
         let mut args = [
             opt_into_json(minconf)?,
+            opt_into_json(add_locked)?,
             opt_into_json(include_empty)?,
             opt_into_json(include_watchonly)?,
             opt_into_json(address_filter)?,
         ];
-        let defaults = [1.into(), false.into(), false.into(), null()];
+        let defaults = [1.into(), true.into(), false.into(), false.into(), null()];
         self.call("listreceivedbyaddress", handle_defaults(&mut args, &defaults))
     }
 

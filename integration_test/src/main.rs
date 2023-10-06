@@ -203,14 +203,14 @@ fn main() {
     test_sign_raw_transaction_with_send_raw_transaction(&cl);
     test_create_raw_transaction(&cl);
     test_fund_raw_transaction(&cl);
+    test_test_mempool_accept(&cl);
+    test_wallet_create_funded_psbt(&cl);
+    test_wallet_process_psbt(&cl);
+    test_combine_psbt(&cl);
+    test_finalize_psbt(&cl);
     */
 
-    test_test_mempool_accept(&cl);
-    // test_wallet_create_funded_psbt(&cl);
-    // test_wallet_process_psbt(&cl);
-    // test_combine_psbt(&cl);
-    // test_finalize_psbt(&cl);
-    // test_list_received_by_address(&cl);
+    test_list_received_by_address(&cl);
 
     // TODO: fix - falinig
     // test_scantxoutset(&cl);
@@ -833,12 +833,10 @@ fn test_wallet_create_funded_psbt(cl: &Client) {
         add_inputs: None,
         change_address: None,
         change_position: Some(1),
-        change_type: Some(json::AddressType::Legacy),
         include_watching: Some(true),
         lock_unspent: Some(true),
         fee_rate: Some(*FEE),
         subtract_fee_from_outputs: vec![0],
-        replaceable: Some(true),
         conf_target: None,
         estimate_mode: None,
     };
@@ -856,12 +854,10 @@ fn test_wallet_create_funded_psbt(cl: &Client) {
         add_inputs: None,
         change_address: Some(addr),
         change_position: Some(1),
-        change_type: None,
         include_watching: Some(true),
         lock_unspent: Some(true),
         fee_rate: None,
         subtract_fee_from_outputs: vec![0],
-        replaceable: Some(true),
         conf_target: Some(3),
         estimate_mode: Some(json::EstimateMode::Conservative),
     };
@@ -944,12 +940,13 @@ fn test_list_received_by_address(cl: &Client) {
         .require_network(*NET).unwrap();
     let txid = cl.send_to_address(&addr, btc(1), None, None, None, None, None, None, None, None).unwrap();
 
-    let _ = cl.list_received_by_address(Some(&addr), None, None, None).unwrap();
-    let _ = cl.list_received_by_address(Some(&addr), None, Some(true), None).unwrap();
-    let _ = cl.list_received_by_address(Some(&addr), None, None, Some(true)).unwrap();
-    let _ = cl.list_received_by_address(None, Some(200), None, None).unwrap();
+    let _ = cl.list_received_by_address(Some(&addr), None, None, None, None).unwrap();
+    let _ = cl.list_received_by_address(Some(&addr), None, Some(true), None, None).unwrap();
+    let _ = cl.list_received_by_address(Some(&addr), None, None, Some(true), None).unwrap();
+    let _ = cl.list_received_by_address(Some(&addr), None, None, None, Some(true)).unwrap();
+    let _ = cl.list_received_by_address(None, Some(200), None, None, None).unwrap();
 
-    let res = cl.list_received_by_address(Some(&addr), Some(0), None, None).unwrap();
+    let res = cl.list_received_by_address(Some(&addr), Some(0), None, None, None).unwrap();
     assert_eq!(res[0].txids, vec![txid]);
 }
 
