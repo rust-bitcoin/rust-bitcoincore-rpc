@@ -1750,14 +1750,10 @@ pub struct CreateRawTransactionInput {
 pub struct FundRawTransactionOptions {
     /// For a transaction with existing inputs, automatically include more if they are not enough (default true).
     /// Added in Bitcoin Core v0.21
-    #[serde(rename = "add_inputs", skip_serializing_if = "Option::is_none")]
-    pub add_inputs: Option<bool>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub change_address: Option<Address>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub change_position: Option<u32>,
-    #[serde(rename = "change_type", skip_serializing_if = "Option::is_none")]
-    pub change_type: Option<AddressType>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub include_watching: Option<bool>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -1769,17 +1765,12 @@ pub struct FundRawTransactionOptions {
     pub fee_rate: Option<Amount>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub subtract_fee_from_outputs: Option<Vec<u32>>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub replaceable: Option<bool>,
-    #[serde(rename = "conf_target", skip_serializing_if = "Option::is_none")]
-    pub conf_target: Option<u32>,
-    #[serde(rename = "estimate_mode", skip_serializing_if = "Option::is_none")]
-    pub estimate_mode: Option<EstimateMode>,
 }
 
 #[derive(Deserialize, Clone, PartialEq, Eq, Debug)]
 #[serde(rename_all = "camelCase")]
 pub struct FundRawTransactionResult {
+    #[serde(with = "hex")]
     pub hex: Vec<u8>,
     #[serde(with = "dashcore::amount::serde::as_btc")]
     pub fee: Amount,

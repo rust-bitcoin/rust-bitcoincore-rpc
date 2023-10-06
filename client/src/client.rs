@@ -701,9 +701,8 @@ pub trait RpcApi: Sized {
         &self,
         tx: R,
         options: Option<&json::FundRawTransactionOptions>,
-        is_witness: Option<bool>,
     ) -> Result<json::FundRawTransactionResult> {
-        let mut args = [tx.raw_hex().into(), opt_into_json(options)?, opt_into_json(is_witness)?];
+        let mut args = [tx.raw_hex().into(), opt_into_json(options)?];
         let defaults = [empty_obj(), null()];
         self.call("fundrawtransaction", handle_defaults(&mut args, &defaults))
     }

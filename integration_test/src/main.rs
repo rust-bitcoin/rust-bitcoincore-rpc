@@ -201,11 +201,10 @@ fn main() {
     test_invalidate_block_reconsider_block(&cl);
     test_key_pool_refill(&cl);
     test_sign_raw_transaction_with_send_raw_transaction(&cl);
+    test_create_raw_transaction(&cl);
     */
 
-    test_create_raw_transaction(&cl);
-    return;
-    // test_fund_raw_transaction(&cl);
+    test_fund_raw_transaction(&cl);
     // test_test_mempool_accept(&cl);
     // test_wallet_create_funded_psbt(&cl);
     // test_wallet_process_psbt(&cl);
@@ -762,37 +761,27 @@ fn test_fund_raw_transaction(cl: &Client) {
     output.insert(RANDOM_ADDRESS.to_string(), btc(1));
 
     let options = json::FundRawTransactionOptions {
-        add_inputs: None,
         change_address: Some(addr),
         change_position: Some(0),
-        change_type: None,
         include_watching: Some(true),
         lock_unspents: Some(true),
         fee_rate: Some(*FEE),
         subtract_fee_from_outputs: Some(vec![0]),
-        replaceable: Some(true),
-        conf_target: None,
-        estimate_mode: None,
     };
     let tx = cl.create_raw_transaction_hex(&[], &output, Some(500_000)).unwrap();
-    let funded = cl.fund_raw_transaction(tx, Some(&options), Some(false)).unwrap();
+    let funded = cl.fund_raw_transaction(tx, Some(&options)).unwrap();
     let _ = funded.transaction().unwrap();
 
     let options = json::FundRawTransactionOptions {
-        add_inputs: None,
         change_address: None,
         change_position: Some(0),
-        change_type: Some(json::AddressType::Legacy),
         include_watching: Some(true),
         lock_unspents: Some(true),
         fee_rate: None,
         subtract_fee_from_outputs: Some(vec![0]),
-        replaceable: Some(true),
-        conf_target: Some(2),
-        estimate_mode: Some(json::EstimateMode::Conservative),
     };
     let tx = cl.create_raw_transaction_hex(&[], &output, Some(500_000)).unwrap();
-    let funded = cl.fund_raw_transaction(tx, Some(&options), Some(false)).unwrap();
+    let funded = cl.fund_raw_transaction(tx, Some(&options)).unwrap();
     let _ = funded.transaction().unwrap();
 }
 
