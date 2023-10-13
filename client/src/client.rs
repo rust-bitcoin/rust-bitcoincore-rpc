@@ -22,7 +22,7 @@ use serde_json::{self, Value};
 
 use crate::dashcore::address::NetworkUnchecked;
 use crate::dashcore::amount::serde::SerdeAmount;
-use crate::dashcore::{block, ScriptBuf};
+use crate::dashcore::{block, consensus, ScriptBuf};
 use dashcore::hashes::hex::FromHex;
 use dashcore::secp256k1::ecdsa::Signature;
 use dashcore::{
@@ -160,7 +160,7 @@ pub trait RawTx: Sized + Clone {
 
 impl<'a> RawTx for &'a Transaction {
     fn raw_hex(self) -> String {
-        self.txid().to_hex()
+        hex::encode(consensus::encode::serialize(&self))
     }
 }
 
@@ -262,7 +262,7 @@ pub trait RpcApi: Sized {
         self.call("loadwallet", &[wallet.into()])
     }
 
-    fn unload_wallet(&self, wallet: Option<&str>) -> Result<()> {
+    fn unload_wallet(&self, wallet: Option<&str>) -> Result<json::UnloadWalletResult> {
         let mut args = [opt_into_json(wallet)?];
         self.call("unloadwallet", handle_defaults(&mut args, &[null()]))
     }
@@ -655,16 +655,18 @@ pub trait RpcApi: Sized {
         &self,
         address_filter: Option<&Address>,
         minconf: Option<u32>,
+        add_locked: Option<bool>,
         include_empty: Option<bool>,
         include_watchonly: Option<bool>,
     ) -> Result<Vec<json::ListReceivedByAddressResult>> {
         let mut args = [
             opt_into_json(minconf)?,
+            opt_into_json(add_locked)?,
             opt_into_json(include_empty)?,
             opt_into_json(include_watchonly)?,
             opt_into_json(address_filter)?,
         ];
-        let defaults = [1.into(), false.into(), false.into(), null()];
+        let defaults = [1.into(), true.into(), false.into(), false.into(), null()];
         self.call("listreceivedbyaddress", handle_defaults(&mut args, &defaults))
     }
 
@@ -673,7 +675,6 @@ pub trait RpcApi: Sized {
         utxos: &[json::CreateRawTransactionInput],
         outs: &HashMap<String, Amount>,
         locktime: Option<i64>,
-        replaceable: Option<bool>,
     ) -> Result<String> {
         let outs_converted = serde_json::Map::from_iter(
             outs.iter().map(|(k, v)| (k.clone(), serde_json::Value::from(v.to_dash()))),
@@ -682,7 +683,6 @@ pub trait RpcApi: Sized {
             into_json(utxos)?,
             into_json(outs_converted)?,
             opt_into_json(locktime)?,
-            opt_into_json(replaceable)?,
         ];
         let defaults = [into_json(0i64)?, null()];
         self.call("createrawtransaction", handle_defaults(&mut args, &defaults))
@@ -693,9 +693,8 @@ pub trait RpcApi: Sized {
         utxos: &[json::CreateRawTransactionInput],
         outs: &HashMap<String, Amount>,
         locktime: Option<i64>,
-        replaceable: Option<bool>,
     ) -> Result<Transaction> {
-        let hex: String = self.create_raw_transaction_hex(utxos, outs, locktime, replaceable)?;
+        let hex: String = self.create_raw_transaction_hex(utxos, outs, locktime)?;
         let bytes: Vec<u8> = FromHex::from_hex(&hex)?;
         Ok(dashcore::consensus::encode::deserialize(&bytes)?)
     }
@@ -704,9 +703,8 @@ pub trait RpcApi: Sized {
         &self,
         tx: R,
         options: Option<&json::FundRawTransactionOptions>,
-        is_witness: Option<bool>,
     ) -> Result<json::FundRawTransactionResult> {
-        let mut args = [tx.raw_hex().into(), opt_into_json(options)?, opt_into_json(is_witness)?];
+        let mut args = [tx.raw_hex().into(), opt_into_json(options)?];
         let defaults = [empty_obj(), null()];
         self.call("fundrawtransaction", handle_defaults(&mut args, &defaults))
     }
@@ -816,9 +814,11 @@ pub trait RpcApi: Sized {
         comment: Option<&str>,
         comment_to: Option<&str>,
         subtract_fee: Option<bool>,
-        replaceable: Option<bool>,
+        use_instant_send: Option<bool>,
+        use_coinjoin: Option<bool>,
         confirmation_target: Option<u32>,
         estimate_mode: Option<json::EstimateMode>,
+        avoid_reuse: Option<bool>,
     ) -> Result<dashcore::Txid> {
         let mut args = [
             address.to_string().into(),
@@ -826,15 +826,27 @@ pub trait RpcApi: Sized {
             opt_into_json(comment)?,
             opt_into_json(comment_to)?,
             opt_into_json(subtract_fee)?,
-            opt_into_json(replaceable)?,
+            opt_into_json(use_instant_send)?,
+            opt_into_json(use_coinjoin)?,
             opt_into_json(confirmation_target)?,
             opt_into_json(estimate_mode)?,
+            opt_into_json(avoid_reuse)?,
         ];
+
         self.call(
             "sendtoaddress",
             handle_defaults(
                 &mut args,
-                &["".into(), "".into(), false.into(), false.into(), 6.into(), null()],
+                &[
+                    "".into(),
+                    "".into(),
+                    false.into(),
+                    true.into(),
+                    false.into(),
+                    6.into(),
+                    "UNSET".into(),
+                    true.into(),
+                ],
             ),
         )
     }

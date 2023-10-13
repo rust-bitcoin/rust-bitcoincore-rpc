@@ -8,3 +8,5 @@ edition = "2021"
 dashcore-rpc = { path = "../client" }
 lazy_static = "1.4.0"
 log = "0.4"
+hex = "0.4.3"
+dotenvy = "0.15.7"
