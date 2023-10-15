@@ -15,7 +15,7 @@ use std::path::PathBuf;
 use std::{fmt, result};
 
 use crate::{bitcoin, deserialize_hex};
-use bitcoin_private::hex::exts::DisplayHex;
+use bitcoin::hex::DisplayHex;
 use jsonrpc;
 use serde;
 use serde_json;

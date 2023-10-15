@@ -22,5 +22,4 @@ path = "src/lib.rs"
 serde = { version = "1", features = [ "derive" ] }
 serde_json = "1"
 
-bitcoin = { version = "0.30.0", features = ["serde", "rand-std"]}
-bitcoin-private = "0.1.0"
+bitcoin = { version = "0.31.0-rc1", features = ["serde", "rand-std"]}
