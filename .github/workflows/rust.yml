@@ -27,6 +27,7 @@ jobs:
                   profile: minimal
                   toolchain: ${{ matrix.rust }}
                   override: true
+            - run: cargo update -p serde_json --precise 1.0.100
             - run: cargo update -p serde --precise 1.0.189
             - name: Running test script
               env: ${{ matrix.env }}
