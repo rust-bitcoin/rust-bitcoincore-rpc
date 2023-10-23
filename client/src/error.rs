@@ -31,6 +31,8 @@ pub enum Error {
     UnexpectedStructure,
     /// The daemon returned an error string.
     ReturnedError(String),
+    /// The {0} RPC does not support the {1} argument on the connected bitcoin version.
+    UnsupportedArgument(&'static str, &'static str),
 }
 
 impl From<jsonrpc::error::Error> for Error {
@@ -88,6 +90,9 @@ impl fmt::Display for Error {
             Error::InvalidCookieFile => write!(f, "invalid cookie file"),
             Error::UnexpectedStructure => write!(f, "the JSON result had an unexpected structure"),
             Error::ReturnedError(ref s) => write!(f, "the daemon returned an error string: {}", s),
+            Error::UnsupportedArgument(rpc, arg) => {
+                write!(f, "the daemon version does not support the {} argument for {}", arg, rpc)
+            }
         }
     }
 }
