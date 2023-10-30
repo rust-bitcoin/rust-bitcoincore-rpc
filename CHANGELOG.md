@@ -1,6 +1,9 @@
-# Unreleased
+# 0.18.0
 
 - MSRV changed from 1.41.1 to 1.48.0
+- Use `bitcoin::Network` in `GetBlockchainInfoResult `.
+- Make checksum optional in `GetDescriptorInfoResult`.
+- Make `getmempoolinfo` compatible with supported RPC versions.
 
 # 0.17.0
 
