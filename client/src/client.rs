@@ -466,15 +466,6 @@ pub trait RpcApi: Sized {
         )?)
     }
 
-    fn get_transaction(
-        &self,
-        txid: &dashcore::Txid,
-        include_watchonly: Option<bool>,
-    ) -> Result<json::GetTransactionResult> {
-        let mut args = [into_json(txid)?, opt_into_json(include_watchonly)?];
-        self.call("gettransaction", handle_defaults(&mut args, &[null()]))
-    }
-
     fn get_transaction_are_locked(
         &self,
         tx_ids: &Vec<dashcore::Txid>,
