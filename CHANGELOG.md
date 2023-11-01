@@ -1,3 +1,7 @@
+# Unreleased
+
+- MSRV changed from 1.41.1 to 1.48.0
+
 # 0.17.0
 
 - add `list_wallet_dir` rpc

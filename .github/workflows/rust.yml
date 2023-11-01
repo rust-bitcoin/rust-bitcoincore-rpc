@@ -15,7 +15,7 @@ jobs:
                     - rust: nightly
                       env:
                           RUSTFMTCHK: false
-                    - rust: 1.41.1
+                    - rust: 1.48.0
                       env:
                           RUSTFMTCHK: false
         steps:
@@ -27,7 +27,6 @@ jobs:
                   profile: minimal
                   toolchain: ${{ matrix.rust }}
                   override: true
-            - run: cargo update -p serde --precise 1.0.152
             - name: Running test script
               env: ${{ matrix.env }}
               run: ./contrib/test.sh
