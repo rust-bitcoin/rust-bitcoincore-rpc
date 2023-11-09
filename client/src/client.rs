@@ -10,9 +10,9 @@
 
 use std::collections::HashMap;
 use std::fs::File;
-use std::io::Read;
 use std::iter::FromIterator;
 use std::path::PathBuf;
+use std::str::FromStr;
 use std::{fmt, result};
 
 use crate::dashcore;
@@ -21,7 +21,6 @@ use serde;
 use serde_json::{self, Value};
 
 use crate::dashcore::address::NetworkUnchecked;
-use crate::dashcore::amount::serde::SerdeAmount;
 use crate::dashcore::{block, consensus, ScriptBuf};
 use dashcore::hashes::hex::FromHex;
 use dashcore::secp256k1::ecdsa::Signature;
@@ -411,6 +410,13 @@ pub trait RpcApi: Sized {
         self.call("getblockstats", &[height.into(), fields.into()])
     }
 
+    fn get_raw_change_address(&self) -> Result<Address<NetworkUnchecked>> {
+        let data: String = self.call("getrawchangeaddress", &[])?;
+        let address = Address::from_str(&data).map_err(|_e| Error::UnexpectedStructure)?;
+
+        Ok(address)
+    }
+
     fn get_raw_transaction(
         &self,
         txid: &dashcore::Txid,
@@ -670,11 +676,7 @@ pub trait RpcApi: Sized {
         let outs_converted = serde_json::Map::from_iter(
             outs.iter().map(|(k, v)| (k.clone(), serde_json::Value::from(v.to_dash()))),
         );
-        let mut args = [
-            into_json(utxos)?,
-            into_json(outs_converted)?,
-            opt_into_json(locktime)?,
-        ];
+        let mut args = [into_json(utxos)?, into_json(outs_converted)?, opt_into_json(locktime)?];
         let defaults = [into_json(0i64)?, null()];
         self.call("createrawtransaction", handle_defaults(&mut args, &defaults))
     }

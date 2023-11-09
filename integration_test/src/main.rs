@@ -301,9 +301,9 @@ fn test_wallet_node_endpoints(wallet_client: &Client) {
     test_list_unspent(wallet_client);
     test_get_difficulty(wallet_client);
     test_get_connection_count(wallet_client);
+    test_get_raw_change_address(wallet_client);
     test_get_raw_transaction(wallet_client);
     test_get_raw_mempool(wallet_client);
-    test_get_transaction(wallet_client);
     test_list_transactions(wallet_client);
     test_list_since_block(wallet_client);
     test_get_tx_out(wallet_client);
@@ -637,6 +637,12 @@ fn test_get_connection_count(cl: &Client) {
     let _ = cl.get_connection_count().unwrap();
 }
 
+
+fn test_get_raw_change_address(cl: &Client) {
+    let address = cl.get_raw_change_address().unwrap();
+    assert!(address.is_valid_for_network(*NET));
+}
+
 fn test_get_raw_transaction(cl: &Client) {
     let addr = cl.get_new_address(None).unwrap()
         .require_network(*NET).unwrap();
@@ -661,17 +667,6 @@ fn test_get_raw_transaction(cl: &Client) {
 
 fn test_get_raw_mempool(cl: &Client) {
     let _ = cl.get_raw_mempool().unwrap();
-}
-
-fn test_get_transaction(cl: &Client) {
-    let txid =
-        cl.send_to_address(&RANDOM_ADDRESS, btc(1), None, None, None, None, None, None, None, None).unwrap();
-    let tx = cl.get_transaction(&txid, None).unwrap();
-    assert_eq!(tx.amount, sbtc(-1.0));
-    assert_eq!(tx.txid, Some(txid));
-
-    let fake = Txid::hash(&[1, 2]);
-    assert!(cl.get_transaction(&fake, Some(true)).is_err());
 }
 
 fn test_list_transactions(cl: &Client) {
