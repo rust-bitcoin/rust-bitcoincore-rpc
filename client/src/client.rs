@@ -1255,12 +1255,20 @@ pub trait RpcApi: Sized {
         }
     }
 
+    fn scan_blocks_blocking(
+        &self,
+        descriptors: &[json::ScanBlocksRequest],
+    ) -> Result<json::ScanBlocksResult> {
+        self.call("scanblocks", &["start".into(), into_json(descriptors)?])
+    }
+
     fn scan_tx_out_set_blocking(
         &self,
         descriptors: &[json::ScanTxOutRequest],
     ) -> Result<json::ScanTxOutResult> {
         self.call("scantxoutset", &["start".into(), into_json(descriptors)?])
     }
+
 }
 
 /// Client implements a JSON-RPC client for the Bitcoin Core daemon or compatible APIs.

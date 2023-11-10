@@ -30,7 +30,7 @@ use bitcoin::block::Version;
 use bitcoin::consensus::encode;
 use bitcoin::hashes::hex::FromHex;
 use bitcoin::hashes::sha256;
-use bitcoin::{Address, Amount, PrivateKey, PublicKey, SignedAmount, Transaction, ScriptBuf, Script, bip158, bip32, Network};
+use bitcoin::{Address, Amount, PrivateKey, PublicKey, SignedAmount, Transaction, ScriptBuf, Script, bip158, bip32, Network, BlockHash};
 use serde::de::Error as SerdeError;
 use serde::{Deserialize, Serialize};
 use std::fmt;
@@ -2085,6 +2085,28 @@ pub enum AddressType {
 pub enum PubKeyOrAddress<'a> {
     Address(&'a Address),
     PubKey(&'a PublicKey),
+}
+
+#[derive(Serialize, Deserialize, Clone, PartialEq, Eq, Debug)]
+#[serde(untagged)]
+/// Start a scan of the UTXO set for an [output descriptor](https://github.com/bitcoin/bitcoin/blob/master/doc/descriptors.md).
+pub enum ScanBlocksRequest {
+    /// Scan for a single descriptor
+    Single(String),
+    /// Scan for a descriptor with xpubs
+    Extended {
+        /// Descriptor
+        desc: String,
+        /// Range of the xpub derivations to scan
+        range: Option<(u64, u64)>,
+    },
+}
+
+#[derive(Serialize, Deserialize, Clone, PartialEq, Eq, Debug)]
+pub struct ScanBlocksResult {
+    pub from_height: u64,
+    pub to_height: u64,
+    pub relevant_blocks: Vec<BlockHash>,
 }
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, Eq, Debug)]
