@@ -13,6 +13,7 @@ use std::fs::File;
 use std::io::{BufRead, BufReader};
 use std::iter::FromIterator;
 use std::path::PathBuf;
+use std::time::Duration;
 use std::{fmt, result};
 
 use crate::{bitcoin, deserialize_hex};
@@ -1288,7 +1289,16 @@ impl Client {
     /// Can only return [Err] when using cookie authentication.
     pub fn new(url: &str, auth: Auth) -> Result<Self> {
         let (user, pass) = auth.get_user_pass()?;
-        jsonrpc::client::Client::simple_http(url, user, pass)
+        jsonrpc::client::Client::simple_http(url, user, pass, None)
+            .map(|client| Client {
+                client,
+            })
+            .map_err(|e| super::error::Error::JsonRpc(e.into()))
+    }
+
+    pub fn new_with_timeout(url: &str, auth: Auth, timeout: Duration) -> Result<Self> {
+        let (user, pass) = auth.get_user_pass()?;
+        jsonrpc::client::Client::simple_http(url, user, pass, Some(timeout))
             .map(|client| Client {
                 client,
             })
