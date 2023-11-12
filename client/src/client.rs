@@ -1289,7 +1289,7 @@ impl Client {
     /// Can only return [Err] when using cookie authentication.
     pub fn new(url: &str, auth: Auth) -> Result<Self> {
         let (user, pass) = auth.get_user_pass()?;
-        jsonrpc::client::Client::simple_http(url, user, pass, None)
+        jsonrpc::client::Client::simple_http(url, user, pass)
             .map(|client| Client {
                 client,
             })
@@ -1298,7 +1298,7 @@ impl Client {
 
     pub fn new_with_timeout(url: &str, auth: Auth, timeout: Duration) -> Result<Self> {
         let (user, pass) = auth.get_user_pass()?;
-        jsonrpc::client::Client::simple_http(url, user, pass, Some(timeout))
+        jsonrpc::client::Client::simple_http_with_timeout(url, user, pass, Some(timeout))
             .map(|client| Client {
                 client,
             })
