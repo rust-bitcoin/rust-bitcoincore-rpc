@@ -1258,9 +1258,19 @@ pub trait RpcApi: Sized {
 
     fn scan_blocks_blocking(
         &self,
-        descriptors: &[json::ScanBlocksRequest],
+        request: json::ScanBlocksRequest,
     ) -> Result<json::ScanBlocksResult> {
-        self.call("scanblocks", &["start".into(), into_json(descriptors)?])
+        self.call(
+            "scanblocks",
+            &[
+                "start".into(),
+                into_json(request.scanobjects)?,
+                into_json(request.start_height)?,
+                into_json(request.stop_height)?,
+                into_json(request.filtertype)?,
+                into_json(request.options)?,
+            ],
+        )
     }
 
     fn scan_tx_out_set_blocking(

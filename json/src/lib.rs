@@ -2087,10 +2087,32 @@ pub enum PubKeyOrAddress<'a> {
     PubKey(&'a PublicKey),
 }
 
+#[derive(Serialize, Clone, PartialEq, Eq, Debug)]
+/// Start a scan of the block filter index for an [output descriptor](https://github.com/bitcoin/bitcoin/blob/master/doc/descriptors.md).
+pub struct ScanBlocksRequest<'a> {
+    /// List of descriptors to scan
+    pub scanobjects: &'a [ScanBlocksRequestDescriptor],
+    /// Height at which to start scanning
+    pub start_height: Option<u64>,
+    /// Height at which to stop scanning
+    pub stop_height: Option<u64>,
+    /// Filter type. Only "basic" is supported for now.
+    pub filtertype: Option<String>,
+    /// Additional scan options. Only "filter_false_positives" is supported for now.
+    pub options: Option<ScanBlocksOptions>,
+}
+
+#[derive(Serialize, Clone, PartialEq, Eq, Debug)]
+/// Options struct for `scanblocks` rpc
+pub struct ScanBlocksOptions {
+    /// Scan for a single descriptor
+    pub filter_false_positives: Option<bool>,
+}
+
 #[derive(Serialize, Deserialize, Clone, PartialEq, Eq, Debug)]
 #[serde(untagged)]
-/// Start a scan of the UTXO set for an [output descriptor](https://github.com/bitcoin/bitcoin/blob/master/doc/descriptors.md).
-pub enum ScanBlocksRequest {
+/// Descriptors to scan in `scanblocks` rpc
+pub enum ScanBlocksRequestDescriptor {
     /// Scan for a single descriptor
     Single(String),
     /// Scan for a descriptor with xpubs
