@@ -13,6 +13,7 @@ use std::fs::File;
 use std::io::{BufRead, BufReader};
 use std::iter::FromIterator;
 use std::path::PathBuf;
+use std::time::Duration;
 use std::{fmt, result};
 
 use crate::{bitcoin, deserialize_hex};
@@ -1255,12 +1256,30 @@ pub trait RpcApi: Sized {
         }
     }
 
+    fn scan_blocks_blocking(
+        &self,
+        request: json::ScanBlocksRequest,
+    ) -> Result<json::ScanBlocksResult> {
+        self.call(
+            "scanblocks",
+            &[
+                "start".into(),
+                into_json(request.scanobjects)?,
+                into_json(request.start_height)?,
+                into_json(request.stop_height)?,
+                into_json(request.filtertype)?,
+                into_json(request.options)?,
+            ],
+        )
+    }
+
     fn scan_tx_out_set_blocking(
         &self,
         descriptors: &[json::ScanTxOutRequest],
     ) -> Result<json::ScanTxOutResult> {
         self.call("scantxoutset", &["start".into(), into_json(descriptors)?])
     }
+
 }
 
 /// Client implements a JSON-RPC client for the Bitcoin Core daemon or compatible APIs.
@@ -1281,6 +1300,15 @@ impl Client {
     pub fn new(url: &str, auth: Auth) -> Result<Self> {
         let (user, pass) = auth.get_user_pass()?;
         jsonrpc::client::Client::simple_http(url, user, pass)
+            .map(|client| Client {
+                client,
+            })
+            .map_err(|e| super::error::Error::JsonRpc(e.into()))
+    }
+
+    pub fn new_with_timeout(url: &str, auth: Auth, timeout: Duration) -> Result<Self> {
+        let (user, pass) = auth.get_user_pass()?;
+        jsonrpc::client::Client::simple_http_with_timeout(url, user, pass, Some(timeout))
             .map(|client| Client {
                 client,
             })
