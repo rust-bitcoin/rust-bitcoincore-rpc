@@ -2140,6 +2140,14 @@ pub struct GetIndexInfoResult {
     pub basic_block_filter_index: Option<IndexStatus>,
 }
 
+#[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
+pub struct GetZmqNotificationsResult {
+    #[serde(rename = "type")]
+    pub notification_type: String,
+    pub address: String,
+    pub hwm: u64,
+}
+
 impl<'a> serde::Serialize for PubKeyOrAddress<'a> {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
