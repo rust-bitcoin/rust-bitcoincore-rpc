@@ -13,8 +13,8 @@ the Bitcoin Core JSON-RPC APIs as rust functions.
 the json responses from the Bitcoin Core JSON-RPC APIs. bitcoincore-rpc depends on this.
 
 # Usage
-Given below is an example of how to connect to the Bitcoin Core JSON-RPC for a Bitcoin Core node running on `localhost`
-and print out the hash of the latest block.
+Given below is an example of how to connect to the Bitcoin Core JSON-RPC for a Bitcoin Core node running on `localhost` 
+and print out the hash of the latest block. 
 
 It assumes that the node has password authentication setup, the RPC interface is enabled at port `8332` and the node
 is set up to accept RPC connections. 
@@ -26,7 +26,7 @@ use bitcoincore_rpc::{Auth, Client, RpcApi};
 
 fn main() {
 
-    let rpc = Client::new("http://localhost:8332",
+    let rpc = Client::new("http://127.0.0.1:8332",
                           Auth::UserPass("<FILL RPC USERNAME>".to_string(),
                                          "<FILL RPC PASSWORD>".to_string())).unwrap();
     let best_block_hash = rpc.get_best_block_hash().unwrap();
