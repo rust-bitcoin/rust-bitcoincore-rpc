@@ -1079,6 +1079,17 @@ pub trait RpcApi: Sized {
         self.call("sendrawtransaction", &[tx.raw_hex().into()])
     }
 
+    /// Submit a package of raw transactions to the node. The package will be
+    /// validated according to consensus and mempool policy rules. If all
+    /// transactions pass, they will be accepted to mempool.
+    /// 
+    /// This RPC is experimental and the interface may be unstable.
+    fn submit_package<R: RawTx>(&self, rawtxs: &[R]) -> Result<json::SubmitPackageResult> {
+        let hexes: Vec<serde_json::Value> =
+            rawtxs.to_vec().into_iter().map(|r| r.raw_hex().into()).collect();
+        self.call("submitpackage", &[hexes.into()])
+    }
+
     fn estimate_smart_fee(
         &self,
         conf_target: u16,
