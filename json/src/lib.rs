@@ -1877,6 +1877,9 @@ pub struct FundRawTransactionOptions {
     pub include_watching: Option<bool>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub lock_unspents: Option<bool>,
+    /// The fee rate to pay per kvB. NB. This field is converted to camelCase
+    /// when serialized, so it is receeived by fundrawtransaction as `feeRate`,
+    /// which fee rate per kvB, and *not* `fee_rate`, which is per vB.
     #[serde(
         with = "bitcoin::amount::serde::as_btc::opt",
         skip_serializing_if = "Option::is_none"
