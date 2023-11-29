@@ -481,7 +481,7 @@ pub trait RpcApi: Sized {
             .map(|tx_id| Ok(into_json(tx_id)?))
             .collect::<Result<Vec<Value>>>()?;
         let args = [transaction_ids_json.into()];
-        self.call("gettxchainlock", &args)
+        self.call("gettxchainlocks", &args)
     }
 
     fn list_transactions(
