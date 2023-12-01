@@ -701,8 +701,7 @@ pub struct WalletTxInfo {
 
 #[derive(Clone, PartialEq, Eq, Debug, Deserialize)]
 pub struct GetTransactionLockedResult {
-    #[serde(default, deserialize_with = "deserialize_u32_opt")]
-    pub height: Option<u32>,
+    pub height: i32,
     #[serde(rename = "chainlock")]
     pub chain_lock: bool,
 }
