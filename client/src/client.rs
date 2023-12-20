@@ -484,6 +484,18 @@ pub trait RpcApi: Sized {
         self.call("gettxchainlocks", &args)
     }
 
+    fn get_asset_unlock_statuses(
+        &self,
+        indices: &Vec<u64>,
+    ) -> Result<Vec<json::AssetUnlockStatusResult>> {
+        let indices_json = indices
+            .into_iter()
+            .map(|tx_id| Ok(into_json(tx_id)?))
+            .collect::<Result<Vec<Value>>>()?;
+        let args = [indices_json.into()];
+        self.call("getassetunlockstatuses", &args)
+    }
+
     fn list_transactions(
         &self,
         label: Option<&str>,

@@ -707,6 +707,20 @@ pub struct GetTransactionLockedResult {
 }
 
 #[derive(Clone, PartialEq, Eq, Debug, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum AssetUnlockStatus {
+    Chainlocked,
+    Mined,
+    Mempooled,
+}
+
+#[derive(Clone, PartialEq, Eq, Debug, Deserialize)]
+pub struct AssetUnlockStatusResult {
+    pub index: u64,
+    pub status: Option<AssetUnlockStatus>,
+}
+
+#[derive(Clone, PartialEq, Eq, Debug, Deserialize)]
 pub struct ListTransactionResult {
     #[serde(flatten)]
     pub info: WalletTxInfo,
