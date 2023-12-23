@@ -1,7 +1,10 @@
-[![Status](https://travis-ci.org/rust-bitcoin/rust-bitcoincore-rpc.png?branch=master)](https://travis-ci.org/rust-bitcoin/rust-bitcoincore-rpc)
 
-# Rust RPC client for Bitcoin Core JSON-RPC 
 
+# Rust RPC client for Bitcoin SV JSON-RPC 
+
+Work in progress.
+
+# Docs from forked repo
 This is a Rust RPC client library for calling the Bitcoin Core JSON-RPC API. It provides a layer of abstraction over 
 [rust-jsonrpc](https://github.com/apoelstra/rust-jsonrpc) and makes it easier to talk to the Bitcoin JSON-RPC interface 
 
