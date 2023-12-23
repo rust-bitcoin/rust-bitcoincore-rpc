@@ -1,28 +1,26 @@
 [package]
-name = "bitcoincore-rpc"
-version = "0.18.0"
+name = "bitcoinsv-rpc"
+version = "0.19.0"
 authors = [
-    "Steven Roose <steven@stevenroose.org>",
-    "Jean Pierre Dudey <jeandudey@hotmail.com>",
-    "Dawid Ciężarkiewicz <dpc@dpc.pw>",
+    "Daniel Connolly <daniel@dconnolly.com>"
 ]
-license = "CC0-1.0"
-homepage = "https://github.com/rust-bitcoin/rust-bitcoincore-rpc/"
-repository = "https://github.com/rust-bitcoin/rust-bitcoincore-rpc/"
-description = "RPC client library for the Bitcoin Core JSON-RPC API."
-keywords = ["crypto", "bitcoin", "bitcoin-core", "rpc"]
+license = "Open BSV"
+homepage = "https://github.com/Danconnolly/rust-bitcoinsv-rpc/"
+repository = "https://github.com/Danconnolly/rust-bitcoinsv-rpc/"
+description = "RPC client library for the Bitcoin SV JSON-RPC API."
+keywords = ["crypto", "bitcoin", "bitcoin-sv", "rpc"]
 readme = "README.md"
 edition = "2018"
 
 [lib]
-name = "bitcoincore_rpc"
+name = "bitcoinsv_rpc"
 path = "src/lib.rs"
 
 [dependencies]
-bitcoincore-rpc-json = { version = "0.18.0", path = "../json" }
+bitcoinsv-rpc-json = { version = "0.19.0", path = "../json" }
 
 log = "0.4.5"
-jsonrpc = "0.14.0"
+jsonrpc = "0.16.0"
 
 # Used for deserialization of JSON.
 serde = "1"

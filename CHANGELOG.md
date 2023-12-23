@@ -1,3 +1,8 @@
+# 0.19.0
+
+- Forked to rust-bitcoinsv-rpc from [rust-bitcoincore-rpc](https://github.com/rust-bitcoin/rust-bitcoincore-rpc),
+which was written by: "Steven Roose <steven@stevenroose.org>", "Jean Pierre Dudey <jeandudey@hotmail.com>", "Dawid Ciężarkiewicz <dpc@dpc.pw>".
+
 # 0.18.0
 
 - MSRV changed from 1.41.1 to 1.48.0
