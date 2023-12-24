@@ -1,7 +1,7 @@
 
 
 # Rust RPC client for Bitcoin SV JSON-RPC 
-![Test Status](https://gist.githubusercontent.com/Danconnolly/9154c08943fa65569d4307fd1a2ab461/raw/badge.svg)
+![Unit Test Status](https://gist.githubusercontent.com/Danconnolly/9154c08943fa65569d4307fd1a2ab461/raw/badge.svg)
 
 Work in progress.
 
