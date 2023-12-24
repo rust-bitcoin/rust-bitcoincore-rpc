@@ -486,18 +486,17 @@ impl From<BlockStatsFields> for serde_json::Value {
 #[serde(rename_all = "camelCase")]
 pub struct GetMiningInfoResult {
     pub blocks: u32,
-    #[serde(rename = "currentblockweight")]
-    pub current_block_weight: Option<u64>,
+    #[serde(rename = "currentblocksize")]
+    pub current_block_size: u64,
     #[serde(rename = "currentblocktx")]
-    pub current_block_tx: Option<usize>,
+    pub current_block_tx: u64,
     pub difficulty: f64,
+    pub errors: String,
     #[serde(rename = "networkhashps")]
     pub network_hash_ps: f64,
     #[serde(rename = "pooledtx")]
-    pub pooled_tx: usize,
-    #[serde(deserialize_with = "deserialize_bip70_network")]
+    pub pooled_tx: u64,
     pub chain: Network,
-    pub warnings: String,
 }
 
 #[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
