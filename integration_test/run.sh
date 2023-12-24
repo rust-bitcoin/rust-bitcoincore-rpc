@@ -9,6 +9,8 @@ mkdir -p ${TESTDIR}/1 ${TESTDIR}/2
 killall -9 bitcoind
 
 bitcoind -regtest \
+    -excessiveblocksize=1000000000 \
+    -maxstackmemoryusageconsensus=200000000 \
     -datadir=${TESTDIR}/1 \
     -port=12348 \
     -server=0 \
@@ -19,6 +21,8 @@ PID1=$!
 sleep 3
 
 bitcoind -regtest  \
+    -excessiveblocksize=1000000000 \
+    -maxstackmemoryusageconsensus=200000000 \
     -datadir=${TESTDIR}/2 \
     -connect=127.0.0.1:12348 \
     -rpcport=12349 \
