@@ -1,18 +1,8 @@
-// To the extent possible under law, the author(s) have dedicated all
-// copyright and related and neighboring rights to this software to
-// the public domain worldwide. This software is distributed without
-// any warranty.
-//
-// You should have received a copy of the CC0 Public Domain Dedication
-// along with this software.
-// If not, see <http://creativecommons.org/publicdomain/zero/1.0/>.
-//
-
 //! A very simple example used as a self-test of this library against a Bitcoin
-//! Core node.
-extern crate bitcoincore_rpc;
+//! SV node.
+extern crate bitcoinsv_rpc;
 
-use bitcoincore_rpc::{bitcoin, Auth, Client, Error, RpcApi};
+use bitcoinsv_rpc::{bitcoin, Auth, Client, Error, RpcApi};
 
 fn main_result() -> Result<(), Error> {
     let mut args = std::env::args();

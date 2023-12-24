@@ -1,19 +1,9 @@
-// To the extent possible under law, the author(s) have dedicated all
-// copyright and related and neighboring rights to this software to
-// the public domain worldwide. This software is distributed without
-// any warranty.
-//
-// You should have received a copy of the CC0 Public Domain Dedication
-// along with this software.
-// If not, see <http://creativecommons.org/publicdomain/zero/1.0/>.
-//
-
-//! # Rust Client for Bitcoin Core API
+//! # Rust Client for Bitcoin SV API
 //!
-//! This is a client library for the Bitcoin Core JSON-RPC API.
+//! This is a client library for the Bitcoin SV JSON-RPC API.
 //!
 
-#![crate_name = "bitcoincore_rpc_json"]
+#![crate_name = "bitcoinsv_rpc_json"]
 #![crate_type = "rlib"]
 
 pub extern crate bitcoin;
@@ -41,12 +31,12 @@ use std::fmt;
 ///
 /// The module is compatible with the serde attribute.
 pub mod serde_hex {
-    use bitcoin::hex::{DisplayHex, FromHex};
+    use hex::{FromHex, ToHex};
     use serde::de::Error;
     use serde::{Deserializer, Serializer};
 
     pub fn serialize<S: Serializer>(b: &Vec<u8>, s: S) -> Result<S::Ok, S::Error> {
-        s.serialize_str(&b.to_lower_hex_string())
+        s.serialize_str(&*hex::encode(b))
     }
 
     pub fn deserialize<'de, D: Deserializer<'de>>(d: D) -> Result<Vec<u8>, D::Error> {
@@ -55,14 +45,14 @@ pub mod serde_hex {
     }
 
     pub mod opt {
-        use bitcoin::hex::{DisplayHex, FromHex};
+        use hex::{FromHex, ToHex};
         use serde::de::Error;
         use serde::{Deserializer, Serializer};
 
         pub fn serialize<S: Serializer>(b: &Option<Vec<u8>>, s: S) -> Result<S::Ok, S::Error> {
             match *b {
                 None => s.serialize_none(),
-                Some(ref b) => s.serialize_str(&b.to_lower_hex_string()),
+                Some(ref b) => s.serialize_str(&*hex::encode(b)),
             }
         }
 
