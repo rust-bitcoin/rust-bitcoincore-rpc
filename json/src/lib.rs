@@ -161,8 +161,8 @@ pub struct GetNetworkInfoResult {
     pub min_consolidation_factor: u64,
     #[serde(rename = "maxconsolidationinputscriptsize")]
     pub max_consolidation_input_script_size: u64,
-    #[serde(rename = "minconsolidationinput")]
-    pub min_consolidation_input: u64,
+    #[serde(rename = "minconfconsolidationinput")]
+    pub min_conf_consolidation_input: u64,
     #[serde(rename = "minconsolidationinputmaturity")]
     pub min_consolidation_input_maturity: u64,
     #[serde(rename = "acceptnonstdconsolidationinput")]
