@@ -31,7 +31,7 @@ use std::fmt;
 ///
 /// The module is compatible with the serde attribute.
 pub mod serde_hex {
-    use hex::{FromHex, ToHex};
+    use hex::FromHex;
     use serde::de::Error;
     use serde::{Deserializer, Serializer};
 
@@ -45,7 +45,7 @@ pub mod serde_hex {
     }
 
     pub mod opt {
-        use hex::{FromHex, ToHex};
+        use hex::FromHex;
         use serde::de::Error;
         use serde::{Deserializer, Serializer};
 
@@ -72,12 +72,64 @@ pub struct GetNetworkInfoResultNetwork {
     pub proxy_randomize_credentials: bool,
 }
 
+#[cfg(test)]
+mod ninfo_network_tests {
+    use super::*;
+    use serde_json;
+
+    #[test]
+    fn test_deserialize_get_network_info_result_network() {
+        let json_data = r#"
+            {
+              "name": "ipv4",
+              "limited": false,
+              "reachable": true,
+              "proxy": "",
+              "proxy_randomize_credentials": false
+            }
+        "#;
+
+        let result: GetNetworkInfoResultNetwork = serde_json::from_str(json_data).unwrap();
+
+        assert_eq!(result.name, "ipv4");
+        assert_eq!(result.limited, false);
+        assert_eq!(result.reachable, true);
+        assert_eq!(result.proxy, "");
+        assert_eq!(result.proxy_randomize_credentials, false);
+    }
+}
+
+
 #[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
 pub struct GetNetworkInfoResultAddress {
     pub address: String,
-    pub port: usize,
-    pub score: usize,
+    pub port: u64,
+    pub score: u64,
 }
+
+#[cfg(test)]
+mod ninfo_address_tests {
+    use super::*;
+    use serde_json;
+
+    #[test]
+    fn test_deserialize_get_network_info_result_address() {
+        let json_data = r#"
+            {
+              "address": "192.168.32.145",
+              "port": 8333,
+              "score": 13436
+            }
+        "#;
+
+        let result: GetNetworkInfoResultAddress = serde_json::from_str(json_data).unwrap();
+
+        assert_eq!(result.address, "192.168.32.145");
+        assert_eq!(result.port, 8333);
+        assert_eq!(result.score, 13436);
+    }
+}
+
 
 #[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
 pub struct GetNetworkInfoResult {
@@ -91,20 +143,30 @@ pub struct GetNetworkInfoResult {
     pub local_relay: bool,
     #[serde(rename = "timeoffset")]
     pub time_offset: isize,
-    pub connections: usize,
-    /// The number of inbound connections
-    /// Added in Bitcoin Core v0.21
-    pub connections_in: Option<usize>,
-    /// The number of outbound connections
-    /// Added in Bitcoin Core v0.21
-    pub connections_out: Option<usize>,
+    #[serde(rename = "txnpropagationfreq")]
+    pub txn_propagation_freq: i64,
+    #[serde(rename = "txnpropagationqlen")]
+    pub txn_propagation_qlen: u64,
     #[serde(rename = "networkactive")]
     pub network_active: bool,
+    pub connections: usize,
+    #[serde(rename = "addresscount")]
+    pub address_count: u64,
+    #[serde(rename = "streampolicies")]
+    pub stream_policies: String,
     pub networks: Vec<GetNetworkInfoResultNetwork>,
     #[serde(rename = "relayfee", with = "bitcoin::amount::serde::as_btc")]
     pub relay_fee: Amount,
-    #[serde(rename = "incrementalfee", with = "bitcoin::amount::serde::as_btc")]
-    pub incremental_fee: Amount,
+    #[serde(rename = "minconsolidationfactor")]
+    pub min_consolidation_factor: u64,
+    #[serde(rename = "maxconsolidationinputscriptsize")]
+    pub max_consolidation_input_script_size: u64,
+    #[serde(rename = "minconsolidationinput")]
+    pub min_consolidation_input: u64,
+    #[serde(rename = "minconsolidationinputmaturity")]
+    pub min_consolidation_input_maturity: u64,
+    #[serde(rename = "acceptnonstdconsolidationinput")]
+    pub accept_non_std_consolidation_input: bool,
     #[serde(rename = "localaddresses")]
     pub local_addresses: Vec<GetNetworkInfoResultAddress>,
     pub warnings: String,
