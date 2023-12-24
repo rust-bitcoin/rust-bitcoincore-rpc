@@ -7,7 +7,7 @@ permissions:
   pull-requests: write
 
 jobs:
-  test:
+  unit-tests:
     name: Unit Tests
     runs-on: ubuntu-latest
     steps:
@@ -72,3 +72,28 @@ jobs:
           token: ${{ secrets.GIST_TOKEN }}
           gistURL: https://gist.github.com/Danconnolly/9154c08943fa65569d4307fd1a2ab461
           file: badge.svg
+
+  integration-tests:
+    name: Integration Tests
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        rust: [stable]
+        bsvversion:
+          [
+            "0.16.0",
+          ]
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache dependencies
+        uses: Swatinem/rust-cache@v2
+
+      - name: Running test script
+        env:
+          BSVVERSION: ${{ matrix.bsvversion }}
+        run: ./integration_test/test_all.sh
