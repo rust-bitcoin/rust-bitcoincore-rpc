@@ -66,15 +66,15 @@ fn get_auth() -> bitcoinsv_rpc::Auth {
     };
 }
 
-fn new_wallet_client(wallet_name: &str) -> Client {
-    let url = format!("{}{}{}", get_rpc_url(), "/wallet/", wallet_name);
+fn new_client() -> Client {
+    let url = get_rpc_url();
     Client::new(&url, get_auth()).unwrap()
 }
 
 fn main() {
     log::set_logger(&LOGGER).map(|()| log::set_max_level(log::LevelFilter::max())).unwrap();
 
-    let cl = new_wallet_client("testwallet");
+    let cl = new_client();
 
     test_get_network_info(&cl);
     unsafe { VERSION = cl.version().unwrap() };

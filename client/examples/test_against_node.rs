@@ -2,7 +2,7 @@
 //! SV node.
 extern crate bitcoinsv_rpc;
 
-use sv::messages::{Block, Tx};
+use sv::messages::Block;
 use bitcoinsv_rpc::{Auth, Client, Error, RpcApi};
 
 fn main_result() -> Result<(), Error> {
