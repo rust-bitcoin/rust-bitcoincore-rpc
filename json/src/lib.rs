@@ -175,32 +175,38 @@ pub struct GetBlockResultStatus {
     pub data: bool,
     pub undo: bool,
     pub failed: bool,
+    #[serde(rename = "parent failed")]
     pub parent_failed: bool,
+    #[serde(rename = "disk meta")]
     pub disk_meta: bool,
+    #[serde(rename = "soft reject")]
     pub soft_reject: bool,
+    #[serde(rename = "double spend")]
     pub double_spend: bool,
+    #[serde(rename = "soft consensus frozen")]
     pub soft_consensus_frozen: bool,
 }
 
 #[derive(Clone, PartialEq, Debug, Deserialize, Serialize)]
 pub struct GetBlockResult {
+    pub tx: Vec<bitcoin::Txid>,
     pub hash: bitcoin::BlockHash,
     pub confirmations: i32,
     pub size: usize,
     pub height: usize,
     pub version: i32,
-    #[serde(default, rename = "versionHex", with = "crate::serde_hex::opt")]
-    pub version_hex: Option<Vec<u8>>,
+    #[serde(default, rename = "versionHex", with = "crate::serde_hex")]
+    pub version_hex: Vec<u8>,
     pub merkleroot: bitcoin::hash_types::TxMerkleNode,
-    pub tx: Vec<bitcoin::Txid>,
-    pub time: usize,
+    pub num_tx: u64,
+    pub time: u64,
     pub mediantime: Option<u64>,
     pub nonce: u32,
     pub bits: String,
     pub difficulty: f64,
     #[serde(with = "crate::serde_hex")]
-    pub chainwork: Vec<u8>,
-    pub num_tx: u64,
+    #[serde(rename = "chainwork")]
+    pub chain_work: Vec<u8>,
     #[serde(rename = "previousblockhash")]
     pub previous_block_hash: Option<bitcoin::BlockHash>,
     #[serde(rename = "nextblockhash")]
