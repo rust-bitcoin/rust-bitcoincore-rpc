@@ -14,7 +14,6 @@ use log::Level::{Debug, Trace, Warn};
 use sv::messages::{Block, BlockHeader};
 use sv::util::Serializable;
 use bitcoinsv_rpc_json::{Tx, TxHash, BlockHash, Amount};
-use bitcoinsv_rpc_json::serde_hex::deserialize;
 
 use crate::error::*;
 use crate::json;
