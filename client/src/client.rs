@@ -30,24 +30,6 @@ pub struct JsonOutPoint {
     pub vout: u32,
 }
 
-// impl From<OutPoint> for JsonOutPoint {
-//     fn from(o: OutPoint) -> JsonOutPoint {
-//         JsonOutPoint {
-//             txid: o.txid,
-//             vout: o.vout,
-//         }
-//     }
-// }
-//
-// impl Into<OutPoint> for JsonOutPoint {
-//     fn into(self) -> OutPoint {
-//         OutPoint {
-//             txid: self.txid,
-//             vout: self.vout,
-//         }
-//     }
-// }
-
 /// Shorthand for converting a variable into a serde_json::Value.
 fn into_json<T>(val: T) -> Result<serde_json::Value>
 where
