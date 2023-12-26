@@ -438,15 +438,6 @@ pub trait RpcApi: Sized {
         self.call("verifymessage", &args)
     }
 
-    /// Generate new address under own control
-    fn get_new_address(
-        &self,
-        label: Option<&str>,
-        address_type: Option<json::AddressType>,
-    ) -> Result<Address<NetworkUnchecked>> {
-        self.call("getnewaddress", &[opt_into_json(label)?, opt_into_json(address_type)?])
-    }
-
     /// Mine `block_num` blocks and pay coinbase to `address`
     ///
     /// Returns hashes of the generated blocks

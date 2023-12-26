@@ -15,16 +15,13 @@ extern crate lazy_static;
 
 use std::str::FromStr;
 use bitcoin::address::NetworkChecked;
-use bitcoinsv_rpc::json;
 use bitcoinsv_rpc::jsonrpc::error::Error as JsonRpcError;
 use bitcoinsv_rpc::{Auth, Client, Error, RpcApi};
 
-use crate::json::BlockStatsFields as BsFields;
 use bitcoin::consensus::encode::{deserialize, serialize_hex};
 use bitcoin::hashes::hex::FromHex;
 use bitcoin::secp256k1;
 use bitcoin::{Address, Amount, Network};
-use bitcoinsv_rpc::bitcoinsv_rpc_json::{ScanTxOutRequest};
 
 lazy_static! {
     static ref SECP: secp256k1::Secp256k1<secp256k1::All> = secp256k1::Secp256k1::new();
@@ -121,7 +118,6 @@ fn main() {
 
     test_get_mining_info(&cl);
     test_get_blockchain_info(&cl);
-    test_get_new_address(&cl);
     test_generate(&cl);
     test_get_best_block_hash(&cl);
     test_get_block_count(&cl);
@@ -129,12 +125,10 @@ fn main() {
     test_get_block(&cl);
     test_get_block_header_get_block_header_info(&cl);
     test_get_block_stats(&cl);
-    test_get_block_stats_fields(&cl);
     test_get_difficulty(&cl);
     test_get_connection_count(&cl);
     test_get_raw_mempool(&cl);
     test_invalidate_block_reconsider_block(&cl);
-    test_scantxoutset(&cl);
     test_ping(&cl);
     test_get_peer_info(&cl);
     test_rescan_blockchain(&cl);
@@ -166,17 +160,6 @@ fn test_get_mining_info(cl: &Client) {
 fn test_get_blockchain_info(cl: &Client) {
     let info = cl.get_blockchain_info().unwrap();
     assert_eq!(info.chain, Network::Regtest);
-}
-
-fn test_get_new_address(cl: &Client) {
-    let addr = cl.get_new_address(None, Some(json::AddressType::Legacy)).unwrap().assume_checked();
-    assert_eq!(addr.address_type(), Some(bitcoin::AddressType::P2pkh));
-
-    let addr = cl.get_new_address(None, Some(json::AddressType::Bech32)).unwrap().assume_checked();
-    assert_eq!(addr.address_type(), Some(bitcoin::AddressType::P2wpkh));
-
-    let addr = cl.get_new_address(None, Some(json::AddressType::P2shSegwit)).unwrap().assume_checked();
-    assert_eq!(addr.address_type(), Some(bitcoin::AddressType::P2sh));
 }
 
 fn test_generate(cl: &Client) {
@@ -243,18 +226,6 @@ fn test_get_block_stats(cl: &Client) {
     assert_eq!(header.block_hash(), stats.block_hash);
     assert_eq!(header.time, stats.time as u32);
     assert_eq!(tip, stats.height);
-}
-
-fn test_get_block_stats_fields(cl: &Client) {
-    let tip = cl.get_block_count().unwrap();
-    let tip_hash = cl.get_best_block_hash().unwrap();
-    let header = cl.get_block_header(&tip_hash).unwrap();
-    let fields = [BsFields::BlockHash, BsFields::Height, BsFields::TotalFee];
-    let stats = cl.get_block_stats_fields(tip, &fields).unwrap();
-    assert_eq!(header.block_hash(), stats.block_hash.unwrap());
-    assert_eq!(tip, stats.height.unwrap());
-    assert!(stats.total_fee.is_some());
-    assert!(stats.avg_fee.is_none());
 }
 
 fn test_get_difficulty(cl: &Client) {
@@ -370,48 +341,9 @@ fn test_uptime(cl: &Client) {
     cl.uptime().unwrap();
 }
 
-fn test_scantxoutset(cl: &Client) {
-    let addr = cl.get_new_address(None, None).unwrap().assume_checked();
-
-    cl.generate_to_address(2, &addr).unwrap();
-    cl.generate_to_address(7, &cl.get_new_address(None, None).unwrap().assume_checked()).unwrap();
-
-    let utxos = cl
-        .scan_tx_out_set_blocking(&[ScanTxOutRequest::Single(format!("addr({})", addr))])
-        .unwrap();
-
-    assert_eq!(utxos.unspents.len(), 2);
-    assert_eq!(utxos.success, Some(true));
-}
-
 fn test_get_mempool_info(cl: &Client) {
     let res = cl.get_mempool_info().unwrap();
-
-    if version() >= 190000 {
-        assert!(res.loaded.is_some());
-    } else {
-        assert!(res.loaded.is_none());
-    }
-
-    if version() >= 210000 {
-        assert!(res.unbroadcast_count.is_some());
-    } else {
-        assert!(res.unbroadcast_count.is_none());
-    }
-
-    if version() >= 220000 {
-        assert!(res.total_fee.is_some());
-    } else {
-        assert!(res.total_fee.is_none());
-    }
-
-    if version() >= 240000 {
-        assert!(res.incremental_relay_fee.is_some());
-        assert!(res.full_rbf.is_some());
-    } else {
-        assert!(res.incremental_relay_fee.is_none());
-        assert!(res.full_rbf.is_none());
-    }
+    assert_eq!(res.size, 0);
 }
 
 fn test_get_index_info(cl: &Client) {

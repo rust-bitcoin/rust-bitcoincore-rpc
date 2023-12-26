@@ -628,124 +628,78 @@ pub enum ImportMultiRequestScriptPubkey<'a> {
 
 #[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
 pub struct GetMempoolInfoResult {
-    /// True if the mempool is fully loaded
-    pub loaded: Option<bool>,
     /// Current tx count
-    pub size: usize,
-    /// Sum of all virtual transaction sizes as defined in BIP 141. Differs from actual serialized size because witness data is discounted
-    pub bytes: usize,
+    pub size: u64,
+    #[serde(rename = "journalsize")]
+    pub journal_size: u64,
+    #[serde(rename = "nonfinalsize")]
+    pub non_final_size: u64,
+    pub bytes: u64,
     /// Total memory usage for the mempool
     pub usage: usize,
-    /// Total fees for the mempool in BTC, ignoring modified fees through prioritisetransaction
-    #[serde(default, with = "bitcoin::amount::serde::as_btc::opt")]
-    pub total_fee: Option<Amount>,
+    #[serde(rename = "usagedisk")]
+    pub usage_disk: u64,
+    #[serde(rename = "usagecpfp")]
+    pub usage_cpfp: u64,
+    #[serde(rename = "nonfinalusage")]
+    pub non_final_usage: u64,
     /// Maximum memory usage for the mempool
     #[serde(rename = "maxmempool")]
     pub max_mempool: usize,
-    /// Minimum fee rate in BTC/kvB for tx to be accepted. Is the maximum of minrelaytxfee and minimum mempool fee
-    #[serde(rename = "mempoolminfee", with = "bitcoin::amount::serde::as_btc")]
+    #[serde(rename = "maxmempoolsizedisk")]
+    pub max_mempool_size_disk: u64,
+    #[serde(rename = "maxmempoolsizecpfp")]
+    pub max_mempool_size_cpfp: u64,
+    #[serde(rename = "mempoolminfee")]
+    #[serde(with = "bitcoin::amount::serde::as_btc")]
     pub mempool_min_fee: Amount,
-    /// Current minimum relay fee for transactions
-    #[serde(rename = "minrelaytxfee", with = "bitcoin::amount::serde::as_btc")]
-    pub min_relay_tx_fee: Amount,
-    /// Minimum fee rate increment for mempool limiting or replacement in BTC/kvB
-    #[serde(rename = "incrementalrelayfee", default, with = "bitcoin::amount::serde::as_btc::opt")]
-    pub incremental_relay_fee: Option<Amount>,
-    /// Current number of transactions that haven't passed initial broadcast yet
-    #[serde(rename = "unbroadcastcount")]
-    pub unbroadcast_count: Option<usize>,
-    /// True if the mempool accepts RBF without replaceability signaling inspection
-    #[serde(rename = "fullrbf")]
-    pub full_rbf: Option<bool>,
 }
 
 #[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
 pub struct GetMempoolEntryResult {
-    /// Virtual transaction size as defined in BIP 141. This is different from actual serialized
-    /// size for witness transactions as witness data is discounted.
-    #[serde(alias = "size")]
-    pub vsize: u64,
-    /// Transaction weight as defined in BIP 141. Added in Core v0.19.0.
-    pub weight: Option<u64>,
+    pub size: u64,
+    /// Transaction fee in BSV
+    #[serde(with = "bitcoin::amount::serde::as_btc")]
+    pub fee: Amount,
+    #[serde(with = "bitcoin::amount::serde::as_btc")]
+    #[serde(rename = "modifiedfee")]
+    pub modified_fee: Amount,
     /// Local time transaction entered pool in seconds since 1 Jan 1970 GMT
     pub time: u64,
     /// Block height when transaction entered pool
     pub height: u64,
-    /// Number of in-mempool descendant transactions (including this one)
-    #[serde(rename = "descendantcount")]
-    pub descendant_count: u64,
-    /// Virtual transaction size of in-mempool descendants (including this one)
-    #[serde(rename = "descendantsize")]
-    pub descendant_size: u64,
-    /// Number of in-mempool ancestor transactions (including this one)
-    #[serde(rename = "ancestorcount")]
-    pub ancestor_count: u64,
-    /// Virtual transaction size of in-mempool ancestors (including this one)
-    #[serde(rename = "ancestorsize")]
-    pub ancestor_size: u64,
-    /// Hash of serialized transaction, including witness data
-    pub wtxid: bitcoin::Txid,
-    /// Fee information
-    pub fees: GetMempoolEntryResultFees,
     /// Unconfirmed transactions used as inputs for this transaction
     pub depends: Vec<bitcoin::Txid>,
-    /// Unconfirmed transactions spending outputs from this transaction
-    #[serde(rename = "spentby")]
-    pub spent_by: Vec<bitcoin::Txid>,
-    /// Whether this transaction could be replaced due to BIP125 (replace-by-fee)
-    #[serde(rename = "bip125-replaceable")]
-    pub bip125_replaceable: bool,
-    /// Whether this transaction is currently unbroadcast (initial broadcast not yet acknowledged by any peers)
-    /// Added in Bitcoin Core v0.21
-    pub unbroadcast: Option<bool>,
 }
 
-#[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
-pub struct GetMempoolEntryResultFees {
-    /// Transaction fee in BTC
-    #[serde(with = "bitcoin::amount::serde::as_btc")]
-    pub base: Amount,
-    /// Transaction fee with fee deltas used for mining priority in BTC
-    #[serde(with = "bitcoin::amount::serde::as_btc")]
-    pub modified: Amount,
-    /// Modified fees (see above) of in-mempool ancestors (including this one) in BTC
-    #[serde(with = "bitcoin::amount::serde::as_btc")]
-    pub ancestor: Amount,
-    /// Modified fees (see above) of in-mempool descendants (including this one) in BTC
-    #[serde(with = "bitcoin::amount::serde::as_btc")]
-    pub descendant: Amount,
-}
-
-impl<'a> serde::Serialize for ImportMultiRequestScriptPubkey<'a> {
-    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: serde::Serializer,
-    {
-        match *self {
-            ImportMultiRequestScriptPubkey::Address(ref addr) => {
-                #[derive(Serialize)]
-                struct Tmp<'a> {
-                    pub address: &'a Address,
-                }
-                serde::Serialize::serialize(
-                    &Tmp {
-                        address: addr,
-                    },
-                    serializer,
-                )
-            }
-            ImportMultiRequestScriptPubkey::Script(script) => {
-                serializer.serialize_str(&script.to_hex_string())
-            }
-        }
-    }
-}
-
-/// Progress toward rejecting pre-softfork blocks
-#[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
-pub struct RejectStatus {
-    /// `true` if threshold reached
-    pub status: bool,
+#[derive(Clone, Debug, Deserialize, Serialize)]
+pub struct GetPeerInfoResultStream {
+    #[serde(rename = "streamtype")]
+    pub stream_type: String,
+    /// The time of the last send
+    #[serde(rename = "lastsend")]
+    pub last_send: u64,
+    /// The time of the last receive
+    #[serde(rename = "lastrecv")]
+    pub last_recv: u64,
+    /// The total bytes sent
+    #[serde(rename = "bytessent")]
+    pub bytes_sent: u64,
+    /// The total bytes received
+    #[serde(rename = "bytesrecv")]
+    pub bytes_recv: u64,
+    #[serde(rename = "sendsize")]
+    pub send_size: u64,
+    #[serde(rename = "recvsize")]
+    pub recv_size: u64,
+    #[serde(rename = "sendmemory")]
+    pub send_memory: u64,
+    #[serde(rename = "spotrecvbw")]
+    pub spot_recv_bw: u64,
+    #[serde(rename = "minuterecvbw")]
+    pub minute_recv_bw: u64,
+    #[serde(rename = "pauserecv")]
+    pub pause_recv: bool,
 }
 
 /// Models the result of "getpeerinfo"
@@ -754,46 +708,61 @@ pub struct GetPeerInfoResult {
     /// Peer index
     pub id: u64,
     /// The IP address and port of the peer
-    // TODO: use a type for addr
     pub addr: String,
-    /// Bind address of the connection to the peer
-    // TODO: use a type for addrbind
-    pub addrbind: String,
     /// Local address as reported by the peer
-    // TODO: use a type for addrlocal
-    pub addrlocal: Option<String>,
-    /// Network (ipv4, ipv6, or onion) the peer connected through
-    /// Added in Bitcoin Core v0.21
-    pub network: Option<GetPeerInfoResultNetwork>,
+    #[serde(rename = "addrlocal")]
+    pub addr_local: Option<String>,
     /// The services offered
-    // TODO: use a type for services
     pub services: String,
     /// Whether peer has asked us to relay transactions to it
-    pub relaytxes: bool,
-    /// The time in seconds since epoch (Jan 1 1970 GMT) of the last send
-    pub lastsend: u64,
-    /// The time in seconds since epoch (Jan 1 1970 GMT) of the last receive
-    pub lastrecv: u64,
-    /// The time in seconds since epoch (Jan 1 1970 GMT) of the last valid transaction received from this peer
-    /// Added in Bitcoin Core v0.21
-    pub last_transaction: Option<u64>,
-    /// The time in seconds since epoch (Jan 1 1970 GMT) of the last block received from this peer
-    /// Added in Bitcoin Core v0.21
-    pub last_block: Option<u64>,
+    #[serde(rename = "relaytxes")]
+    pub relay_txes: bool,
+    /// The time of the last send
+    #[serde(rename = "lastsend")]
+    pub last_send: u64,
+    /// The time of the last receive
+    #[serde(rename = "lastrecv")]
+    pub last_recv: u64,
+    #[serde(rename = "sendsize")]
+    pub send_size: u64,
+    #[serde(rename = "recvsize")]
+    pub recv_size: u64,
+    #[serde(rename = "sendmemory")]
+    pub send_memory: u64,
+    #[serde(rename = "pausesend")]
+    pub pause_send: bool,
+    #[serde(rename = "unpausesend")]
+    pub unpause_send: bool,
     /// The total bytes sent
-    pub bytessent: u64,
+    #[serde(rename = "bytessent")]
+    pub bytes_sent: u64,
     /// The total bytes received
-    pub bytesrecv: u64,
-    /// The connection time in seconds since epoch (Jan 1 1970 GMT)
-    pub conntime: u64,
+    #[serde(rename = "bytesrecv")]
+    pub bytes_recv: u64,
+    #[serde(rename = "avgrecvbw")]
+    pub avg_recv_bw: u64,
+    #[serde(rename = "associd")]
+    pub assoc_id: String,
+    #[serde(rename = "streampolicy")]
+    pub stream_policy: String,
+    pub streams: Vec<GetPeerInfoResultStream>,
+    #[serde(rename = "authconn")]
+    pub auth_conn: bool,
+    /// The connection time
+    #[serde(rename = "conntime")]
+    pub conn_time: u64,
     /// The time offset in seconds
-    pub timeoffset: i64,
+    #[serde(rename = "timeoffset")]
+    pub time_offset: i64,
     /// ping time (if available)
-    pub pingtime: Option<f64>,
+    #[serde(rename = "pingtime")]
+    pub ping_time: Option<f64>,
     /// minimum observed ping time (if any at all)
-    pub minping: Option<f64>,
+    #[serde(rename = "minping")]
+    pub min_ping: Option<f64>,
     /// ping wait (if non-zero)
-    pub pingwait: Option<f64>,
+    #[serde(rename = "pingwait")]
+    pub ping_wait: Option<f64>,
     /// The peer version, such as 70001
     pub version: u64,
     /// The string version
@@ -802,56 +771,30 @@ pub struct GetPeerInfoResult {
     pub inbound: bool,
     /// Whether connection was due to `addnode`/`-connect` or if it was an
     /// automatic/inbound connection
-    /// Deprecated in Bitcoin Core v0.21
-    pub addnode: Option<bool>,
+    #[serde(rename = "addnode")]
+    pub add_node: Option<bool>,
     /// The starting height (block) of the peer
-    pub startingheight: i64,
+    #[serde(rename = "startingheight")]
+    pub starting_height: i64,
     /// The ban score
-    /// Deprecated in Bitcoin Core v0.21
-    pub banscore: Option<i64>,
+    #[serde(rename = "banscore")]
+    pub ban_score: Option<i64>,
     /// The last header we have in common with this peer
     pub synced_headers: i64,
     /// The last block we have in common with this peer
     pub synced_blocks: i64,
     /// The heights of blocks we're currently asking from this peer
-    pub inflight: Vec<u64>,
+    #[serde(rename = "inflight")]
+    pub in_flight: Vec<u64>,
     /// Whether the peer is whitelisted
-    /// Deprecated in Bitcoin Core v0.21
-    pub whitelisted: Option<bool>,
-    #[serde(rename = "minfeefilter", default, with = "bitcoin::amount::serde::as_btc::opt")]
-    pub min_fee_filter: Option<Amount>,
+    #[serde(rename = "whitelisted")]
+    pub white_listed: Option<bool>,
     /// The total bytes sent aggregated by message type
-    pub bytessent_per_msg: HashMap<String, u64>,
+    #[serde(rename = "bytessent_per_msg")]
+    pub bytes_sent_per_msg: HashMap<String, u64>,
     /// The total bytes received aggregated by message type
-    pub bytesrecv_per_msg: HashMap<String, u64>,
-    /// The type of the connection
-    /// Added in Bitcoin Core v0.21
-    pub connection_type: Option<GetPeerInfoResultConnectionType>,
-}
-
-#[derive(Copy, Serialize, Deserialize, Clone, PartialEq, Eq, Debug)]
-#[serde(rename_all = "snake_case")]
-pub enum GetPeerInfoResultNetwork {
-    Ipv4,
-    Ipv6,
-    Onion,
-    #[deprecated]
-    Unroutable,
-    NotPubliclyRoutable,
-    I2p,
-    Cjdns,
-    Internal,
-}
-
-#[derive(Copy, Serialize, Deserialize, Clone, PartialEq, Eq, Debug)]
-#[serde(rename_all = "kebab-case")]
-pub enum GetPeerInfoResultConnectionType {
-    OutboundFullRelay,
-    BlockRelayOnly,
-    Inbound,
-    Manual,
-    AddrFetch,
-    Feeler,
+    #[serde(rename = "bytesrecv_per_msg")]
+    pub bytes_recv_per_msg: HashMap<String, u64>,
 }
 
 #[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
