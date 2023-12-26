@@ -50,26 +50,6 @@ impl log::Log for StdLogger {
 
 static LOGGER: StdLogger = StdLogger;
 
-/// Assert that the call returns a "deprecated" error.
-macro_rules! assert_deprecated {
-    ($call:expr) => {
-        match $call.unwrap_err() {
-            Error::JsonRpc(JsonRpcError::Rpc(ref e)) if e.code == -32 => {}
-            e => panic!("expected deprecated error for {}, got: {}", stringify!($call), e),
-        }
-    };
-}
-
-/// Assert that the call returns a "method not found" error.
-macro_rules! assert_not_found {
-    ($call:expr) => {
-        match $call.unwrap_err() {
-            Error::JsonRpc(JsonRpcError::Rpc(ref e)) if e.code == -32601 => {}
-            e => panic!("expected method not found error for {}, got: {}", stringify!($call), e),
-        }
-    };
-}
-
 /// Assert that the call returns the specified error message.
 macro_rules! assert_error_message {
     ($call:expr, $code:expr, $msg:expr) => {
@@ -118,7 +98,6 @@ fn main() {
 
     test_get_mining_info(&cl);
     test_get_blockchain_info(&cl);
-    test_generate(&cl);
     test_get_best_block_hash(&cl);
     test_get_block_count(&cl);
     test_get_block_hash(&cl);
@@ -158,23 +137,6 @@ fn test_get_mining_info(cl: &Client) {
 fn test_get_blockchain_info(cl: &Client) {
     let info = cl.get_blockchain_info().unwrap();
     assert_eq!(info.chain, Network::Regtest);
-}
-
-fn test_generate(cl: &Client) {
-    if version() < 180000 {
-        let blocks = cl.generate(4, None).unwrap();
-        assert_eq!(blocks.len(), 4);
-        let blocks = cl.generate(6, Some(45)).unwrap();
-        assert_eq!(blocks.len(), 6);
-    } else if version() < 190000 {
-        assert_deprecated!(cl.generate(5, None));
-    } else if version() < 210000 {
-        assert_not_found!(cl.generate(5, None));
-    } else {
-        // Bitcoin Core v0.21 appears to return this with a generic -1 error code,
-        // rather than the expected -32601 code (RPC_METHOD_NOT_FOUND).
-        assert_error_message!(cl.generate(5, None), -1, "replaced by the -generate cli option");
-    }
 }
 
 fn test_get_best_block_hash(cl: &Client) {

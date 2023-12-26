@@ -432,12 +432,6 @@ pub trait RpcApi: Sized {
         self.call("generatetoaddress", &[block_num.into(), address.to_string().into()])
     }
 
-    /// Mine up to block_num blocks immediately (before the RPC call returns)
-    /// to an address in the wallet.
-    fn generate(&self, block_num: u64, maxtries: Option<u64>) -> Result<Vec<bitcoin::BlockHash>> {
-        self.call("generate", &[block_num.into(), opt_into_json(maxtries)?])
-    }
-
     /// Mark a block as invalid by `block_hash`
     fn invalidate_block(&self, block_hash: &bitcoin::BlockHash) -> Result<()> {
         self.call("invalidateblock", &[into_json(block_hash)?])
