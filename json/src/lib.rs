@@ -22,7 +22,6 @@ use bitcoin::{Address, Amount, Transaction, ScriptBuf, Script, Network};
 use serde::{Deserialize, Serialize};
 use std::fmt;
 
-//TODO(stevenroose) consider using a Time type
 
 /// A module used for serde serialization of bytes in hexadecimal format.
 ///
@@ -213,6 +212,54 @@ pub struct GetBlockResult {
     pub next_block_hash: Option<bitcoin::BlockHash>,
     pub status: GetBlockResultStatus,
 }
+
+#[cfg(test)]
+mod getblock_tests {
+    use super::*;
+    use approx::assert_relative_eq;
+
+    #[test]
+    fn test_deserialize_get_block_result() {
+        let json_data = r#"
+            {
+              "tx": [
+                "4a5e1e4baab89f3a32518a88c31bc87f618f76673e2cc77ab2127b7afdeda33b"
+              ],
+              "hash": "0f9188f13cb7b2c71f2a335e3a4fc328bf5beb436012afca590b1a11466e2206",
+              "confirmations": 1,
+              "size": 285,
+              "height": 0,
+              "version": 1,
+              "versionHex": "00000001",
+              "merkleroot": "4a5e1e4baab89f3a32518a88c31bc87f618f76673e2cc77ab2127b7afdeda33b",
+              "num_tx": 1,
+              "time": 1296688602,
+              "mediantime": 1296688602,
+              "nonce": 2,
+              "bits": "207fffff",
+              "difficulty": 4.656542373906925e-10,
+              "chainwork": "0000000000000000000000000000000000000000000000000000000000000002",
+              "status": {
+                "validity": "transactions",
+                "data": true,
+                "undo": false,
+                "failed": false,
+                "parent failed": false,
+                "disk meta": true,
+                "soft reject": false,
+                "double spend": false,
+                "soft consensus frozen": false
+              }
+            }
+        "#;
+
+        let result: GetBlockResult = serde_json::from_str(json_data).unwrap();
+
+        assert_eq!(result.confirmations, 1);
+        assert_relative_eq!(result.difficulty, 4.656542373906925e-10, epsilon = 1e-8);
+    }
+}
+
 
 #[derive(Clone, PartialEq, Debug, Deserialize, Serialize)]
 pub struct GetBlockHeaderResult {
