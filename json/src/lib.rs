@@ -19,16 +19,16 @@ use serde::{Deserialize, Serialize};
 use std::fmt;
 use std::io::Cursor;
 use hex::FromHexError;
-use sv::messages::Tx;
+pub use sv::messages::Tx;
 use sv::util::{Serializable};
 use sv::script::Script;
 
 
-type Amount = fixed::types::U37F27;
-type TxHash = String;       // TODO: use Hash256 but its not serializable
-type BlockHash = String;    // TODO: use Hash256 but its not serializable
-type MerkleRootHash = String;   // TODO: use Hash256 but its not serializable
-type Network = String;          // TODO: use sv::Network but its not serializable
+pub type Amount = fixed::types::U37F27;
+pub type TxHash = String;       // TODO: use Hash256 but its not serializable
+pub type BlockHash = String;    // TODO: use Hash256 but its not serializable
+pub type MerkleRootHash = String;   // TODO: use Hash256 but its not serializable
+pub type Network = String;          // TODO: use sv::Network but its not serializable
 
 /// A module used for serde serialization of bytes in hexadecimal format.
 ///

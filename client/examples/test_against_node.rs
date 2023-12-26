@@ -2,7 +2,8 @@
 //! SV node.
 extern crate bitcoinsv_rpc;
 
-use bitcoinsv_rpc::{bitcoin, Auth, Client, Error, RpcApi};
+use sv::messages::{Block, Tx};
+use bitcoinsv_rpc::{Auth, Client, Error, RpcApi};
 
 fn main_result() -> Result<(), Error> {
     let mut args = std::env::args();
@@ -25,11 +26,8 @@ fn main_result() -> Result<(), Error> {
     println!("best block hash by height: {}", best_block_hash_by_height);
     assert_eq!(best_block_hash_by_height, best_block_hash);
 
-    let bitcoin_block: bitcoin::Block = rpc.get_by_id(&best_block_hash)?;
-    println!("best block hash by `get`: {}", bitcoin_block.header.prev_blockhash);
-    let bitcoin_tx: bitcoin::Transaction = rpc.get_by_id(&bitcoin_block.txdata[0].txid())?;
-    println!("tx by `get`: {}", bitcoin_tx.txid());
-
+    let bitcoin_block: Block = rpc.get_block(&best_block_hash)?;
+    println!("best block hash by `get`: {:?}", bitcoin_block.header.prev_hash);
     Ok(())
 }
 

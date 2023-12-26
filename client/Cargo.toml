@@ -18,13 +18,12 @@ path = "src/lib.rs"
 
 [dependencies]
 bitcoinsv-rpc-json = { version = "0.19.0", path = "../json" }
-
 log = "0.4.5"
 jsonrpc = "0.16.0"
-
-# Used for deserialization of JSON.
 serde = "1"
 serde_json = "1"
+sv = "0.2.2"
+hex = "0.4.3"
 
 [dev-dependencies]
 tempfile = "3.3.0"
