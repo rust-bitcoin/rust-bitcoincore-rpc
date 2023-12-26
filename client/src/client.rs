@@ -15,7 +15,7 @@ use crate::bitcoin::address::{NetworkUnchecked, NetworkChecked};
 use crate::bitcoin::hashes::hex::FromHex;
 use crate::bitcoin::secp256k1::ecdsa::Signature;
 use crate::bitcoin::{
-    Address, Amount, Block, OutPoint, PrivateKey, PublicKey, Script, Transaction,
+    Address, Amount, Block, OutPoint, Transaction,
 };
 use log::Level::{Debug, Trace, Warn};
 
@@ -75,16 +75,6 @@ where
 /// Shorthand for `serde_json::Value::Null`.
 fn null() -> serde_json::Value {
     serde_json::Value::Null
-}
-
-/// Shorthand for an empty serde_json::Value array.
-fn empty_arr() -> serde_json::Value {
-    serde_json::Value::Array(vec![])
-}
-
-/// Shorthand for an empty serde_json object.
-fn empty_obj() -> serde_json::Value {
-    serde_json::Value::Object(Default::default())
 }
 
 /// Handle default values in the argument list
@@ -297,7 +287,7 @@ pub trait RpcApi: Sized {
     /// Returns a data structure containing various state info regarding
     /// blockchain processing.
     fn get_blockchain_info(&self) -> Result<json::GetBlockchainInfoResult> {
-        let mut raw: serde_json::Value = self.call("getblockchaininfo", &[])?;
+        let raw: serde_json::Value = self.call("getblockchaininfo", &[])?;
         Ok(serde_json::from_value(raw)?)
     }
 

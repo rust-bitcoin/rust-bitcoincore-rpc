@@ -15,13 +15,10 @@ extern crate serde_json;
 use std::collections::HashMap;
 
 
-use bitcoin::address::NetworkUnchecked;
 use bitcoin::block::Version;
 use bitcoin::consensus::encode;
-use bitcoin::hashes::hex::FromHex;
 use bitcoin::hashes::sha256;
-use bitcoin::{Address, Amount, PublicKey, SignedAmount, Transaction, ScriptBuf, Script, bip158, bip32, Network};
-use serde::de::Error as SerdeError;
+use bitcoin::{Address, Amount, Transaction, ScriptBuf, Script, Network};
 use serde::{Deserialize, Serialize};
 use std::fmt;
 
@@ -1104,24 +1101,6 @@ pub struct GetNetTotalsResultUploadTarget {
     pub bytes_left_in_cycle: u64,
     /// Seconds left in current time cycle
     pub time_left_in_cycle: u64,
-}
-
-// Custom deserializer functions.
-
-/// deserialize_hex_array_opt deserializes a vector of hex-encoded byte arrays.
-fn deserialize_hex_array_opt<'de, D>(deserializer: D) -> Result<Option<Vec<Vec<u8>>>, D::Error>
-where
-    D: serde::Deserializer<'de>,
-{
-    //TODO(stevenroose) Revisit when issue is fixed:
-    // https://github.com/serde-rs/serde/issues/723
-
-    let v: Vec<String> = Vec::deserialize(deserializer)?;
-    let mut res = Vec::new();
-    for h in v.into_iter() {
-        res.push(FromHex::from_hex(&h).map_err(D::Error::custom)?);
-    }
-    Ok(Some(res))
 }
 
 /// deserialize_bip70_network deserializes a Bitcoin Core network according to BIP70
