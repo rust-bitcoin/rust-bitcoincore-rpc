@@ -13,7 +13,7 @@ use serde_json;
 use log::Level::{Debug, Trace, Warn};
 use sv::messages::{Block, BlockHeader};
 use sv::util::Serializable;
-use bitcoinsv_rpc_json::{Tx, TxHash, BlockHash, Amount};
+use bitcoinsv_rpc_json::{Tx, TxHash, BlockHash, Amount, GetNetworkInfoResult};
 
 use crate::error::*;
 use crate::json;
@@ -206,12 +206,8 @@ pub trait RpcApi: Sized {
         self.call("getnetworkinfo", &[])
     }
 
-    fn version(&self) -> Result<usize> {
-        #[derive(Deserialize)]
-        struct Response {
-            pub version: usize,
-        }
-        let res: Response = self.call("getnetworkinfo", &[])?;
+    fn version(&self) -> Result<u32> {
+        let res: GetNetworkInfoResult = self.call("getnetworkinfo", &[])?;
         Ok(res.version)
     }
 

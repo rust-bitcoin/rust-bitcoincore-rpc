@@ -45,13 +45,6 @@ macro_rules! assert_error_message {
     };
 }
 
-static mut VERSION: usize = 0;
-/// Get the version of the node that is running.
-fn version() -> usize {
-    unsafe { VERSION }
-}
-
-/// Quickly create a BTC amount.
 fn get_rpc_url() -> String {
     return std::env::var("RPC_URL").expect("RPC_URL must be set");
 }
@@ -77,8 +70,7 @@ fn main() {
     let cl = new_client();
 
     test_get_network_info(&cl);
-    unsafe { VERSION = cl.version().unwrap() };
-    println!("Version: {}", version());
+    println!("Version: {}", cl.version().unwrap());
 
     test_get_mining_info(&cl);
     test_get_blockchain_info(&cl);
