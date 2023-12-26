@@ -10,7 +10,7 @@ repository = "https://github.com/Danconnolly/rust-bitcoinsv-rpc/"
 description = "JSON-enabled type structs for bitcoinsv-rpc crate."
 keywords = [ "crypto", "bitcoin", "bitcoin-sv", "rpc" ]
 readme = "README.md"
-edition = "2018"
+edition = "2021"
 
 [lib]
 name = "bitcoinsv_rpc_json"

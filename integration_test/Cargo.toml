@@ -2,7 +2,7 @@
 name = "integration_test"
 version = "0.1.0"
 authors = ["Daniel Connolly <daniel@dconnolly.com>"]
-edition = "2018"
+edition = "2021"
 
 [dependencies]
 bitcoinsv-rpc = { path = "../client" }

@@ -10,7 +10,7 @@ repository = "https://github.com/Danconnolly/rust-bitcoinsv-rpc/"
 description = "RPC client library for the Bitcoin SV JSON-RPC API."
 keywords = ["crypto", "bitcoin", "bitcoin-sv", "rpc"]
 readme = "README.md"
-edition = "2018"
+edition = "2021"
 
 [lib]
 name = "bitcoinsv_rpc"
