@@ -227,10 +227,6 @@ pub trait RpcApi: Sized {
         self.call("getnetworkinfo", &[])
     }
 
-    fn get_index_info(&self) -> Result<json::GetIndexInfoResult> {
-        self.call("getindexinfo", &[])
-    }
-
     fn version(&self) -> Result<usize> {
         #[derive(Deserialize)]
         struct Response {
@@ -647,13 +643,6 @@ pub trait RpcApi: Sized {
             Ok(res) => Err(Error::ReturnedError(res.to_string())),
             Err(err) => Err(err.into()),
         }
-    }
-
-    fn scan_tx_out_set_blocking(
-        &self,
-        descriptors: &[json::ScanTxOutRequest],
-    ) -> Result<json::ScanTxOutResult> {
-        self.call("scantxoutset", &["start".into(), into_json(descriptors)?])
     }
 }
 
