@@ -122,7 +122,6 @@ fn main() {
     test_get_mining_info(&cl);
     test_get_blockchain_info(&cl);
     test_get_new_address(&cl);
-    test_get_raw_change_address(&cl);
     test_generate(&cl);
     test_get_best_block_hash(&cl);
     test_get_block_count(&cl);
@@ -131,11 +130,9 @@ fn main() {
     test_get_block_header_get_block_header_info(&cl);
     test_get_block_stats(&cl);
     test_get_block_stats_fields(&cl);
-    test_get_address_info(&cl);
     test_get_difficulty(&cl);
     test_get_connection_count(&cl);
     test_get_raw_mempool(&cl);
-    test_get_block_filter(&cl);
     test_invalidate_block_reconsider_block(&cl);
     test_scantxoutset(&cl);
     test_ping(&cl);
@@ -179,17 +176,6 @@ fn test_get_new_address(cl: &Client) {
     assert_eq!(addr.address_type(), Some(bitcoin::AddressType::P2wpkh));
 
     let addr = cl.get_new_address(None, Some(json::AddressType::P2shSegwit)).unwrap().assume_checked();
-    assert_eq!(addr.address_type(), Some(bitcoin::AddressType::P2sh));
-}
-
-fn test_get_raw_change_address(cl: &Client) {
-    let addr = cl.get_raw_change_address(Some(json::AddressType::Legacy)).unwrap().assume_checked();
-    assert_eq!(addr.address_type(), Some(bitcoin::AddressType::P2pkh));
-
-    let addr = cl.get_raw_change_address(Some(json::AddressType::Bech32)).unwrap().assume_checked();
-    assert_eq!(addr.address_type(), Some(bitcoin::AddressType::P2wpkh));
-
-    let addr = cl.get_raw_change_address(Some(json::AddressType::P2shSegwit)).unwrap().assume_checked();
     assert_eq!(addr.address_type(), Some(bitcoin::AddressType::P2sh));
 }
 
@@ -271,20 +257,6 @@ fn test_get_block_stats_fields(cl: &Client) {
     assert!(stats.avg_fee.is_none());
 }
 
-fn test_get_address_info(cl: &Client) {
-    let addr = cl.get_new_address(None, Some(json::AddressType::Legacy)).unwrap().assume_checked();
-    let info = cl.get_address_info(&addr).unwrap();
-    assert!(!info.is_witness.unwrap());
-
-    let addr = cl.get_new_address(None, Some(json::AddressType::Bech32)).unwrap().assume_checked();
-    let info = cl.get_address_info(&addr).unwrap();
-    assert!(!info.witness_program.unwrap().is_empty());
-
-    let addr = cl.get_new_address(None, Some(json::AddressType::P2shSegwit)).unwrap().assume_checked();
-    let info = cl.get_address_info(&addr).unwrap();
-    assert!(!info.hex.unwrap().is_empty());
-}
-
 fn test_get_difficulty(cl: &Client) {
     let _ = cl.get_difficulty().unwrap();
 }
@@ -295,15 +267,6 @@ fn test_get_connection_count(cl: &Client) {
 
 fn test_get_raw_mempool(cl: &Client) {
     let _ = cl.get_raw_mempool().unwrap();
-}
-
-fn test_get_block_filter(cl: &Client) {
-    let blocks = cl.generate_to_address(7, &cl.get_new_address(None, None).unwrap().assume_checked()).unwrap();
-    if version() >= 190000 {
-        let _ = cl.get_block_filter(&blocks[0]).unwrap();
-    } else {
-        assert_not_found!(cl.get_block_filter(&blocks[0]));
-    }
 }
 
 fn test_invalidate_block_reconsider_block(cl: &Client) {

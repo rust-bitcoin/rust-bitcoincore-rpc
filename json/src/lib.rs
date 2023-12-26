@@ -173,55 +173,69 @@ pub struct GetNetworkInfoResult {
 }
 
 #[derive(Clone, PartialEq, Debug, Deserialize, Serialize)]
-#[serde(rename_all = "camelCase")]
+pub struct GetBlockResultStatus {
+    pub validity: String,
+    pub data: bool,
+    pub undo: bool,
+    pub failed: bool,
+    pub parent_failed: bool,
+    pub disk_meta: bool,
+    pub soft_reject: bool,
+    pub double_spend: bool,
+    pub soft_consensus_frozen: bool,
+}
+
+#[derive(Clone, PartialEq, Debug, Deserialize, Serialize)]
 pub struct GetBlockResult {
     pub hash: bitcoin::BlockHash,
     pub confirmations: i32,
     pub size: usize,
-    pub strippedsize: Option<usize>,
-    pub weight: usize,
     pub height: usize,
     pub version: i32,
-    #[serde(default, with = "crate::serde_hex::opt")]
+    #[serde(default, rename = "versionHex", with = "crate::serde_hex::opt")]
     pub version_hex: Option<Vec<u8>>,
     pub merkleroot: bitcoin::hash_types::TxMerkleNode,
     pub tx: Vec<bitcoin::Txid>,
     pub time: usize,
-    pub mediantime: Option<usize>,
+    pub mediantime: Option<u64>,
     pub nonce: u32,
     pub bits: String,
     pub difficulty: f64,
     #[serde(with = "crate::serde_hex")]
     pub chainwork: Vec<u8>,
-    pub n_tx: usize,
-    pub previousblockhash: Option<bitcoin::BlockHash>,
-    pub nextblockhash: Option<bitcoin::BlockHash>,
-}
-
-#[derive(Clone, PartialEq, Debug, Deserialize, Serialize)]
-#[serde(rename_all = "camelCase")]
-pub struct GetBlockHeaderResult {
-    pub hash: bitcoin::BlockHash,
-    pub confirmations: i32,
-    pub height: usize,
-    pub version: Version,
-    #[serde(default, with = "crate::serde_hex::opt")]
-    pub version_hex: Option<Vec<u8>>,
-    #[serde(rename = "merkleroot")]
-    pub merkle_root: bitcoin::hash_types::TxMerkleNode,
-    pub time: usize,
-    #[serde(rename = "mediantime")]
-    pub median_time: Option<usize>,
-    pub nonce: u32,
-    pub bits: String,
-    pub difficulty: f64,
-    #[serde(with = "crate::serde_hex")]
-    pub chainwork: Vec<u8>,
-    pub n_tx: usize,
+    pub num_tx: u64,
     #[serde(rename = "previousblockhash")]
     pub previous_block_hash: Option<bitcoin::BlockHash>,
     #[serde(rename = "nextblockhash")]
     pub next_block_hash: Option<bitcoin::BlockHash>,
+    pub status: GetBlockResultStatus,
+}
+
+#[derive(Clone, PartialEq, Debug, Deserialize, Serialize)]
+pub struct GetBlockHeaderResult {
+    pub hash: bitcoin::BlockHash,
+    pub confirmations: i32,
+    pub size: u64,
+    pub height: u64,
+    pub version: Version,
+    #[serde(default, rename = "versionHex", with = "crate::serde_hex::opt")]
+    pub version_hex: Option<Vec<u8>>,
+    #[serde(rename = "merkleroot")]
+    pub merkle_root: bitcoin::hash_types::TxMerkleNode,
+    pub num_tx: usize,
+    pub time: u64,
+    #[serde(rename = "mediantime")]
+    pub median_time: Option<u64>,
+    pub nonce: u32,
+    pub bits: String,
+    pub difficulty: f64,
+    #[serde(with = "crate::serde_hex")]
+    pub chainwork: Vec<u8>,
+    #[serde(rename = "previousblockhash")]
+    pub previous_block_hash: Option<bitcoin::BlockHash>,
+    #[serde(rename = "nextblockhash")]
+    pub next_block_hash: Option<bitcoin::BlockHash>,
+    pub status: GetBlockResultStatus,
 }
 
 #[derive(Clone, PartialEq, Debug, Deserialize, Serialize)]
@@ -235,9 +249,8 @@ pub struct GetBlockStatsResult {
     #[serde(rename = "blockhash")]
     pub block_hash: bitcoin::BlockHash,
     #[serde(rename = "feerate_percentiles")]
-    pub fee_rate_percentiles: FeeRatePercentiles,
     pub height: u64,
-    pub ins: usize,
+    pub ins: u64,
     #[serde(rename = "maxfee", with = "bitcoin::amount::serde::as_sat")]
     pub max_fee: Amount,
     #[serde(rename = "maxfeerate", with = "bitcoin::amount::serde::as_sat")]
@@ -259,17 +272,10 @@ pub struct GetBlockStatsResult {
     pub outs: usize,
     #[serde(with = "bitcoin::amount::serde::as_sat")]
     pub subsidy: Amount,
-    #[serde(rename = "swtotal_size")]
-    pub sw_total_size: usize,
-    #[serde(rename = "swtotal_weight")]
-    pub sw_total_weight: usize,
-    #[serde(rename = "swtxs")]
-    pub sw_txs: usize,
     pub time: u64,
     #[serde(with = "bitcoin::amount::serde::as_sat")]
     pub total_out: Amount,
     pub total_size: usize,
-    pub total_weight: usize,
     #[serde(rename = "totalfee", with = "bitcoin::amount::serde::as_sat")]
     pub total_fee: Amount,
     pub txs: usize,
@@ -297,8 +303,6 @@ pub struct GetBlockStatsResultPartial {
     pub avg_tx_size: Option<u32>,
     #[serde(default, rename = "blockhash", skip_serializing_if = "Option::is_none")]
     pub block_hash: Option<bitcoin::BlockHash>,
-    #[serde(default, rename = "feerate_percentiles", skip_serializing_if = "Option::is_none")]
-    pub fee_rate_percentiles: Option<FeeRatePercentiles>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub height: Option<u64>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -354,12 +358,6 @@ pub struct GetBlockStatsResultPartial {
         skip_serializing_if = "Option::is_none"
     )]
     pub subsidy: Option<Amount>,
-    #[serde(default, rename = "swtotal_size", skip_serializing_if = "Option::is_none")]
-    pub sw_total_size: Option<usize>,
-    #[serde(default, rename = "swtotal_weight", skip_serializing_if = "Option::is_none")]
-    pub sw_total_weight: Option<usize>,
-    #[serde(default, rename = "swtxs", skip_serializing_if = "Option::is_none")]
-    pub sw_txs: Option<usize>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub time: Option<u64>,
     #[serde(
@@ -370,8 +368,6 @@ pub struct GetBlockStatsResultPartial {
     pub total_out: Option<Amount>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub total_size: Option<usize>,
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub total_weight: Option<usize>,
     #[serde(
         default,
         rename = "totalfee",
@@ -387,27 +383,12 @@ pub struct GetBlockStatsResultPartial {
     pub utxo_size_inc: Option<i32>,
 }
 
-#[derive(Clone, PartialEq, Debug, Deserialize, Serialize)]
-pub struct FeeRatePercentiles {
-    #[serde(with = "bitcoin::amount::serde::as_sat")]
-    pub fr_10th: Amount,
-    #[serde(with = "bitcoin::amount::serde::as_sat")]
-    pub fr_25th: Amount,
-    #[serde(with = "bitcoin::amount::serde::as_sat")]
-    pub fr_50th: Amount,
-    #[serde(with = "bitcoin::amount::serde::as_sat")]
-    pub fr_75th: Amount,
-    #[serde(with = "bitcoin::amount::serde::as_sat")]
-    pub fr_90th: Amount,
-}
-
 #[derive(Clone)]
 pub enum BlockStatsFields {
     AverageFee,
     AverageFeeRate,
     AverageTxSize,
     BlockHash,
-    FeeRatePercentiles,
     Height,
     Ins,
     MaxFee,
@@ -421,13 +402,9 @@ pub enum BlockStatsFields {
     MinTxSize,
     Outs,
     Subsidy,
-    SegWitTotalSize,
-    SegWitTotalWeight,
-    SegWitTxs,
     Time,
     TotalOut,
     TotalSize,
-    TotalWeight,
     TotalFee,
     Txs,
     UtxoIncrease,
@@ -441,7 +418,6 @@ impl BlockStatsFields {
             BlockStatsFields::AverageFeeRate => "avgfeerate",
             BlockStatsFields::AverageTxSize => "avgtxsize",
             BlockStatsFields::BlockHash => "blockhash",
-            BlockStatsFields::FeeRatePercentiles => "feerate_percentiles",
             BlockStatsFields::Height => "height",
             BlockStatsFields::Ins => "ins",
             BlockStatsFields::MaxFee => "maxfee",
@@ -455,13 +431,9 @@ impl BlockStatsFields {
             BlockStatsFields::MinTxSize => "minfeerate",
             BlockStatsFields::Outs => "outs",
             BlockStatsFields::Subsidy => "subsidy",
-            BlockStatsFields::SegWitTotalSize => "swtotal_size",
-            BlockStatsFields::SegWitTotalWeight => "swtotal_weight",
-            BlockStatsFields::SegWitTxs => "swtxs",
             BlockStatsFields::Time => "time",
             BlockStatsFields::TotalOut => "total_out",
             BlockStatsFields::TotalSize => "total_size",
-            BlockStatsFields::TotalWeight => "total_weight",
             BlockStatsFields::TotalFee => "totalfee",
             BlockStatsFields::Txs => "txs",
             BlockStatsFields::UtxoIncrease => "utxo_increase",
@@ -526,9 +498,6 @@ pub struct GetRawTransactionResultVin {
     pub vout: Option<u32>,
     /// The scriptSig in case of a non-coinbase tx.
     pub script_sig: Option<GetRawTransactionResultVinScriptSig>,
-    /// Not provided for coinbase txs.
-    #[serde(default, deserialize_with = "deserialize_hex_array_opt")]
-    pub txinwitness: Option<Vec<Vec<u8>>>,
 }
 
 impl GetRawTransactionResultVin {
@@ -546,15 +515,8 @@ pub struct GetRawTransactionResultVoutScriptPubKey {
     pub asm: String,
     #[serde(with = "crate::serde_hex")]
     pub hex: Vec<u8>,
-    pub req_sigs: Option<usize>,
     #[serde(rename = "type")]
     pub type_: Option<ScriptPubkeyType>,
-    // Deprecated in Bitcoin Core 22
-    #[serde(default)]
-    pub addresses: Vec<Address<NetworkUnchecked>>,
-    // Added in Bitcoin Core 22
-    #[serde(default)]
-    pub address: Option<Address<NetworkUnchecked>>,
 }
 
 impl GetRawTransactionResultVoutScriptPubKey {
@@ -575,45 +537,23 @@ pub struct GetRawTransactionResultVout {
 #[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct GetRawTransactionResult {
-    #[serde(rename = "in_active_chain")]
-    pub in_active_chain: Option<bool>,
     #[serde(with = "crate::serde_hex")]
     pub hex: Vec<u8>,
     pub txid: bitcoin::Txid,
     pub hash: bitcoin::Wtxid,
-    pub size: usize,
-    pub vsize: usize,
     pub version: u32,
+    pub size: usize,
     pub locktime: u32,
     pub vin: Vec<GetRawTransactionResultVin>,
     pub vout: Vec<GetRawTransactionResultVout>,
-    pub blockhash: Option<bitcoin::BlockHash>,
+    #[serde(rename = "blockhash")]
+    pub block_hash: Option<bitcoin::BlockHash>,
     pub confirmations: Option<u32>,
     pub time: Option<usize>,
-    pub blocktime: Option<usize>,
-}
-
-#[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
-pub struct GetBlockFilterResult {
-    pub header: bitcoin::hash_types::FilterHash,
-    #[serde(with = "crate::serde_hex")]
-    pub filter: Vec<u8>,
-}
-
-impl GetBlockFilterResult {
-    /// Get the filter.
-    /// Note that this copies the underlying filter data. To prevent this,
-    /// use [into_filter] instead.
-    pub fn to_filter(&self) -> bip158::BlockFilter {
-        bip158::BlockFilter::new(&self.filter)
-    }
-
-    /// Convert the result in the filter type.
-    pub fn into_filter(self) -> bip158::BlockFilter {
-        bip158::BlockFilter {
-            content: self.filter,
-        }
-    }
+    #[serde(rename = "blocktime")]
+    pub block_time: Option<usize>,
+    #[serde(rename = "blockheight")]
+    pub block_height: Option<u32>,
 }
 
 impl GetRawTransactionResult {
@@ -627,39 +567,6 @@ impl GetRawTransactionResult {
     }
 }
 
-/// Enum to represent the BIP125 replaceable status for a transaction.
-#[derive(Copy, Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
-#[serde(rename_all = "lowercase")]
-pub enum Bip125Replaceable {
-    Yes,
-    No,
-    Unknown,
-}
-
-/// Enum to represent the category of a transaction.
-#[derive(Copy, Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
-#[serde(rename_all = "lowercase")]
-pub enum GetTransactionResultDetailCategory {
-    Send,
-    Receive,
-    Generate,
-    Immature,
-    Orphan,
-}
-
-#[derive(Clone, PartialEq, Eq, Debug, Deserialize)]
-pub struct GetTransactionResultDetail {
-    pub address: Option<Address<NetworkUnchecked>>,
-    pub category: GetTransactionResultDetailCategory,
-    #[serde(with = "bitcoin::amount::serde::as_btc")]
-    pub amount: SignedAmount,
-    pub label: Option<String>,
-    pub vout: u32,
-    #[serde(default, with = "bitcoin::amount::serde::as_btc::opt")]
-    pub fee: Option<SignedAmount>,
-    pub abandoned: Option<bool>,
-}
-
 #[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct GetTxOutResult {
@@ -671,121 +578,6 @@ pub struct GetTxOutResult {
     pub coinbase: bool,
 }
 
-#[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize, Default)]
-#[serde(rename_all = "camelCase")]
-pub struct ListUnspentQueryOptions {
-    #[serde(
-        rename = "minimumAmount",
-        with = "bitcoin::amount::serde::as_btc::opt",
-        skip_serializing_if = "Option::is_none"
-    )]
-    pub minimum_amount: Option<Amount>,
-    #[serde(
-        rename = "maximumAmount",
-        with = "bitcoin::amount::serde::as_btc::opt",
-        skip_serializing_if = "Option::is_none"
-    )]
-    pub maximum_amount: Option<Amount>,
-    #[serde(rename = "maximumCount", skip_serializing_if = "Option::is_none")]
-    pub maximum_count: Option<usize>,
-    #[serde(
-        rename = "minimumSumAmount",
-        with = "bitcoin::amount::serde::as_btc::opt",
-        skip_serializing_if = "Option::is_none"
-    )]
-    pub minimum_sum_amount: Option<Amount>,
-}
-
-#[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
-#[serde(rename_all = "camelCase")]
-pub struct ListUnspentResultEntry {
-    pub txid: bitcoin::Txid,
-    pub vout: u32,
-    pub address: Option<Address<NetworkUnchecked>>,
-    pub label: Option<String>,
-    pub redeem_script: Option<ScriptBuf>,
-    pub witness_script: Option<ScriptBuf>,
-    pub script_pub_key: ScriptBuf,
-    #[serde(with = "bitcoin::amount::serde::as_btc")]
-    pub amount: Amount,
-    pub confirmations: u32,
-    pub spendable: bool,
-    pub solvable: bool,
-    #[serde(rename = "desc")]
-    pub descriptor: Option<String>,
-    pub safe: bool,
-}
-
-#[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
-pub struct TestMempoolAcceptResult {
-    pub txid: bitcoin::Txid,
-    pub allowed: bool,
-    #[serde(rename = "reject-reason")]
-    pub reject_reason: Option<String>,
-    /// Virtual transaction size as defined in BIP 141 (only present when 'allowed' is true)
-    /// Added in Bitcoin Core v0.21
-    pub vsize: Option<u64>,
-    /// Transaction fees (only present if 'allowed' is true)
-    /// Added in Bitcoin Core v0.21
-    pub fees: Option<TestMempoolAcceptResultFees>,
-}
-
-#[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
-pub struct TestMempoolAcceptResultFees {
-    /// Transaction fee in BTC
-    #[serde(with = "bitcoin::amount::serde::as_btc")]
-    pub base: Amount,
-    // unlike GetMempoolEntryResultFees, this only has the `base` fee
-}
-
-#[derive(Copy, Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
-#[serde(rename_all = "snake_case")]
-pub enum Bip9SoftforkStatus {
-    Defined,
-    Started,
-    LockedIn,
-    Active,
-    Failed,
-}
-
-#[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
-pub struct Bip9SoftforkStatistics {
-    pub period: u32,
-    pub threshold: Option<u32>,
-    pub elapsed: u32,
-    pub count: u32,
-    pub possible: Option<bool>,
-}
-
-#[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
-pub struct Bip9SoftforkInfo {
-    pub status: Bip9SoftforkStatus,
-    pub bit: Option<u8>,
-    // Can be -1 for 0.18.x inactive ones.
-    pub start_time: i64,
-    pub timeout: u64,
-    pub since: u32,
-    pub statistics: Option<Bip9SoftforkStatistics>,
-}
-
-#[derive(Copy, Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
-#[serde(rename_all = "lowercase")]
-pub enum SoftforkType {
-    Buried,
-    Bip9,
-    #[serde(other)]
-    Other,
-}
-
-/// Status of a softfork
-#[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
-pub struct Softfork {
-    #[serde(rename = "type")]
-    pub type_: SoftforkType,
-    pub bip9: Option<Bip9SoftforkInfo>,
-    pub height: Option<u32>,
-    pub active: bool,
-}
 
 #[allow(non_camel_case_types)]
 #[derive(Copy, Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
@@ -797,97 +589,6 @@ pub enum ScriptPubkeyType {
     ScriptHash,
     MultiSig,
     NullData,
-    Witness_v0_KeyHash,
-    Witness_v0_ScriptHash,
-    Witness_v1_Taproot,
-    Witness_Unknown,
-}
-
-#[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
-pub struct GetAddressInfoResultEmbedded {
-    pub address: Address<NetworkUnchecked>,
-    #[serde(rename = "scriptPubKey")]
-    pub script_pub_key: ScriptBuf,
-    #[serde(rename = "is_script")]
-    pub is_script: Option<bool>,
-    #[serde(rename = "is_witness")]
-    pub is_witness: Option<bool>,
-    pub witness_version: Option<u32>,
-    #[serde(with = "crate::serde_hex")]
-    pub witness_program: Vec<u8>,
-    pub script: Option<ScriptPubkeyType>,
-    /// The redeemscript for the p2sh address.
-    #[serde(default, with = "crate::serde_hex::opt")]
-    pub hex: Option<Vec<u8>>,
-    pub pubkeys: Option<Vec<PublicKey>>,
-    #[serde(rename = "sigsrequired")]
-    pub n_signatures_required: Option<usize>,
-    pub pubkey: Option<PublicKey>,
-    #[serde(rename = "is_compressed")]
-    pub is_compressed: Option<bool>,
-    pub label: Option<String>,
-    #[serde(rename = "hdkeypath")]
-    pub hd_key_path: Option<bip32::DerivationPath>,
-    #[serde(rename = "hdseedid")]
-    pub hd_seed_id: Option<bitcoin::bip32::XKeyIdentifier>,
-    #[serde(default)]
-    pub labels: Vec<GetAddressInfoResultLabel>,
-}
-
-#[derive(Copy, Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
-#[serde(rename_all = "lowercase")]
-pub enum GetAddressInfoResultLabelPurpose {
-    Send,
-    Receive,
-}
-
-#[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
-#[serde(untagged)]
-pub enum GetAddressInfoResultLabel {
-    Simple(String),
-    WithPurpose {
-        name: String,
-        purpose: GetAddressInfoResultLabelPurpose,
-    },
-}
-
-#[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
-pub struct GetAddressInfoResult {
-    pub address: Address<NetworkUnchecked>,
-    #[serde(rename = "scriptPubKey")]
-    pub script_pub_key: ScriptBuf,
-    #[serde(rename = "ismine")]
-    pub is_mine: Option<bool>,
-    #[serde(rename = "iswatchonly")]
-    pub is_watchonly: Option<bool>,
-    #[serde(rename = "isscript")]
-    pub is_script: Option<bool>,
-    #[serde(rename = "iswitness")]
-    pub is_witness: Option<bool>,
-    pub witness_version: Option<u32>,
-    #[serde(default, with = "crate::serde_hex::opt")]
-    pub witness_program: Option<Vec<u8>>,
-    pub script: Option<ScriptPubkeyType>,
-    /// The redeemscript for the p2sh address.
-    #[serde(default, with = "crate::serde_hex::opt")]
-    pub hex: Option<Vec<u8>>,
-    pub pubkeys: Option<Vec<PublicKey>>,
-    #[serde(rename = "sigsrequired")]
-    pub n_signatures_required: Option<usize>,
-    pub pubkey: Option<PublicKey>,
-    /// Information about the address embedded in P2SH or P2WSH, if relevant and known.
-    pub embedded: Option<GetAddressInfoResultEmbedded>,
-    #[serde(rename = "is_compressed")]
-    pub is_compressed: Option<bool>,
-    pub timestamp: Option<u64>,
-    #[serde(rename = "hdkeypath")]
-    pub hd_key_path: Option<bip32::DerivationPath>,
-    #[serde(rename = "hdseedid")]
-    pub hd_seed_id: Option<bitcoin::bip32::XKeyIdentifier>,
-    pub labels: Vec<GetAddressInfoResultLabel>,
-    /// Deprecated in v0.20.0. See `labels` field instead.
-    #[deprecated(note = "since Core v0.20.0")]
-    pub label: Option<String>,
 }
 
 /// Models the result of "getblockchaininfo"
@@ -911,28 +612,12 @@ pub struct GetBlockchainInfoResult {
     /// Estimate of verification progress [0..1]
     #[serde(rename = "verificationprogress")]
     pub verification_progress: f64,
-    /// Estimate of whether this node is in Initial Block Download mode
-    #[serde(rename = "initialblockdownload")]
-    pub initial_block_download: bool,
     /// Total amount of work in active chain, in hexadecimal
     #[serde(rename = "chainwork", with = "crate::serde_hex")]
     pub chain_work: Vec<u8>,
-    /// The estimated size of the block and undo files on disk
-    pub size_on_disk: u64,
     /// If the blocks are subject to pruning
     pub pruned: bool,
-    /// Lowest-height complete block stored (only present if pruning is enabled)
-    #[serde(rename = "pruneheight")]
-    pub prune_height: Option<u64>,
-    /// Whether automatic pruning is enabled (only present if pruning is enabled)
-    pub automatic_pruning: Option<bool>,
-    /// The target size used by pruning (only present if automatic pruning is enabled)
-    pub prune_target_size: Option<u64>,
-    /// Status of softforks in progress
-    #[serde(default)]
-    pub softforks: HashMap<String, Softfork>,
-    /// Any network and blockchain warnings.
-    pub warnings: String,
+    // todo: skipped the softforks field
 }
 
 #[derive(Clone, PartialEq, Eq, Debug)]
@@ -1756,19 +1441,4 @@ where
     }
 
     deserializer.deserialize_str(NetworkVisitor)
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_softfork_type() {
-        let buried: SoftforkType = serde_json::from_str("\"buried\"").unwrap();
-        assert_eq!(buried, SoftforkType::Buried);
-        let bip9: SoftforkType = serde_json::from_str("\"bip9\"").unwrap();
-        assert_eq!(bip9, SoftforkType::Bip9);
-        let other: SoftforkType = serde_json::from_str("\"bip8\"").unwrap();
-        assert_eq!(other, SoftforkType::Other);
-    }
 }

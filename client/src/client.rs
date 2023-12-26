@@ -305,73 +305,7 @@ pub trait RpcApi: Sized {
     /// blockchain processing.
     fn get_blockchain_info(&self) -> Result<json::GetBlockchainInfoResult> {
         let mut raw: serde_json::Value = self.call("getblockchaininfo", &[])?;
-        // The softfork fields are not backwards compatible:
-        // - 0.18.x returns a "softforks" array and a "bip9_softforks" map.
-        // - 0.19.x returns a "softforks" map.
-        Ok(if self.version()? < 190000 {
-            use crate::Error::UnexpectedStructure as err;
-
-            // First, remove both incompatible softfork fields.
-            // We need to scope the mutable ref here for v1.29 borrowck.
-            let (bip9_softforks, old_softforks) = {
-                let map = raw.as_object_mut().ok_or(err)?;
-                let bip9_softforks = map.remove("bip9_softforks").ok_or(err)?;
-                let old_softforks = map.remove("softforks").ok_or(err)?;
-                // Put back an empty "softforks" field.
-                map.insert("softforks".into(), serde_json::Map::new().into());
-                (bip9_softforks, old_softforks)
-            };
-            let mut ret: json::GetBlockchainInfoResult = serde_json::from_value(raw)?;
-
-            // Then convert both softfork types and add them.
-            for sf in old_softforks.as_array().ok_or(err)?.iter() {
-                let json = sf.as_object().ok_or(err)?;
-                let id = json.get("id").ok_or(err)?.as_str().ok_or(err)?;
-                let reject = json.get("reject").ok_or(err)?.as_object().ok_or(err)?;
-                let active = reject.get("status").ok_or(err)?.as_bool().ok_or(err)?;
-                ret.softforks.insert(
-                    id.into(),
-                    json::Softfork {
-                        type_: json::SoftforkType::Buried,
-                        bip9: None,
-                        height: None,
-                        active: active,
-                    },
-                );
-            }
-            for (id, sf) in bip9_softforks.as_object().ok_or(err)?.iter() {
-                #[derive(Deserialize)]
-                struct OldBip9SoftFork {
-                    pub status: json::Bip9SoftforkStatus,
-                    pub bit: Option<u8>,
-                    #[serde(rename = "startTime")]
-                    pub start_time: i64,
-                    pub timeout: u64,
-                    pub since: u32,
-                    pub statistics: Option<json::Bip9SoftforkStatistics>,
-                }
-                let sf: OldBip9SoftFork = serde_json::from_value(sf.clone())?;
-                ret.softforks.insert(
-                    id.clone(),
-                    json::Softfork {
-                        type_: json::SoftforkType::Bip9,
-                        bip9: Some(json::Bip9SoftforkInfo {
-                            status: sf.status,
-                            bit: sf.bit,
-                            start_time: sf.start_time,
-                            timeout: sf.timeout,
-                            since: sf.since,
-                            statistics: sf.statistics,
-                        }),
-                        height: None,
-                        active: sf.status == json::Bip9SoftforkStatus::Active,
-                    },
-                );
-            }
-            ret
-        } else {
-            serde_json::from_value(raw)?
-        })
+        Ok(serde_json::from_value(raw)?)
     }
 
     /// Returns the numbers of block in the longest chain.
@@ -427,13 +361,6 @@ pub trait RpcApi: Sized {
     ) -> Result<json::GetRawTransactionResult> {
         let mut args = [into_json(txid)?, into_json(true)?, opt_into_json(block_hash)?];
         self.call("getrawtransaction", handle_defaults(&mut args, &[null()]))
-    }
-
-    fn get_block_filter(
-        &self,
-        block_hash: &bitcoin::BlockHash,
-    ) -> Result<json::GetBlockFilterResult> {
-        self.call("getblockfilter", &[into_json(block_hash)?])
     }
 
     fn get_tx_out(
@@ -497,15 +424,6 @@ pub trait RpcApi: Sized {
         self.call("decoderawtransaction", handle_defaults(&mut args, &defaults))
     }
 
-    fn test_mempool_accept<R: RawTx>(
-        &self,
-        rawtxs: &[R],
-    ) -> Result<Vec<json::TestMempoolAcceptResult>> {
-        let hexes: Vec<serde_json::Value> =
-            rawtxs.to_vec().into_iter().map(|r| r.raw_hex().into()).collect();
-        self.call("testmempoolaccept", &[hexes.into()])
-    }
-
     fn stop(&self) -> Result<String> {
         self.call("stop", &[])
     }
@@ -527,15 +445,6 @@ pub trait RpcApi: Sized {
         address_type: Option<json::AddressType>,
     ) -> Result<Address<NetworkUnchecked>> {
         self.call("getnewaddress", &[opt_into_json(label)?, opt_into_json(address_type)?])
-    }
-
-    /// Generate new address for receiving change
-    fn get_raw_change_address(&self, address_type: Option<json::AddressType>) -> Result<Address<NetworkUnchecked>> {
-        self.call("getrawchangeaddress", &[opt_into_json(address_type)?])
-    }
-
-    fn get_address_info(&self, address: &Address) -> Result<json::GetAddressInfoResult> {
-        self.call("getaddressinfo", &[address.to_string().into()])
     }
 
     /// Mine `block_num` blocks and pay coinbase to `address`
