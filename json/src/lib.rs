@@ -824,44 +824,17 @@ pub enum GetAddedNodeInfoResultAddressType {
 }
 
 #[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
-pub struct GetNodeAddressesResult {
-    /// Timestamp in seconds since epoch (Jan 1 1970 GMT) keeping track of when the node was last seen
-    pub time: u64,
-    /// The services offered
-    pub services: usize,
-    /// The address of the node
-    pub address: String,
-    /// The port of the node
-    pub port: u16,
-}
-
-#[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
 pub struct ListBannedResult {
     pub address: String,
     pub banned_until: u64,
     pub ban_created: u64,
-}
-
-
-/// Models the result of "getdescriptorinfo"
-#[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
-pub struct GetDescriptorInfoResult {
-    pub descriptor: String,
-    pub checksum: Option<String>,
-    #[serde(rename = "isrange")]
-    pub is_range: bool,
-    #[serde(rename = "issolvable")]
-    pub is_solvable: bool,
-    #[serde(rename = "hasprivatekeys")]
-    pub has_private_keys: bool,
+    pub ban_reason: String,
 }
 
 /// Models the request options of "getblocktemplate"
 #[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
 pub struct GetBlockTemplateOptions {
     pub mode: GetBlockTemplateModes,
-    //// List of client side supported softfork deployment
-    pub rules: Vec<GetBlockTemplateRules>,
     /// List of client side supported features
     pub capabilities: Vec<GetBlockTemplateCapabilities>,
 }
@@ -871,17 +844,6 @@ pub struct GetBlockTemplateOptions {
 #[serde(rename_all = "lowercase")]
 pub enum GetBlockTemplateCapabilities {
     // No features supported yet. In the future this could be, for example, Proposal and Longpolling
-}
-
-/// Enum to representing specific block rules that the requested template
-/// should support.
-#[derive(Copy, Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
-#[serde(rename_all = "lowercase")]
-pub enum GetBlockTemplateRules {
-    SegWit,
-    Signet,
-    Csv,
-    Taproot,
 }
 
 /// Enum to represent client-side supported features.
@@ -898,52 +860,15 @@ pub enum GetBlockTemplateModes {
 /// Models the result of "getblocktemplate"
 #[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
 pub struct GetBlockTemplateResult {
-    /// The compressed difficulty in hexadecimal
-    #[serde(with = "crate::serde_hex")]
-    pub bits: Vec<u8>,
+    /// List of features the getblocktemplate implementation supports
+    pub capabilities: Vec<String>,
+    /// Block header version
+    pub version: u32,
     /// The previous block hash the current template is mining on
     #[serde(rename = "previousblockhash")]
     pub previous_block_hash: bitcoin::BlockHash,
-    /// The current time as seen by the server (recommended for block time)
-    /// Note: this is not necessarily the system clock, and must fall within
-    /// the mintime/maxtime rules. Expressed as UNIX timestamp.
-    #[serde(rename = "curtime")]
-    pub current_time: u64,
-    /// The height of the block we will be mining: `current height + 1`
-    pub height: u64,
-    /// Block sigops limit
-    #[serde(rename = "sigoplimit")]
-    pub sigop_limit: u32,
-    /// Block size limit
-    #[serde(rename = "sizelimit")]
-    pub size_limit: u32,
-    /// Block weight limit
-    #[serde(rename = "weightlimit")]
-    pub weight_limit: u32,
-    /// Block header version
-    pub version: u32,
-    /// Block rules that are to be enforced
-    pub rules: Vec<GetBlockTemplateResultRules>,
-    /// List of features the Bitcoin Core getblocktemplate implementation supports
-    pub capabilities: Vec<GetBlockTemplateResultCapabilities>,
-    /// Set of pending, supported versionbit (BIP 9) softfork deployments
-    #[serde(rename = "vbavailable")]
-    pub version_bits_available: HashMap<String, u32>,
-    /// Bit mask of versionbits the server requires set in submissions
-    #[serde(rename = "vbrequired")]
-    pub version_bits_required: u32,
-    /// Id used in longpoll requests for this template.
-    pub longpollid: String,
     /// List of transactions included in the template block
     pub transactions: Vec<GetBlockTemplateResultTransaction>,
-    /// The signet challenge. Only set if mining on a signet, otherwise empty
-    #[serde(default, with = "bitcoin::script::ScriptBuf")]
-    pub signet_challenge: bitcoin::script::ScriptBuf,
-    /// The default witness commitment included in an OP_RETURN output of the
-    /// coinbase transactions. Only set when mining on a network where SegWit
-    /// is activated.
-    #[serde(with = "bitcoin::script::ScriptBuf", default)]
-    pub default_witness_commitment: bitcoin::script::ScriptBuf,
     /// Data that should be included in the coinbase's scriptSig content. Only
     /// the values (hexadecimal byte-for-byte) in this map should be included,
     /// not the keys. This does not include the block height, which is required
@@ -954,6 +879,8 @@ pub struct GetBlockTemplateResult {
     /// Total funds available for the coinbase
     #[serde(rename = "coinbasevalue", with = "bitcoin::amount::serde::as_sat", default)]
     pub coinbase_value: Amount,
+    /// Id used in longpoll requests for this template.
+    pub longpollid: String,
     /// The number which valid hashes must be less than, in big-endian
     #[serde(with = "crate::serde_hex")]
     pub target: Vec<u8>,
@@ -967,30 +894,36 @@ pub struct GetBlockTemplateResult {
     /// A range of valid nonces
     #[serde(with = "crate::serde_hex", rename = "noncerange")]
     pub nonce_range: Vec<u8>,
+    /// Block size limit
+    #[serde(rename = "sizelimit")]
+    pub size_limit: u64,
+    /// current time on the server
+    #[serde(rename = "curtime")]
+    pub cur_time: u64,
+    /// The compressed difficulty in hexadecimal
+    #[serde(with = "crate::serde_hex")]
+    pub bits: Vec<u8>,
+    /// The height of the block we will be mining: `current height + 1`
+    pub height: u64,
 }
 
 /// Models a single transaction entry in the result of "getblocktemplate"
 #[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
 pub struct GetBlockTemplateResultTransaction {
-    /// The transaction id
-    pub txid: bitcoin::Txid,
-    /// The wtxid of the transaction
-    #[serde(rename = "hash")]
-    pub wtxid: bitcoin::Wtxid,
     /// The serilaized transaction bytes
     #[serde(with = "crate::serde_hex", rename = "data")]
     pub raw_tx: Vec<u8>,
-    // The transaction fee
-    #[serde(with = "bitcoin::amount::serde::as_sat")]
-    pub fee: Amount,
-    /// Transaction sigops
-    pub sigops: u32,
-    /// Transaction weight in weight units
-    pub weight: usize,
+    /// The transaction id
+    #[serde(rename = "txid")]
+    pub tx_id: bitcoin::Txid,
+    pub hash: bitcoin::Txid,
     /// Transactions that must be in present in the final block if this one is.
     /// Indexed by a 1-based index in the `GetBlockTemplateResult.transactions`
     /// list
     pub depends: Vec<u32>,
+    // The transaction fee
+    #[serde(with = "bitcoin::amount::serde::as_sat")]
+    pub fee: Amount,
 }
 
 impl GetBlockTemplateResultTransaction {
@@ -999,41 +932,7 @@ impl GetBlockTemplateResultTransaction {
     }
 }
 
-/// Enum to represent Bitcoin Core's supported features for getblocktemplate
-#[derive(Copy, Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
-#[serde(rename_all = "lowercase")]
-pub enum GetBlockTemplateResultCapabilities {
-    Proposal,
-}
-
-/// Enum to representing specific block rules that client must support to work
-/// with the template returned by Bitcoin Core
-#[derive(Copy, Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
-#[serde(rename_all = "lowercase")]
-pub enum GetBlockTemplateResultRules {
-    /// Inidcates that the client must support the SegWit rules when using this
-    /// template.
-    #[serde(alias = "!segwit")]
-    SegWit,
-    /// Indicates that the client must support the Signet rules when using this
-    /// template.
-    #[serde(alias = "!signet")]
-    Signet,
-    /// Indicates that the client must support the CSV rules when using this
-    /// template.
-    Csv,
-    /// Indicates that the client must support the taproot rules when using this
-    /// template.
-    Taproot,
-    /// Indicates that the client must support the Regtest rules when using this
-    /// template. TestDummy is a test soft-fork only used on the regtest network.
-    Testdummy,
-}
-
-/// Enum to representing mutable parts of the block template. This does only
-/// cover the muations implemented in Bitcoin Core. More mutations are defined
-/// in [BIP-23](https://github.com/bitcoin/bips/blob/master/bip-0023.mediawiki#Mutations),
-/// but not implemented in the getblocktemplate implementation of Bitcoin Core.
+/// Enum to representing mutable parts of the block template.
 #[derive(Copy, Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
 #[serde(rename_all = "lowercase")]
 pub enum GetBlockTemplateResulMutations {
@@ -1052,10 +951,8 @@ pub enum GetBlockTemplateResulMutations {
 #[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
 pub struct DecodeRawTransactionResult {
     pub txid: bitcoin::Txid,
-    pub hash: bitcoin::Wtxid,
+    pub hash: bitcoin::Txid,
     pub size: u32,
-    pub vsize: u32,
-    pub weight: u32,
     pub version: u32,
     pub locktime: u32,
     pub vin: Vec<GetRawTransactionResultVin>,
@@ -1074,8 +971,8 @@ pub struct GetChainTipsResultTip {
     pub hash: bitcoin::BlockHash,
     /// Length of the branch (number of blocks since the last common block)
     #[serde(rename = "branchlen")]
-    pub branch_length: usize,
-    /// Status of the tip as seen by Bitcoin Core
+    pub branch_length: u32,
+    /// Status of the tip as seen by the node
     pub status: GetChainTipsResultStatus,
 }
 
@@ -1160,72 +1057,20 @@ pub struct GetTxOutSetInfoResult {
     /// The hash of the block at which these statistics are calculated
     #[serde(rename = "bestblock")]
     pub best_block: bitcoin::BlockHash,
-    /// The number of transactions with unspent outputs (not available when coinstatsindex is used)
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub transactions: Option<u64>,
+    /// The number of transactions with unspent outputs
+    pub transactions: u64,
     /// The number of unspent transaction outputs
     #[serde(rename = "txouts")]
     pub tx_outs: u64,
     /// A meaningless metric for UTXO set size
     pub bogosize: u64,
-    /// The serialized hash (only present if 'hash_serialized_2' hash_type is chosen)
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub hash_serialized_2: Option<sha256::Hash>,
-    /// The serialized hash (only present if 'muhash' hash_type is chosen)
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub muhash: Option<sha256::Hash>,
-    /// The estimated size of the chainstate on disk (not available when coinstatsindex is used)
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub disk_size: Option<u64>,
+    /// The serialized hash
+    pub hash_serialized: sha256::Hash,
+    /// The estimated size of the chainstate on disk
+    pub disk_size: u64,
     /// The total amount
     #[serde(with = "bitcoin::amount::serde::as_btc")]
     pub total_amount: Amount,
-    /// The total amount of coins permanently excluded from the UTXO set (only available if coinstatsindex is used)
-    #[serde(
-        default,
-        skip_serializing_if = "Option::is_none",
-        with = "bitcoin::amount::serde::as_btc::opt"
-    )]
-    pub total_unspendable_amount: Option<Amount>,
-    /// Info on amounts in the block at this block height (only available if coinstatsindex is used)
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub block_info: Option<BlockInfo>,
-}
-
-/// Info on amounts in the block at the block height of the `gettxoutsetinfo` call (only available if coinstatsindex is used)
-#[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
-pub struct BlockInfo {
-    /// Amount of previous outputs spent
-    #[serde(with = "bitcoin::amount::serde::as_btc")]
-    pub prevout_spent: Amount,
-    /// Output size of the coinbase transaction
-    #[serde(with = "bitcoin::amount::serde::as_btc")]
-    pub coinbase: Amount,
-    /// Newly-created outputs
-    #[serde(with = "bitcoin::amount::serde::as_btc")]
-    pub new_outputs_ex_coinbase: Amount,
-    /// Amount of unspendable outputs
-    #[serde(with = "bitcoin::amount::serde::as_btc")]
-    pub unspendable: Amount,
-    /// Detailed view of the unspendable categories
-    pub unspendables: Unspendables,
-}
-
-/// Detailed view of the unspendable categories
-#[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
-pub struct Unspendables {
-    /// Unspendable coins from the Genesis block
-    #[serde(with = "bitcoin::amount::serde::as_btc")]
-    pub genesis_block: Amount,
-    /// Transactions overridden by duplicates (no longer possible with BIP30)
-    #[serde(with = "bitcoin::amount::serde::as_btc")]
-    pub bip30: Amount,
-    /// Amounts sent to scripts that are unspendable (for example OP_RETURN outputs)
-    #[serde(with = "bitcoin::amount::serde::as_btc")]
-    pub scripts: Amount,
-    /// Fee rewards that miners did not claim in their coinbase transaction
-    #[serde(with = "bitcoin::amount::serde::as_btc")]
-    pub unclaimed_rewards: Amount,
 }
 
 #[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]

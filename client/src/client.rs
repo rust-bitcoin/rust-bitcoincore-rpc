@@ -281,13 +281,11 @@ pub trait RpcApi: Sized {
     fn get_block_template(
         &self,
         mode: json::GetBlockTemplateModes,
-        rules: &[json::GetBlockTemplateRules],
         capabilities: &[json::GetBlockTemplateCapabilities],
     ) -> Result<json::GetBlockTemplateResult> {
         #[derive(Serialize)]
         struct Argument<'a> {
             mode: json::GetBlockTemplateModes,
-            rules: &'a [json::GetBlockTemplateRules],
             capabilities: &'a [json::GetBlockTemplateCapabilities],
         }
 
@@ -295,7 +293,6 @@ pub trait RpcApi: Sized {
             "getblocktemplate",
             &[into_json(Argument {
                 mode: mode,
-                rules: rules,
                 capabilities: capabilities,
             })?],
         )
@@ -525,15 +522,6 @@ pub trait RpcApi: Sized {
         } else {
             self.call("getaddednodeinfo", &[])
         }
-    }
-
-    /// Return known addresses which can potentially be used to find new nodes in the network
-    fn get_node_addresses(
-        &self,
-        count: Option<usize>,
-    ) -> Result<Vec<json::GetNodeAddressesResult>> {
-        let cnt = count.unwrap_or(1);
-        self.call("getnodeaddresses", &[into_json(&cnt)?])
     }
 
     /// List all banned IPs/Subnets.

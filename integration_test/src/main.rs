@@ -141,7 +141,6 @@ fn main() {
     //TODO verify_message(
     test_add_node(&cl);
     test_get_added_node_info(&cl);
-    test_get_node_addresses(&cl);
     test_disconnect_node(&cl);
     test_add_ban(&cl);
     test_set_network_active(&cl);
@@ -289,10 +288,6 @@ fn test_get_added_node_info(cl: &Client) {
     assert_eq!(cl.get_added_node_info(None).unwrap().len(), 2);
     assert_eq!(cl.get_added_node_info(Some("127.0.0.1:1234")).unwrap().len(), 1);
     assert_eq!(cl.get_added_node_info(Some("127.0.0.1:4321")).unwrap().len(), 1);
-}
-
-fn test_get_node_addresses(cl: &Client) {
-    cl.get_node_addresses(None).unwrap();
 }
 
 fn test_disconnect_node(cl: &Client) {
