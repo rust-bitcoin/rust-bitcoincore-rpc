@@ -39,6 +39,7 @@ sleep 5
 RPC_URL=http://localhost:12349 \
     RPC_COOKIE=${TESTDIR}/2/regtest/.cookie \
     TESTDIR=${TESTDIR} \
+    RUST_BACKTRACE=1 \
     cargo run
 
 RESULT=$?
