@@ -145,7 +145,7 @@ fn test_get_best_block_hash(cl: &Client) {
 
 fn test_get_block_count(cl: &Client) {
     let height = cl.get_block_count().unwrap();
-    assert!(height > 0);
+    assert_eq!(height, 0);
 }
 
 fn test_get_block_hash(cl: &Client) {
