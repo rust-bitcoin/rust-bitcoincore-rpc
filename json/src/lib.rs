@@ -24,7 +24,7 @@ use sv::util::{Serializable};
 use sv::script::Script;
 
 
-pub type Amount = fixed::types::U37F27;
+pub type Amount = f64;          // todo: this is bad, must replace it
 pub type TxHash = String;       // TODO: use Hash256 but its not serializable
 pub type BlockHash = String;    // TODO: use Hash256 but its not serializable
 pub type MerkleRootHash = String;   // TODO: use Hash256 but its not serializable
@@ -134,7 +134,7 @@ mod ninfo_address_tests {
 }
 
 
-#[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
+#[derive(Clone, PartialEq, Debug, Deserialize, Serialize)]
 pub struct GetNetworkInfoResult {
     pub version: u32,
     pub subversion: String,
@@ -159,7 +159,7 @@ pub struct GetNetworkInfoResult {
     pub stream_policies: String,
     pub networks: Vec<GetNetworkInfoResultNetwork>,
     #[serde(rename = "relayfee")]
-    pub relay_fee: String,
+    pub relay_fee: f64,
     #[serde(rename = "minconsolidationfactor")]
     pub min_consolidation_factor: u64,
     #[serde(rename = "maxconsolidationinputscriptsize")]
@@ -173,6 +173,65 @@ pub struct GetNetworkInfoResult {
     #[serde(rename = "localaddresses")]
     pub local_addresses: Vec<GetNetworkInfoResultAddress>,
     pub warnings: String,
+}
+
+#[cfg(test)]
+mod ninfo_tests {
+    use super::*;
+    use serde_json;
+
+    #[test]
+    fn test_deserialize_get_network_info_result() {
+        let json_data = r#"
+            {
+              "version": 101001600,
+              "subversion": "/Bitcoin SV:1.0.16/",
+              "protocolversion": 70016,
+              "localservices": "0000000000000021",
+              "localrelay": true,
+              "timeoffset": 0,
+              "txnpropagationfreq": 250,
+              "txnpropagationqlen": 0,
+              "networkactive": true,
+              "connections": 129,
+              "addresscount": 38071,
+              "streampolicies": "BlockPriority,Default",
+              "networks": [
+                {
+                  "name": "ipv4",
+                  "limited": false,
+                  "reachable": true,
+                  "proxy": "",
+                  "proxy_randomize_credentials": false
+                },
+                {
+                  "name": "ipv6",
+                  "limited": false,
+                  "reachable": true,
+                  "proxy": "",
+                  "proxy_randomize_credentials": false
+                }
+              ],
+              "relayfee": 0.00000000,
+              "minconsolidationfactor": 20,
+              "maxconsolidationinputscriptsize": 150,
+              "minconfconsolidationinput": 6,
+              "minconsolidationinputmaturity": 6,
+              "acceptnonstdconsolidationinput": false,
+              "localaddresses": [
+                {
+                  "address": "192.168.78.4",
+                  "port": 8333,
+                  "score": 16651
+                }
+              ],
+              "warnings": ""
+            }
+        "#;
+        let result: GetNetworkInfoResult = serde_json::from_str(json_data).unwrap();
+
+        assert_eq!(result.version, 101001600);
+    }
 }
 
 #[derive(Clone, PartialEq, Debug, Deserialize, Serialize)]
@@ -572,7 +631,7 @@ impl GetRawTransactionResultVoutScriptPubKey {
     }
 }
 
-#[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
+#[derive(Clone, PartialEq, Debug, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct GetRawTransactionResultVout {
     pub value: Amount,
@@ -580,7 +639,7 @@ pub struct GetRawTransactionResultVout {
     pub script_pub_key: GetRawTransactionResultVoutScriptPubKey,
 }
 
-#[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
+#[derive(Clone, PartialEq, Debug, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct GetRawTransactionResult {
     #[serde(with = "crate::serde_hex")]
@@ -615,7 +674,7 @@ impl GetRawTransactionResult {
     }
 }
 
-#[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
+#[derive(Clone, PartialEq, Debug, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct GetTxOutResult {
     pub bestblock: BlockHash,
@@ -665,7 +724,7 @@ pub struct GetBlockchainInfoResult {
     pub pruned: bool,
 }
 
-#[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
+#[derive(Clone, PartialEq, Debug, Deserialize, Serialize)]
 pub struct GetMempoolInfoResult {
     /// Current tx count
     pub size: u64,
@@ -693,7 +752,7 @@ pub struct GetMempoolInfoResult {
     pub mempool_min_fee: Amount,
 }
 
-#[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
+#[derive(Clone, PartialEq, Debug, Deserialize, Serialize)]
 pub struct GetMempoolEntryResult {
     pub size: u64,
     /// Transaction fee in BSV
@@ -894,7 +953,7 @@ pub enum GetBlockTemplateModes {
 }
 
 /// Models the result of "getblocktemplate"
-#[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
+#[derive(Clone, PartialEq, Debug, Deserialize, Serialize)]
 pub struct GetBlockTemplateResult {
     /// List of features the getblocktemplate implementation supports
     pub capabilities: Vec<String>,
@@ -944,7 +1003,7 @@ pub struct GetBlockTemplateResult {
 }
 
 /// Models a single transaction entry in the result of "getblocktemplate"
-#[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
+#[derive(Clone, PartialEq, Debug, Deserialize, Serialize)]
 pub struct GetBlockTemplateResultTransaction {
     /// The serilaized transaction bytes
     #[serde(with = "crate::serde_hex", rename = "data")]
@@ -985,7 +1044,7 @@ pub enum GetBlockTemplateResulMutations {
 }
 
 /// Model for decode transaction
-#[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
+#[derive(Clone, PartialEq, Debug, Deserialize, Serialize)]
 pub struct DecodeRawTransactionResult {
     pub txid: TxHash,
     pub hash: TxHash,
@@ -1058,7 +1117,7 @@ pub enum HashOrHeight {
     Height(u64),
 }
 
-#[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
+#[derive(Clone, PartialEq, Debug, Deserialize, Serialize)]
 pub struct GetTxOutSetInfoResult {
     /// The block height (index) of the returned statistics
     pub height: u64,
