@@ -17,6 +17,7 @@ use std::collections::HashMap;
 
 use serde::{Deserialize, Serialize};
 use std::fmt;
+pub use bitcoinsv::{TxHash, BlockHash, MerkleRoot};
 use std::io::Cursor;
 use hex::FromHexError;
 pub use sv::messages::Tx;
@@ -25,9 +26,6 @@ use sv::script::Script;
 
 
 pub type Amount = f64;          // todo: this is bad, must replace it
-pub type TxHash = String;       // TODO: use Hash256 but its not serializable
-pub type BlockHash = String;    // TODO: use Hash256 but its not serializable
-pub type MerkleRootHash = String;   // TODO: use Hash256 but its not serializable
 pub type Network = String;          // TODO: use sv::Network but its not serializable
 
 /// A module used for serde serialization of bytes in hexadecimal format.
@@ -262,7 +260,7 @@ pub struct GetBlockResult {
     pub version: i32,
     #[serde(default, rename = "versionHex", with = "crate::serde_hex")]
     pub version_hex: Vec<u8>,
-    pub merkleroot: MerkleRootHash,
+    pub merkleroot: MerkleRoot,
     pub num_tx: u64,
     pub time: u64,
     pub mediantime: Option<u64>,
@@ -337,7 +335,7 @@ pub struct GetBlockHeaderResult {
     #[serde(default, rename = "versionHex", with = "crate::serde_hex::opt")]
     pub version_hex: Option<Vec<u8>>,
     #[serde(rename = "merkleroot")]
-    pub merkle_root: MerkleRootHash,
+    pub merkle_root: MerkleRoot,
     pub num_tx: usize,
     pub time: u64,
     #[serde(rename = "mediantime")]
