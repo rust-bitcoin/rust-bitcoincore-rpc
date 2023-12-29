@@ -4,7 +4,7 @@ set -xe
 
 # Integration test.
 if [ -n "$BSVVERSION" ]; then
-    if [ ! -d "/bitcoin-sv-$BSVVERSION/bin"]; then
+    if [ ! -d "bitcoin-sv-$BSVVERSION/bin"]; then
       if [ ! -f "bitcoin-sv-$BSVVERSION-x86_64-linux-gnu.tar.gz"]; then
         wget -nv https://download.bitcoinsv.io/bitcoinsv/$BSVVERSION/bitcoin-sv-$BSVVERSION-x86_64-linux-gnu.tar.gz
       fi
