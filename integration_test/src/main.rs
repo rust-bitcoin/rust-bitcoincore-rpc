@@ -145,9 +145,9 @@ fn test_get_block_header_get_block_header_info(cl: &Client) {
     let tip = cl.get_best_block_hash().unwrap();
     let header = cl.get_block_header(&tip).unwrap();
     let info = cl.get_block_header_info(&tip).unwrap();
-    // assert_eq!(header.hash(), tip);                      todo
+    assert_eq!(header.hash(), tip);
     assert_eq!(header.version, info.version);
-    // assert_eq!(header.merkle_root, info.merkle_root);        todo
+    assert_eq!(header.merkle_root, info.merkle_root);
     assert_eq!(info.confirmations, 1);
     assert_eq!(info.next_block_hash, None);
     assert!(info.previous_block_hash.is_some());
@@ -158,7 +158,7 @@ fn test_get_block_stats(cl: &Client) {
     let tip_hash = cl.get_best_block_hash().unwrap();
     let header = cl.get_block_header(&tip_hash).unwrap();
     let stats = cl.get_block_stats(tip).unwrap();
-    // assert_eq!(header.hash(), stats.block_hash);         todo
+    assert_eq!(header.hash(), stats.block_hash);
     assert_eq!(header.timestamp, stats.time as u32);
     assert_eq!(tip, stats.height);
 }

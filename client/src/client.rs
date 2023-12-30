@@ -11,8 +11,9 @@ use serde;
 use serde_json;
 
 use log::Level::{Debug, Trace, Warn};
-use sv::messages::{Block, BlockHeader};
+use sv::messages::Block;
 use sv::util::Serializable;
+use bitcoinsv::BlockHeader;
 use bitcoinsv_rpc_json::{Tx, TxHash, BlockHash, Amount, GetNetworkInfoResult};
 
 use crate::error::*;
@@ -218,8 +219,7 @@ pub trait RpcApi: Sized {
 
     fn get_block_header(&self, hash: &BlockHash) -> Result<BlockHeader> {
         let hex: String = self.call("getblockheader", &[into_json(hash)?, false.into()])?;
-        let buf = hex::decode(hex)?;
-        Ok(BlockHeader::read(&mut &buf[..])?)
+        Ok(BlockHeader::from_hex(hex)?)
     }
 
     fn get_block_header_info(

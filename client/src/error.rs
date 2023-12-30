@@ -16,6 +16,7 @@ pub enum Error {
     /// The daemon returned an error string.
     ReturnedError(String),
     SVError(sv::util::Error),
+    BitcoinSVError(bitcoinsv::Error),
 }
 
 impl From<jsonrpc::error::Error> for Error {
@@ -48,6 +49,12 @@ impl From<sv::util::Error> for Error {
     }
 }
 
+impl From<bitcoinsv::Error> for Error {
+    fn from(e: bitcoinsv::Error) -> Error {
+        Error::BitcoinSVError(e)
+    }
+}
+
 impl fmt::Display for Error {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match *self {
@@ -59,6 +66,7 @@ impl fmt::Display for Error {
             Error::UnexpectedStructure => write!(f, "the JSON result had an unexpected structure"),
             Error::ReturnedError(ref s) => write!(f, "the daemon returned an error string: {}", s),
             Error::SVError(ref e) => write!(f, "SV error: {}", e),
+            Error::BitcoinSVError(ref e) => write!(f, "BSV error: {}", e),
         }
     }
 }
