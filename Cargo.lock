@@ -43,7 +43,7 @@ checksum = "9e1b586273c5702936fe7b7d6896644d8be71e6314cfe09d3167c95f712589e8"
 [[package]]
 name = "bitcoinsv"
 version = "0.0.1"
-source = "git+https://github.com/Danconnolly/rust-bitcoinsv.git?branch=main#284fc16d2af1013147f56a56a1b519f31d34a733"
+source = "git+https://github.com/Danconnolly/rust-bitcoinsv.git?branch=main#8c53a4463847a178c198d77771314a46a4363dc6"
 dependencies = [
  "async-trait",
  "hex 0.4.3",
