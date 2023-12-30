@@ -78,8 +78,8 @@ fn main() {
     test_get_block_count(&cl);
     test_get_block_hash(&cl);
     // test_get_block(&cl);
-    // test_get_block_header_get_block_header_info(&cl);
-    // test_get_block_stats(&cl);
+    test_get_block_header_get_block_header_info(&cl);
+    test_get_block_stats(&cl);
     test_get_difficulty(&cl);
     test_get_connection_count(&cl);
     // test_get_raw_mempool(&cl);
