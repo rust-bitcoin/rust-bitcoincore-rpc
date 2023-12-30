@@ -11,13 +11,10 @@
 extern crate serde;
 extern crate serde_json;
 extern crate alloc;
-
 use std::collections::HashMap;
-
-
 use serde::{Deserialize, Serialize};
 use std::fmt;
-pub use bitcoinsv::{TxHash, BlockHash, MerkleRoot};
+pub use bitcoinsv::{TxHash, BlockHash, MerkleRoot, Amount};
 use std::io::Cursor;
 use hex::FromHexError;
 pub use sv::messages::Tx;
@@ -25,7 +22,6 @@ use sv::util::{Serializable};
 use sv::script::Script;
 
 
-pub type Amount = f64;          // todo: this is bad, must replace it
 pub type Network = String;          // TODO: use sv::Network but its not serializable
 
 /// A module used for serde serialization of bytes in hexadecimal format.
