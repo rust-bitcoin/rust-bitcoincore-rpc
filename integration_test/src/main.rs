@@ -15,24 +15,6 @@ use bitcoinsv_rpc::jsonrpc::error::Error as JsonRpcError;
 use bitcoinsv_rpc::{Auth, Client, Error, RpcApi};
 
 
-struct StdLogger;
-
-impl log::Log for StdLogger {
-    fn enabled(&self, metadata: &log::Metadata) -> bool {
-        metadata.target().contains("jsonrpc") || metadata.target().contains("bitcoincore_rpc")
-    }
-
-    fn log(&self, record: &log::Record) {
-        if self.enabled(record.metadata()) {
-            println!("[{}][{}]: {}", record.level(), record.metadata().target(), record.args());
-        }
-    }
-
-    fn flush(&self) {}
-}
-
-static LOGGER: StdLogger = StdLogger;
-
 /// Assert that the call returns the specified error message.
 macro_rules! assert_error_message {
     ($call:expr, $code:expr, $msg:expr) => {
@@ -64,8 +46,6 @@ fn new_client() -> Client {
 }
 
 fn main() {
-    log::set_logger(&LOGGER).map(|()| log::set_max_level(log::LevelFilter::max())).unwrap();
-
     let cl = new_client();
 
     test_get_network_info(&cl);
