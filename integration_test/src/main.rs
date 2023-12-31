@@ -79,7 +79,7 @@ fn main() {
     test_get_block_hash(&cl);
     test_get_block(&cl);         
     test_get_block_header_get_block_header_info(&cl);
-    // test_get_block_stats(&cl);       todo
+    test_get_block_stats(&cl);
     test_get_difficulty(&cl);
     test_get_connection_count(&cl);
     test_get_raw_mempool(&cl);    
@@ -156,7 +156,7 @@ fn test_get_block_stats(cl: &Client) {
     let tip = cl.get_block_count().unwrap();
     let tip_hash = cl.get_best_block_hash().unwrap();
     let header = cl.get_block_header(&tip_hash).unwrap();
-    let stats = cl.get_block_stats(tip).unwrap();
+    let stats = cl.get_block_stats(&tip_hash).unwrap();
     assert_eq!(header.hash(), stats.block_hash);
     assert_eq!(header.timestamp, stats.time as u32);
     assert_eq!(tip, stats.height);

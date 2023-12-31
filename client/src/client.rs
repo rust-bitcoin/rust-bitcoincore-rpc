@@ -238,8 +238,8 @@ pub trait RpcApi: Sized {
         self.call("getblockhash", &[height.into()])
     }
 
-    fn get_block_stats(&self, height: u64) -> Result<json::GetBlockStatsResult> {
-        self.call("getblockstats", &[height.into()])
+    fn get_block_stats(&self, block_hash: &BlockHash) -> Result<json::GetBlockStatsResult> {
+        self.call("getblockstats", &[into_json(block_hash)?])
     }
 
     fn get_block_stats_fields(

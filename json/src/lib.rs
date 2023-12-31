@@ -348,14 +348,13 @@ pub struct GetBlockHeaderResult {
 #[derive(Clone, PartialEq, Debug, Deserialize, Serialize)]
 pub struct GetBlockStatsResult {
     #[serde(rename = "avgfee")]
-    pub avg_fee: String,
+    pub avg_fee: Amount,
     #[serde(rename = "avgfeerate")]
     pub avg_fee_rate: Amount,
     #[serde(rename = "avgtxsize")]
     pub avg_tx_size: u32,
     #[serde(rename = "blockhash")]
     pub block_hash: BlockHash,
-    #[serde(rename = "feerate_percentiles")]
     pub height: u64,
     pub ins: u64,
     #[serde(rename = "maxfee")]
