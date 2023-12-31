@@ -15,8 +15,6 @@ use std::collections::HashMap;
 use serde::{Deserialize, Serialize};
 use std::fmt;
 pub use bitcoinsv::{Amount, BlockHash, Encodable, Error, MerkleRoot, Tx, TxHash};
-use hex::FromHexError;
-use sv::script::Script;
 
 
 pub type Network = String;          // TODO: use sv::Network but its not serializable
@@ -573,13 +571,6 @@ pub struct GetRawTransactionResultVinScriptSig {
     pub hex: Vec<u8>,
 }
 
-impl GetRawTransactionResultVinScriptSig {
-    pub fn script(&self) -> Result<Script, FromHexError> {
-        let buf = hex::decode(&self.hex)?;
-        Ok(Script(buf))
-    }
-}
-
 #[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct GetRawTransactionResultVin {
@@ -612,13 +603,6 @@ pub struct GetRawTransactionResultVoutScriptPubKey {
     pub hex: Vec<u8>,
     #[serde(rename = "type")]
     pub type_: Option<ScriptPubkeyType>,
-}
-
-impl GetRawTransactionResultVoutScriptPubKey {
-    pub fn script(&self) -> Result<Script, FromHexError> {
-        let buf = hex::decode(&self.hex)?;
-        Ok(Script(buf))
-    }
 }
 
 #[derive(Clone, PartialEq, Debug, Deserialize, Serialize)]
