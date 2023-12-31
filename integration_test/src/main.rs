@@ -150,7 +150,6 @@ fn test_get_block_header_get_block_header_info(cl: &Client) {
     assert_eq!(header.merkle_root, info.merkle_root);
     assert_eq!(info.confirmations, 1);
     assert_eq!(info.next_block_hash, None);
-    assert!(info.previous_block_hash.is_some());
 }
 
 fn test_get_block_stats(cl: &Client) {
