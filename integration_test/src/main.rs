@@ -1,4 +1,4 @@
-//! # rust-bitcoincore-rpc integration test
+//! # rust-bitcoinsv-rpc integration test
 //!
 //! The test methods are named to mention the methods tested.
 //! Individual test methods don't use any methods not tested before or
@@ -8,8 +8,7 @@
 //! to test the serialization of arguments and deserialization of responses.
 //!
 
-// todo: put this back when all issues fixed
-// #![deny(unused)]
+#![deny(unused)]
 
 
 use bitcoinsv_rpc::jsonrpc::error::Error as JsonRpcError;
