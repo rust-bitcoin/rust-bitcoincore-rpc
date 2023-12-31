@@ -4,7 +4,7 @@ use std::io::{BufRead, BufReader, Cursor};
 use std::iter::FromIterator;
 use std::path::PathBuf;
 use std::{fmt, result};
-use hex::FromHex;
+use hex::{FromHex, ToHex};
 
 use jsonrpc;
 use serde;
@@ -111,43 +111,6 @@ fn opt_result<T: for<'a> serde::de::Deserialize<'a>>(
         Ok(None)
     } else {
         Ok(serde_json::from_value(result)?)
-    }
-}
-
-/// Used to pass raw txs into the API.
-pub trait RawTx: Sized + Clone {
-    fn raw_hex(self) -> String;
-}
-
-impl<'a> RawTx for &'a Tx {
-    fn raw_hex(self) -> String {
-        let mut buf = Vec::new();
-        self.write(&mut buf).unwrap();
-        hex::encode(buf)
-    }
-}
-
-impl<'a> RawTx for &'a [u8] {
-    fn raw_hex(self) -> String {
-        hex::encode(self)
-    }
-}
-
-impl<'a> RawTx for &'a Vec<u8> {
-    fn raw_hex(self) -> String {
-        hex::encode(self)
-    }
-}
-
-impl<'a> RawTx for &'a str {
-    fn raw_hex(self) -> String {
-        self.to_owned()
-    }
-}
-
-impl RawTx for String {
-    fn raw_hex(self) -> String {
-        self
     }
 }
 
@@ -294,8 +257,7 @@ pub trait RpcApi: Sized {
     ) -> Result<Tx> {
         let mut args = [into_json(tx_hash)?, into_json(false)?, opt_into_json(block_hash)?];
         let hex: String = self.call("getrawtransaction", handle_defaults(&mut args, &[null()]))?;
-        let buf = hex::decode(hex)?;
-        Ok(Tx::read(&mut &buf[..])?)
+        Ok(Tx::from_hex(&hex)?)
     }
 
     fn get_raw_transaction_hex(
@@ -364,18 +326,11 @@ pub trait RpcApi: Sized {
         replaceable: Option<bool>,
     ) -> Result<Tx> {
         let hex: String = self.create_raw_transaction_hex(utxos, outs, locktime, replaceable)?;
-        let buf = hex::decode(hex)?;
-        Ok(Tx::read(&mut &buf[..])?)
+        Ok(Tx::from_hex(&hex)?)
     }
 
-    fn decode_raw_transaction<R: RawTx>(
-        &self,
-        tx: R,
-        is_witness: Option<bool>,
-    ) -> Result<json::DecodeRawTransactionResult> {
-        let mut args = [tx.raw_hex().into(), opt_into_json(is_witness)?];
-        let defaults = [null()];
-        self.call("decoderawtransaction", handle_defaults(&mut args, &defaults))
+    fn decode_raw_transaction(&self, tx: Tx) -> Result<json::DecodeRawTransactionResult> {
+        self.call("decoderawtransaction", &[into_json(tx.encode_hex::<String>())?])
     }
 
     fn stop(&self) -> Result<String> {
@@ -502,8 +457,8 @@ pub trait RpcApi: Sized {
         self.call("ping", &[])
     }
 
-    fn send_raw_transaction<R: RawTx>(&self, tx: R) -> Result<TxHash> {
-        self.call("sendrawtransaction", &[tx.raw_hex().into()])
+    fn send_raw_transaction(&self, tx: Tx) -> Result<TxHash> {
+        self.call("sendrawtransaction", &[into_json(tx.encode_hex::<String>())?])
     }
 
     /// Returns statistics about the unspent transaction output set.
@@ -651,13 +606,6 @@ fn log_response(cmd: &str, resp: &Result<jsonrpc::Response>) {
 mod tests {
     use super::*;
     use serde_json;
-
-    #[test]
-    fn test_raw_tx() {
-        let client = Client::new("http://localhost/".into(), Auth::None).unwrap();
-        assert!(client.send_raw_transaction("deadbeef").is_err());
-        assert!(client.send_raw_transaction("deadbeef".to_owned()).is_err());
-    }
 
     fn test_handle_defaults_inner() -> Result<()> {
         {

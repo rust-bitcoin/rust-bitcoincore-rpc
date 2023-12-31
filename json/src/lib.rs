@@ -14,11 +14,8 @@ extern crate alloc;
 use std::collections::HashMap;
 use serde::{Deserialize, Serialize};
 use std::fmt;
-pub use bitcoinsv::{TxHash, BlockHash, MerkleRoot, Amount};
-use std::io::Cursor;
+pub use bitcoinsv::{Amount, BlockHash, Encodable, Error, MerkleRoot, Tx, TxHash};
 use hex::FromHexError;
-pub use sv::messages::Tx;
-use sv::util::{Serializable};
 use sv::script::Script;
 
 
@@ -661,9 +658,8 @@ impl GetRawTransactionResult {
         self.vin.len() == 1 && self.vin[0].is_coinbase()
     }
 
-    pub fn transaction(&self) -> Result<Tx, sv::util::Error> {
-        let mut c = Cursor::new(&self.hex);
-        let tx = Tx::read(&mut c)?;
+    pub fn transaction(&self) -> Result<Tx, bitcoinsv::Error> {
+        let tx = Tx::read_from_buf(&self.hex)?;
         Ok(tx)
     }
 }
@@ -1015,9 +1011,8 @@ pub struct GetBlockTemplateResultTransaction {
 }
 
 impl GetBlockTemplateResultTransaction {
-    pub fn transaction(&self) -> Result<Tx, sv::util::Error> {
-        let mut c = Cursor::new(&self.raw_tx);
-        let tx = Tx::read(&mut c)?;
+    pub fn transaction(&self) -> Result<Tx, Error> {
+        let tx = Tx::read_from_buf(&self.raw_tx)?;
         Ok(tx)
     }
 }
