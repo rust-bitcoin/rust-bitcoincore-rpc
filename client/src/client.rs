@@ -576,12 +576,22 @@ impl Client {
     ///
     /// Can only return [Err] when using cookie authentication.
     pub fn new(url: &str, auth: Auth) -> Result<Self> {
-        let (user, pass) = auth.get_user_pass()?;
-        jsonrpc::client::Client::simple_http(url, user, pass)
-            .map(|client| Client {
-                client,
-            })
-            .map_err(|e| super::error::Error::JsonRpc(e.into()))
+        let b = jsonrpc::minreq_http::MinreqHttpTransport::builder();
+        let b = b.url(url)?;
+        let b = match auth {
+            Auth::None => b,
+            Auth::UserPass(user, pass) => b.basic_auth(user, Some(pass)),
+            Auth::CookieFile(path) => {
+                let line = BufReader::new(File::open(path)?)
+                    .lines()
+                    .next()
+                    .ok_or(Error::InvalidCookieFile)??;
+                let colon = line.find(':').ok_or(Error::InvalidCookieFile)?;
+                b.basic_auth((&line[..colon]).parse().unwrap(), Some((&line[colon + 1..]).parse().unwrap()))
+            }
+        };
+        let transport = b.build();
+        Ok(Client {client: jsonrpc::client::Client::with_transport(transport)})
     }
 
     /// Create a new Client using the given [jsonrpc::Client].

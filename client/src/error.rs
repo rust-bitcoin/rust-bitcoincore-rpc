@@ -17,6 +17,7 @@ pub enum Error {
     ReturnedError(String),
     SVError(sv::util::Error),
     BitcoinSVError(bitcoinsv::Error),
+    MinReqError(jsonrpc::minreq_http::Error)
 }
 
 impl From<jsonrpc::error::Error> for Error {
@@ -55,6 +56,12 @@ impl From<bitcoinsv::Error> for Error {
     }
 }
 
+impl From<jsonrpc::minreq_http::Error> for Error {
+    fn from(e: jsonrpc::minreq_http::Error) -> Error {
+        Error::MinReqError(e)
+    }
+}
+
 impl fmt::Display for Error {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match *self {
@@ -67,6 +74,7 @@ impl fmt::Display for Error {
             Error::ReturnedError(ref s) => write!(f, "the daemon returned an error string: {}", s),
             Error::SVError(ref e) => write!(f, "SV error: {}", e),
             Error::BitcoinSVError(ref e) => write!(f, "BSV error: {}", e),
+            Error::MinReqError(ref e) => write!(f, "HTTPMinReq: {}", e),
         }
     }
 }

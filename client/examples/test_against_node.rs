@@ -25,7 +25,6 @@ fn main_result() -> Result<(), Error> {
     let best_block_hash_by_height = rpc.get_block_hash(bestblockcount)?;
     println!("best block hash by height: {}", best_block_hash_by_height);
     assert_eq!(best_block_hash_by_height, best_block_hash);
-
     let bitcoin_block: Block = rpc.get_block(&best_block_hash)?;
     println!("best block hash by `get`: {:?}", bitcoin_block.header.prev_hash);
     Ok(())
