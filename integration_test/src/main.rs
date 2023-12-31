@@ -77,12 +77,12 @@ fn main() {
     test_get_best_block_hash(&cl);
     test_get_block_count(&cl);
     test_get_block_hash(&cl);
-    // test_get_block(&cl);         todo
+    test_get_block(&cl);         
     test_get_block_header_get_block_header_info(&cl);
     // test_get_block_stats(&cl);       todo
     test_get_difficulty(&cl);
     test_get_connection_count(&cl);
-    // test_get_raw_mempool(&cl);    todo
+    test_get_raw_mempool(&cl);    
     test_invalidate_block_reconsider_block(&cl);
     test_ping(&cl);
     test_get_peer_info(&cl);
