@@ -16,6 +16,7 @@ pub extern crate jsonrpc;
 
 pub extern crate bitcoinsv_rpc_json;
 pub use bitcoinsv_rpc_json as json;
+pub use json::*;
 
 mod client;
 mod error;
