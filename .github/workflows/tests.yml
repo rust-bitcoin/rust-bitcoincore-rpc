@@ -23,12 +23,11 @@ jobs:
       - name: Install cargo2junit
         run: cargo install cargo2junit
 
-#      todo disable for now, add them back once rust-sv is removed
-#      - name: Install cargo-audit
-#        run: cargo install cargo-audit
-#
-#      - name: Run cargo audit
-#        run: cargo audit
+      - name: Install cargo-audit
+        run: cargo install cargo-audit
+
+      - name: Run cargo audit
+        run: cargo audit
 
       - name: Run Clippy
         uses: clechasseur/rs-clippy-check@v3

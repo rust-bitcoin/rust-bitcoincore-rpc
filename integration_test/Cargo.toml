@@ -6,7 +6,6 @@ edition = "2021"
 
 [dependencies]
 bitcoinsv-rpc = { path = "../client" }
-sv = "0.2.2"
 lazy_static = "1.4.0"
 log = "0.4"
 env_logger = "0.10.1"
