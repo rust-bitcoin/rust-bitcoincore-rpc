@@ -474,29 +474,6 @@ pub trait RpcApi: Sized {
     fn uptime(&self) -> Result<u64> {
         self.call("uptime", &[])
     }
-
-    /// Submit a block
-    // fn submit_block(&self, block: &Block) -> Result<()> {        todo
-    //     let mut buf = Vec::new();
-    //     block.write(&mut buf)?;
-    //     let block_hex: String = hex::encode(buf);
-    //     self.submit_block_hex(&block_hex)
-    // }
-
-    /// Submit a raw block
-    fn submit_block_bytes(&self, block_bytes: &[u8]) -> Result<()> {
-        let block_hex: String = hex::encode(block_bytes);
-        self.submit_block_hex(&block_hex)
-    }
-
-    /// Submit a block as a hex string
-    fn submit_block_hex(&self, block_hex: &str) -> Result<()> {
-        match self.call("submitblock", &[into_json(&block_hex)?]) {
-            Ok(serde_json::Value::Null) => Ok(()),
-            Ok(res) => Err(Error::ReturnedError(res.to_string())),
-            Err(err) => Err(err.into()),
-        }
-    }
 }
 
 /// Client implements a JSON-RPC client for the Bitcoin Core daemon or compatible APIs.

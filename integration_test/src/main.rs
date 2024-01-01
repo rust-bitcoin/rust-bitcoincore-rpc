@@ -73,7 +73,6 @@ async fn main() {
     test_get_network_hash_ps(&cl);
     test_uptime(&cl);
     test_get_mempool_info(&cl);
-    //TODO verify_message(
     test_add_node(&cl);
     test_get_added_node_info(&cl);
     test_disconnect_node(&cl);
