@@ -23,7 +23,7 @@ jobs:
       - name: Install cargo2junit
         run: cargo install cargo2junit
 
-#      disable for now, add them back once rust-sv is removed
+#      todo disable for now, add them back once rust-sv is removed
 #      - name: Install cargo-audit
 #        run: cargo install cargo-audit
 #
