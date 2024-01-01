@@ -200,26 +200,6 @@ pub trait RpcApi: Sized {
         self.call("getmininginfo", &[])
     }
 
-    fn get_block_template(
-        &self,
-        mode: json::GetBlockTemplateModes,
-        capabilities: &[json::GetBlockTemplateCapabilities],
-    ) -> Result<json::GetBlockTemplateResult> {
-        #[derive(Serialize)]
-        struct Argument<'a> {
-            mode: json::GetBlockTemplateModes,
-            capabilities: &'a [json::GetBlockTemplateCapabilities],
-        }
-
-        self.call(
-            "getblocktemplate",
-            &[into_json(Argument {
-                mode: mode,
-                capabilities: capabilities,
-            })?],
-        )
-    }
-
     /// Returns a data structure containing various state info regarding
     /// blockchain processing.
     fn get_blockchain_info(&self) -> Result<json::GetBlockchainInfoResult> {
