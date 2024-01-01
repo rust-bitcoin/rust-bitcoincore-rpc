@@ -2,7 +2,6 @@
 //! SV node.
 extern crate bitcoinsv_rpc;
 
-use sv::messages::Block;
 use bitcoinsv_rpc::{Auth, Client, Error, RpcApi};
 
 fn main_result() -> Result<(), Error> {
@@ -25,8 +24,8 @@ fn main_result() -> Result<(), Error> {
     let best_block_hash_by_height = rpc.get_block_hash(bestblockcount)?;
     println!("best block hash by height: {}", best_block_hash_by_height);
     assert_eq!(best_block_hash_by_height, best_block_hash);
-    let bitcoin_block: Block = rpc.get_block(&best_block_hash)?;
-    println!("best block hash by `get`: {:?}", bitcoin_block.header.hash());
+    // let bitcoin_block: Block = rpc.get_block(&best_block_hash)?;     todo
+    // println!("best block hash by `get`: {:?}", bitcoin_block.header.hash());
     Ok(())
 }
 

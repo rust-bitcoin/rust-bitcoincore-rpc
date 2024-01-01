@@ -22,9 +22,9 @@ log = "0.4.5"
 jsonrpc = { version = "0.16.0", features = ["minreq_http"]}
 serde = "1"
 serde_json = "1"
-sv = "0.2.2"
 hex = "0.4.3"
 bitcoinsv = { git = "https://github.com/Danconnolly/rust-bitcoinsv.git", branch = "main" }
+async-trait = "0.1.75"
 
 [dev-dependencies]
 tempfile = "3.3.0"

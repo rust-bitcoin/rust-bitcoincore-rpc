@@ -15,9 +15,9 @@ pub enum Error {
     UnexpectedStructure,
     /// The daemon returned an error string.
     ReturnedError(String),
-    SVError(sv::util::Error),
-    BitcoinSVError(bitcoinsv::Error),
-    MinReqError(jsonrpc::minreq_http::Error)
+    // BitcoinSVError(bitcoinsv::Error),
+    MinReqError(jsonrpc::minreq_http::Error),
+    SVJsonError(bitcoinsv_rpc_json::Error),
 }
 
 impl From<jsonrpc::error::Error> for Error {
@@ -44,21 +44,21 @@ impl From<io::Error> for Error {
     }
 }
 
-impl From<sv::util::Error> for Error {
-    fn from(e: sv::util::Error) -> Error {
-        Error::SVError(e)
-    }
-}
-
-impl From<bitcoinsv::Error> for Error {
-    fn from(e: bitcoinsv::Error) -> Error {
-        Error::BitcoinSVError(e)
-    }
-}
-
+// impl From<bitcoinsv::Error> for Error {
+//     fn from(e: bitcoinsv::Error) -> Error {
+//         Error::BitcoinSVError(e)
+//     }
+// }
+//
 impl From<jsonrpc::minreq_http::Error> for Error {
     fn from(e: jsonrpc::minreq_http::Error) -> Error {
         Error::MinReqError(e)
+    }
+}
+
+impl From<bitcoinsv_rpc_json::Error> for Error {
+    fn from(e: bitcoinsv_rpc_json::Error) -> Error {
+        Error::SVJsonError(e)
     }
 }
 
@@ -72,9 +72,9 @@ impl fmt::Display for Error {
             Error::InvalidCookieFile => write!(f, "invalid cookie file"),
             Error::UnexpectedStructure => write!(f, "the JSON result had an unexpected structure"),
             Error::ReturnedError(ref s) => write!(f, "the daemon returned an error string: {}", s),
-            Error::SVError(ref e) => write!(f, "SV error: {}", e),
-            Error::BitcoinSVError(ref e) => write!(f, "BSV error: {}", e),
+            // Error::BitcoinSVError(ref e) => write!(f, "BSV error: {}", e),
             Error::MinReqError(ref e) => write!(f, "HTTPMinReq: {}", e),
+            Error::SVJsonError(ref e) => write!(f, "SVJson: {}", e),
         }
     }
 }

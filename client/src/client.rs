@@ -4,6 +4,7 @@ use std::io::{BufRead, BufReader, Cursor};
 use std::iter::FromIterator;
 use std::path::PathBuf;
 use std::{fmt, result};
+use async_trait::async_trait;
 use hex::{FromHex, ToHex};
 
 use jsonrpc;
@@ -11,9 +12,7 @@ use serde;
 use serde_json;
 
 use log::Level::{Debug, Trace, Warn};
-use sv::messages::Block;
-use sv::util::Serializable;
-use bitcoinsv::BlockHeader;
+use bitcoinsv::{BlockHeader, FullBlockStream};
 use bitcoinsv_rpc_json::{Tx, TxHash, BlockHash, Amount, GetNetworkInfoResult};
 
 use crate::error::*;
@@ -140,6 +139,7 @@ impl Auth {
     }
 }
 
+#[async_trait]
 pub trait RpcApi: Sized {
     /// Call a `cmd` rpc with given `args` list
     fn call<T: for<'a> serde::de::Deserialize<'a>>(
@@ -165,11 +165,15 @@ pub trait RpcApi: Sized {
         self.call("getconnectioncount", &[])
     }
 
-    fn get_block(&self, hash: &BlockHash) -> Result<Block> {
+    /// Using getblock over the RPC interface is a terrible way to get blocks.
+    /// This method will use at least three times the size of the block in RAM. Twice to retrieve the
+    /// hex representation of the block and once to deserialize that to binary.
+    async fn get_block(&self, hash: &BlockHash) -> Result<FullBlockStream<Cursor<Vec<u8>>>> {
         let hex: String = self.call("getblock", &[into_json(hash)?, 0.into()])?;
         let buf = hex::decode(hex)?;
-        let mut c = Cursor::new(buf);
-        Block::read(&mut c).map_err(Error::from)
+        let c = Cursor::new(buf);
+        let f = FullBlockStream::new(c).await?;
+        Ok(f)
     }
 
     fn get_block_hex(&self, hash: &BlockHash) -> Result<String> {
@@ -492,12 +496,12 @@ pub trait RpcApi: Sized {
     }
 
     /// Submit a block
-    fn submit_block(&self, block: &Block) -> Result<()> {
-        let mut buf = Vec::new();
-        block.write(&mut buf)?;
-        let block_hex: String = hex::encode(buf);
-        self.submit_block_hex(&block_hex)
-    }
+    // fn submit_block(&self, block: &Block) -> Result<()> {        todo
+    //     let mut buf = Vec::new();
+    //     block.write(&mut buf)?;
+    //     let block_hex: String = hex::encode(buf);
+    //     self.submit_block_hex(&block_hex)
+    // }
 
     /// Submit a raw block
     fn submit_block_bytes(&self, block_bytes: &[u8]) -> Result<()> {

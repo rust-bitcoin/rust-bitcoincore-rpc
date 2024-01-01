@@ -11,6 +11,7 @@
 #![deny(unused)]
 
 
+use tokio_stream::StreamExt;
 use bitcoinsv_rpc::jsonrpc::error::Error as JsonRpcError;
 use bitcoinsv_rpc::{Auth, Blockchain, Client, Error, RpcApi};
 
@@ -45,7 +46,8 @@ fn new_client() -> Client {
     Client::new(&url, get_auth()).unwrap()
 }
 
-fn main() {
+#[tokio::main]
+async fn main() {
     let cl = new_client();
 
     test_get_network_info(&cl);
@@ -56,7 +58,7 @@ fn main() {
     test_get_best_block_hash(&cl);
     test_get_block_count(&cl);
     test_get_block_hash(&cl);
-    test_get_block(&cl);         
+    test_get_block(&cl).await;
     test_get_block_header_get_block_header_info(&cl);
     test_get_block_stats(&cl);
     test_get_difficulty(&cl);
@@ -107,17 +109,17 @@ fn test_get_block_hash(cl: &Client) {
     assert_eq!(cl.get_block_hash(h).unwrap(), cl.get_best_block_hash().unwrap());
 }
 
-fn test_get_block(cl: &Client) {
+async fn test_get_block(cl: &Client) {
     let tip = cl.get_best_block_hash().unwrap();
-    let _block = cl.get_block(&tip).unwrap();
-    let _hex = cl.get_block_hex(&tip).unwrap();
-    // assert_eq!(block, deserialize(&Vec::<u8>::from_hex(&hex).unwrap()).unwrap());
-    // assert_eq!(hex, serialize_hex(&block));
-
-    let tip = cl.get_best_block_hash().unwrap();
+    let mut block = cl.get_block(&tip).await.unwrap();
+    while let Some(tx) = block.next().await {
+        let _ = tx.unwrap();
+    }
     let info = cl.get_block_info(&tip).unwrap();
     assert_eq!(info.hash, tip);
     assert_eq!(info.confirmations, 1);
+    assert_eq!(info.num_tx, block.num_tx);
+    assert_eq!(info.hash, block.block_header.hash());
 }
 
 fn test_get_block_header_get_block_header_info(cl: &Client) {
