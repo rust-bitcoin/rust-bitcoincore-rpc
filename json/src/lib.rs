@@ -12,7 +12,9 @@ extern crate alloc;
 use std::collections::HashMap;
 use serde::{Deserialize, Serialize};
 use std::fmt;
-pub use bitcoinsv::{Amount, Blockchain, BlockHash, Encodable, Error, MerkleRoot, Tx, TxHash};
+pub use bitcoinsv::Error;
+pub use bitcoinsv::bitcoin::{BlockchainId, BlockHash, Encodable, MerkleRoot, Tx, TxHash};
+pub use bitcoinsv::util::Amount;
 
 /// A module used for serde serialization of bytes in hexadecimal format.
 ///
@@ -555,7 +557,7 @@ pub struct GetMiningInfoResult {
     pub network_hash_ps: f64,
     #[serde(rename = "pooledtx")]
     pub pooled_tx: u64,
-    pub chain: Blockchain,
+    pub chain: BlockchainId,
 }
 
 #[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
@@ -669,7 +671,7 @@ pub enum ScriptPubkeyType {
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct GetBlockchainInfoResult {
     /// Current network name as defined in BIP70 (main, test, signet, regtest)
-    pub chain: Blockchain,
+    pub chain: BlockchainId,
     /// The current number of blocks processed in the server
     pub blocks: u64,
     /// The current number of headers we have validated

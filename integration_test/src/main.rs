@@ -13,7 +13,7 @@
 
 use tokio_stream::StreamExt;
 use bitcoinsv_rpc::jsonrpc::error::Error as JsonRpcError;
-use bitcoinsv_rpc::{Auth, Blockchain, Client, Error, RpcApi};
+use bitcoinsv_rpc::{Auth, BlockchainId, Client, Error, RpcApi};
 
 
 /// Assert that the call returns the specified error message.
@@ -91,7 +91,7 @@ fn test_get_mining_info(cl: &Client) {
 
 fn test_get_blockchain_info(cl: &Client) {
     let info = cl.get_blockchain_info().unwrap();
-    assert_eq!(info.chain, Blockchain::Regtest);
+    assert_eq!(info.chain, BlockchainId::Regtest);
 }
 
 fn test_get_best_block_hash(cl: &Client) {

@@ -20,7 +20,7 @@ path = "src/lib.rs"
 hex = "0.4.3"
 serde = { version = "1", features = [ "derive" ] }
 serde_json = "1"
-bitcoinsv = { git = "https://github.com/Danconnolly/rust-bitcoinsv.git", branch = "main" }
+bitcoinsv = { git = "https://github.com/Danconnolly/rust-bitcoinsv.git", branch = "dev" }
 
 [dev-dependencies]
 approx = "0.5"
