@@ -23,7 +23,7 @@ jsonrpc = { version = "0.16.0", features = ["minreq_http"]}
 serde = "1"
 serde_json = "1"
 hex = "0.4.3"
-bitcoinsv = { git = "https://github.com/Danconnolly/rust-bitcoinsv.git", branch = "dev" }
+bitcoinsv = "0.2.0"
 async-trait = "0.1.75"
 
 [dev-dependencies]
