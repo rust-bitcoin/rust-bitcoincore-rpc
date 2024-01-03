@@ -8,7 +8,7 @@ license-file = "LICENSE"
 homepage = "https://github.com/Danconnolly/rust-bitcoinsv-rpc/"
 repository = "https://github.com/Danconnolly/rust-bitcoinsv-rpc/"
 description = "RPC client library for the Bitcoin SV JSON-RPC API."
-keywords = ["crypto", "bitcoin-sv", "rpc"]
+keywords = ["bitcoin-sv", "rpc"]
 readme = "README.md"
 edition = "2021"
 

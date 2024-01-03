@@ -81,7 +81,7 @@ impl fmt::Display for Error {
 
 impl error::Error for Error {
     fn description(&self) -> &str {
-        "bitcoincore-rpc error"
+        "bitcoinsv-rpc error"
     }
 
     fn cause(&self) -> Option<&dyn error::Error> {
