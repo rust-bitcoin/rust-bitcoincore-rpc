@@ -9,7 +9,6 @@
 //
 
 use crate::bitcoin;
-use serde_json;
 
 use crate::client::Result;
 use crate::client::RpcApi;

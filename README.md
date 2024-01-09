@@ -20,8 +20,6 @@ It assumes that the node has password authentication setup, the RPC interface is
 is set up to accept RPC connections. 
 
 ```rust
-extern crate bitcoincore_rpc;
-
 use bitcoincore_rpc::{Auth, Client, RpcApi};
 
 fn main() {
