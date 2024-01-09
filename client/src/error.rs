@@ -14,8 +14,6 @@ use crate::bitcoin;
 use crate::bitcoin::hashes::hex;
 use crate::bitcoin::secp256k1;
 
-
-
 /// The error type for errors produced in this library.
 #[derive(Debug)]
 pub enum Error {

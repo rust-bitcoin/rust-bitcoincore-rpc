@@ -10,7 +10,6 @@
 
 use crate::bitcoin;
 
-
 use crate::client::Result;
 use crate::client::RpcApi;
 
