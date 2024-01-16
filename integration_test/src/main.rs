@@ -26,6 +26,7 @@ use crate::json::BlockStatsFields as BsFields;
 use bitcoin::consensus::encode::{deserialize, serialize_hex};
 use bitcoin::hashes::hex::FromHex;
 use bitcoin::hashes::Hash;
+use bitcoin::sign_message::MessageSignature;
 use bitcoin::{secp256k1, ScriptBuf, sighash};
 use bitcoin::{
     transaction, Address, Amount, Network, OutPoint, PrivateKey, Sequence, SignedAmount,
@@ -146,6 +147,7 @@ fn main() {
     test_get_blockchain_info(&cl);
     test_get_new_address(&cl);
     test_get_raw_change_address(&cl);
+    test_verify_message_with_messagesignature(&cl);
     test_dump_private_key(&cl);
     test_generate(&cl);
     test_get_balance_generate_to_address(&cl);
@@ -216,7 +218,7 @@ fn main() {
     test_get_mempool_info(&cl);
     test_add_multisig_address(&cl);
     //TODO import_multi(
-    //TODO verify_message(
+
     //TODO encrypt_wallet(&self, passphrase: &str) -> Result<()> {
     //TODO get_by_id<T: queryable::Queryable<Self>>(
     test_add_node(&cl);
@@ -1365,6 +1367,16 @@ fn test_add_multisig_address(cl: &Client) {
     assert!(cl.add_multisig_address(addresses.len(), &addresses, None, Some(json::AddressType::Legacy)).is_ok());
     assert!(cl.add_multisig_address(addresses.len(), &addresses, None, Some(json::AddressType::P2shSegwit)).is_ok());
     assert!(cl.add_multisig_address(addresses.len(), &addresses, None, Some(json::AddressType::Bech32)).is_ok());
+}
+
+fn test_verify_message_with_messagesignature(cl: &Client) {
+    let addr: Address = Address::from_str("mm68FdwbpxkVcqjU3fu7iiBGEwrsC6Hk66").unwrap().assume_checked();  
+    let signature = MessageSignature::from_base64(
+        "H3X+ic7axKtHGIsKiqDq0TmP9HIAkONwunln17ROlvB4SOVVUoG5e79EwAz94x2eERPwqcGJ5rLuWRhIu85pEwE=",)
+        .expect("a valid signature");
+    let message = "The Times 03/Jan/2009 Chancellor on brink of second bailout for banks";
+
+    assert!(cl.verify_message(&addr, &signature, message).expect("a valid signature")); 
 }
 
 #[rustfmt::skip]
