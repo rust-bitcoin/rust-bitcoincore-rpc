@@ -704,6 +704,7 @@ pub struct GetTransactionLockedResult {
     pub height: i32,
     #[serde(rename = "chainlock")]
     pub chain_lock: bool,
+    pub mempool: bool,
 }
 
 #[derive(Clone, PartialEq, Eq, Debug, Deserialize)]
