@@ -717,7 +717,7 @@ pub enum AssetUnlockStatus {
 #[derive(Clone, PartialEq, Eq, Debug, Deserialize)]
 pub struct AssetUnlockStatusResult {
     pub index: u64,
-    pub status: Option<AssetUnlockStatus>,
+    pub status: AssetUnlockStatus,
 }
 
 #[derive(Clone, PartialEq, Eq, Debug, Deserialize)]
