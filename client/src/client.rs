@@ -21,7 +21,7 @@ use jsonrpc;
 use serde;
 use serde_json;
 
-use crate::bitcoin::address::{NetworkUnchecked, NetworkChecked};
+use crate::bitcoin::address::{NetworkChecked, NetworkUnchecked};
 use crate::bitcoin::hashes::hex::FromHex;
 use crate::bitcoin::secp256k1::ecdsa::Signature;
 use crate::bitcoin::{
@@ -343,7 +343,10 @@ pub trait RpcApi: Sized {
     fn get_block_info(&self, hash: &bitcoin::BlockHash) -> Result<json::GetBlockResult> {
         self.call("getblock", &[into_json(hash)?, 1.into()])
     }
-    //TODO(stevenroose) add getblock_txs
+
+    fn get_block_txs(&self, hash: &bitcoin::BlockHash) -> Result<json::GetBlockTxResult> {
+        self.call("getblock", &[into_json(hash)?, 2.into()])
+    }
 
     fn get_block_header(&self, hash: &bitcoin::BlockHash) -> Result<bitcoin::block::Header> {
         let hex: String = self.call("getblockheader", &[into_json(hash)?, false.into()])?;
