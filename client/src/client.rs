@@ -13,15 +13,17 @@ use std::fs::File;
 use std::io::{BufRead, BufReader};
 use std::iter::FromIterator;
 use std::path::PathBuf;
+use std::time::Duration;
 use std::{fmt, result};
 
 use crate::{bitcoin, deserialize_hex};
 use bitcoin::hex::DisplayHex;
 use jsonrpc;
+use jsonrpc::minreq_http::Builder;
 use serde;
 use serde_json;
 
-use crate::bitcoin::address::{NetworkUnchecked, NetworkChecked};
+use crate::bitcoin::address::{NetworkChecked, NetworkUnchecked};
 use crate::bitcoin::hashes::hex::FromHex;
 use crate::bitcoin::secp256k1::ecdsa::Signature;
 use crate::bitcoin::{
@@ -891,7 +893,10 @@ pub trait RpcApi: Sized {
     }
 
     /// Generate new address for receiving change
-    fn get_raw_change_address(&self, address_type: Option<json::AddressType>) -> Result<Address<NetworkUnchecked>> {
+    fn get_raw_change_address(
+        &self,
+        address_type: Option<json::AddressType>,
+    ) -> Result<Address<NetworkUnchecked>> {
         self.call("getrawchangeaddress", &[opt_into_json(address_type)?])
     }
 
@@ -1182,7 +1187,11 @@ pub trait RpcApi: Sized {
         self.call("finalizepsbt", handle_defaults(&mut args, &[true.into()]))
     }
 
-    fn derive_addresses(&self, descriptor: &str, range: Option<[u32; 2]>) -> Result<Vec<Address<NetworkUnchecked>>> {
+    fn derive_addresses(
+        &self,
+        descriptor: &str,
+        range: Option<[u32; 2]>,
+    ) -> Result<Vec<Address<NetworkUnchecked>>> {
         let mut args = [into_json(descriptor)?, opt_into_json(range)?];
         self.call("deriveaddresses", handle_defaults(&mut args, &[null()]))
     }
@@ -1285,6 +1294,20 @@ impl Client {
                 client,
             })
             .map_err(|e| super::error::Error::JsonRpc(e.into()))
+    }
+
+    pub fn new_minreq_http(url: &str, auth: Auth) -> Result<Self> {
+        let (user, pass) = auth.get_user_pass()?;
+        let mut tp_builder = Builder::new().timeout(Duration::from_millis(10000)).url(url).unwrap();
+        if let Some(user) = user {
+            tp_builder = tp_builder.basic_auth(user, pass);
+        }
+        let tp = tp_builder.build();
+
+        let client = jsonrpc::client::Client::with_transport(tp);
+        Ok(Client {
+            client,
+        })
     }
 
     /// Create a new Client using the given [jsonrpc::Client].
