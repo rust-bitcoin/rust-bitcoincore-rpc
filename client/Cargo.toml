@@ -1,5 +1,5 @@
 [package]
-name = "brc20-bitcoincore-rpc"
+name = "bitcoincore-rpc"
 version = "0.18.1"
 authors = [
     "Steven Roose <steven@stevenroose.org>",
@@ -19,7 +19,7 @@ name = "bitcoincore_rpc"
 path = "src/lib.rs"
 
 [dependencies]
-bitcoincore-rpc-json = { version = "0.18.0", path = "../json" }
+brc20-bitcoincore-rpc-json = { version = "0.18.1", path = "../json" }
 
 log = "0.4.5"
 # jsonrpc = "0.16.0"
