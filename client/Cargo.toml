@@ -22,7 +22,6 @@ path = "src/lib.rs"
 brc20-bitcoincore-rpc-json = { version = "0.18.1", path = "../json" }
 
 log = "0.4.5"
-# jsonrpc = "0.16.0"
 jsonrpc = { version = "0.16.0", features = ["minreq_http"] }
 
 # Used for deserialization of JSON.
