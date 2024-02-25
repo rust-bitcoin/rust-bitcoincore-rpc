@@ -1,5 +1,5 @@
 [package]
-name = "bitcoincore-rpc"
+name = "brc20-bitcoincore-rpc"
 version = "0.18.1"
 authors = [
     "Steven Roose <steven@stevenroose.org>",
