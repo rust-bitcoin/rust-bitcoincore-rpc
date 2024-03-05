@@ -1,3 +1,6 @@
+# 0.19.1
+- Updated to use bitcoinsv crate v0.2.1
+
 # 0.19.0
 
 - Forked to rust-bitcoinsv-rpc from [rust-bitcoincore-rpc](https://github.com/rust-bitcoin/rust-bitcoincore-rpc),

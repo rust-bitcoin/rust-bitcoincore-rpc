@@ -1,6 +1,6 @@
 [package]
 name = "bitcoinsv-rpc-json"
-version = "0.19.0"
+version = "0.19.1"
 authors = [
     "Daniel Connolly <daniel@dconnolly.com>",
 ]
@@ -20,7 +20,7 @@ path = "src/lib.rs"
 hex = "0.4.3"
 serde = { version = "1", features = [ "derive" ] }
 serde_json = "1"
-bitcoinsv = "0.2.0"
+bitcoinsv = "0.2.1"
 
 [dev-dependencies]
 approx = "0.5"
