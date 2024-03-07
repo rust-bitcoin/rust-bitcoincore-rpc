@@ -8,6 +8,8 @@
 //!    let best_block_hash = rpc_client.get_best_block_hash().unwrap();
 //!    println!("best block hash: {}", best_block_hash);
 //! ```
+//!
+//! For documentation on which methods are available, see the [RpcApi] trait.
 
 #![crate_name = "bitcoinsv_rpc"]
 #![crate_type = "rlib"]

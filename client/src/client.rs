@@ -148,26 +148,87 @@ pub trait RpcApi: Sized {
         args: &[serde_json::Value],
     ) -> Result<T>;
 
-    fn get_network_info(&self) -> Result<json::GetNetworkInfoResult> {
-        self.call("getnetworkinfo", &[])
+    /// Attempts to add an IP/Subnet to the banned list.
+    fn add_ban(&self, subnet: &str, bantime: u64, absolute: bool) -> Result<()> {
+        self.call(
+            "setban",
+            &[into_json(&subnet)?, into_json("add")?, into_json(&bantime)?, into_json(&absolute)?],
+        )
     }
 
-    fn version(&self) -> Result<u32> {
-        let res: GetNetworkInfoResult = self.call("getnetworkinfo", &[])?;
-        Ok(res.version)
+    /// Adds an address to the list of peers that the node will attempt to connect to.
+    fn add_node(&self, addr: &str) -> Result<()> {
+        self.call("addnode", &[into_json(&addr)?, into_json("add")?])
     }
 
-    fn get_difficulty(&self) -> Result<f64> {
-        self.call("getdifficulty", &[])
+    /// Clear all banned IPs.
+    fn clear_banned(&self) -> Result<()> {
+        self.call("clearbanned", &[])
     }
 
-    fn get_connection_count(&self) -> Result<usize> {
-        self.call("getconnectioncount", &[])
+    fn create_raw_transaction(
+        &self,
+        utxos: &[json::CreateRawTransactionInput],
+        outs: &HashMap<String, Amount>,
+        locktime: Option<i64>,
+        replaceable: Option<bool>,
+    ) -> Result<Tx> {
+        let hex: String = self.create_raw_transaction_hex(utxos, outs, locktime, replaceable)?;
+        Ok(Tx::from_hex(&hex)?)
     }
+
+    fn create_raw_transaction_hex(
+        &self,
+        utxos: &[json::CreateRawTransactionInput],
+        outs: &HashMap<String, Amount>,
+        locktime: Option<i64>,
+        replaceable: Option<bool>,
+    ) -> Result<String> {
+        let outs_converted = serde_json::Map::from_iter(
+            outs.iter().map(|(k, v)| (k.clone(), serde_json::Value::from(v.to_string()))),
+        );
+        let mut args = [
+            into_json(utxos)?,
+            into_json(outs_converted)?,
+            opt_into_json(locktime)?,
+            opt_into_json(replaceable)?,
+        ];
+        let defaults = [into_json(0i64)?, null()];
+        self.call("createrawtransaction", handle_defaults(&mut args, &defaults))
+    }
+
+    fn decode_raw_transaction(&self, tx: Tx) -> Result<json::DecodeRawTransactionResult> {
+        self.call("decoderawtransaction", &[into_json(tx.encode_hex::<String>())?])
+    }
+
+    /// Disconnect from the specified address.
+    fn disconnect_node(&self, addr: &str) -> Result<()> {
+        self.call("disconnectnode", &[into_json(&addr)?])
+    }
+
+    /// Disconnect from the specified peer using the peer_id.
+    fn disconnect_node_by_id(&self, peer_id: u32) -> Result<()> {
+        self.call("disconnectnode", &[into_json("")?, into_json(peer_id)?])
+    }
+
+    /// Returns information about the given added peer, or all added peers (note that onetry addnodes are not listed here).
+    fn get_added_node_info(&self, node: Option<&str>) -> Result<Vec<json::GetAddedNodeInfoResult>> {
+        if let Some(addr) = node {
+            self.call("getaddednodeinfo", &[into_json(&addr)?])
+        } else {
+            self.call("getaddednodeinfo", &[])
+        }
+    }
+
+    /// Returns the hash of the best (tip) block in the longest blockchain.
+    fn get_best_block_hash(&self) -> Result<BlockHash> {
+        self.call("getbestblockhash", &[])
+    }
+
 
     /// Using getblock over the RPC interface is a terrible way to get blocks.
-    /// This method will use at least three times the size of the block in RAM. Twice to retrieve the
-    /// hex representation of the block and once to deserialize that to binary.
+    /// This method will use at least three times the size of the block in RAM on the client machine.
+    /// Twice to retrieve the hex representation of the block and once to deserialize that to binary.
     async fn get_block(&self, hash: &BlockHash) -> Result<FullBlockStream<Cursor<Vec<u8>>>> {
         let hex: String = self.call("getblock", &[into_json(hash)?, 0.into()])?;
         let buf = hex::decode(hex)?;
@@ -176,19 +237,33 @@ pub trait RpcApi: Sized {
         Ok(f)
     }
 
+    /// Returns the numbers of block in the 'longest" chain (the chain with the most proof of work).
+    fn get_block_count(&self) -> Result<u64> {
+        self.call("getblockcount", &[])
+    }
+
+    /// Get block hash at a given height.
+    fn get_block_hash(&self, height: u64) -> Result<BlockHash> {
+        self.call("getblockhash", &[height.into()])
+    }
+
+    /// Returns the encoded block as a hex string.
     fn get_block_hex(&self, hash: &BlockHash) -> Result<String> {
         self.call("getblock", &[into_json(hash)?, 0.into()])
     }
 
+    /// Returns information about the block.
     fn get_block_info(&self, hash: &BlockHash) -> Result<json::GetBlockResult> {
         self.call("getblock", &[into_json(hash)?, 1.into()])
     }
 
+    /// Returns the block header as a BlockHeader struct.
     fn get_block_header(&self, hash: &BlockHash) -> Result<BlockHeader> {
         let hex: String = self.call("getblockheader", &[into_json(hash)?, false.into()])?;
         Ok(BlockHeader::from_hex(hex)?)
     }
 
+    /// Returns information about the block header.
     fn get_block_header_info(
         &self,
         hash: &BlockHash,
@@ -196,32 +271,7 @@ pub trait RpcApi: Sized {
         self.call("getblockheader", &[into_json(hash)?, true.into()])
     }
 
-    fn get_mining_info(&self) -> Result<json::GetMiningInfoResult> {
-        self.call("getmininginfo", &[])
-    }
-
-    /// Returns a data structure containing various state info regarding
-    /// blockchain processing.
-    fn get_blockchain_info(&self) -> Result<json::GetBlockchainInfoResult> {
-        let raw: serde_json::Value = self.call("getblockchaininfo", &[])?;
-        Ok(serde_json::from_value(raw)?)
-    }
-
-    /// Returns the numbers of block in the longest chain.
-    fn get_block_count(&self) -> Result<u64> {
-        self.call("getblockcount", &[])
-    }
-
-    /// Returns the hash of the best (tip) block in the longest blockchain.
-    fn get_best_block_hash(&self) -> Result<BlockHash> {
-        self.call("getbestblockhash", &[])
-    }
-
-    /// Get block hash at a given height
-    fn get_block_hash(&self, height: u64) -> Result<BlockHash> {
-        self.call("getblockhash", &[height.into()])
-    }
-
+    /// Compute per block statistics for a given window.
     fn get_block_stats(&self, block_hash: &BlockHash) -> Result<json::GetBlockStatsResult> {
         self.call("getblockstats", &[into_json(block_hash)?])
     }
@@ -232,6 +282,81 @@ pub trait RpcApi: Sized {
         fields: &[json::BlockStatsFields],
     ) -> Result<json::GetBlockStatsResultPartial> {
         self.call("getblockstats", &[height.into(), fields.into()])
+    }
+
+    /// Returns a data structure containing various state info regarding
+    /// blockchain processing.
+    fn get_blockchain_info(&self) -> Result<json::GetBlockchainInfoResult> {
+        let raw: serde_json::Value = self.call("getblockchaininfo", &[])?;
+        Ok(serde_json::from_value(raw)?)
+    }
+
+    /// Get information about all known tips in the block tree, including the
+    /// main chain as well as stale branches.
+    fn get_chain_tips(&self) -> Result<json::GetChainTipsResult> {
+        self.call("getchaintips", &[])
+    }
+
+    /// Return the number of current connections to the node.
+    fn get_connection_count(&self) -> Result<usize> {
+        self.call("getconnectioncount", &[])
+    }
+
+    /// Returns the proof-of-work difficulty as a multiple of the minimum difficulty.
+    fn get_difficulty(&self) -> Result<f64> {
+        self.call("getdifficulty", &[])
+    }
+
+    /// Get mempool data for given transaction
+    fn get_mempool_entry(&self, tx_hash: &TxHash) -> Result<json::GetMempoolEntryResult> {
+        self.call("getmempoolentry", &[into_json(tx_hash)?])
+    }
+
+    /// Returns details on the active state of the TX memory pool
+    fn get_mempool_info(&self) -> Result<json::GetMempoolInfoResult> {
+        self.call("getmempoolinfo", &[])
+    }
+
+    /// Returns mining-related information.
+    fn get_mining_info(&self) -> Result<json::GetMiningInfoResult> {
+        self.call("getmininginfo", &[])
+    }
+
+    /// Returns information about network traffic, including bytes in, bytes out,
+    /// and current time.
+    fn get_net_totals(&self) -> Result<json::GetNetTotalsResult> {
+        self.call("getnettotals", &[])
+    }
+
+    /// Returns the estimated network hashes per second based on the last n blocks.
+    fn get_network_hash_ps(&self, nblocks: Option<u64>, height: Option<u64>) -> Result<f64> {
+        let mut args = [opt_into_json(nblocks)?, opt_into_json(height)?];
+        self.call("getnetworkhashps", handle_defaults(&mut args, &[null(), null()]))
+    }
+
+    /// Get information about the network and current connections.
+    fn get_network_info(&self) -> Result<json::GetNetworkInfoResult> {
+        self.call("getnetworkinfo", &[])
+    }
+
+    /// Returns data about each connected network node as an array of
+    /// [`PeerInfo`][]
+    ///
+    /// [`PeerInfo`]: net/struct.PeerInfo.html
+    fn get_peer_info(&self) -> Result<Vec<json::GetPeerInfoResult>> {
+        self.call("getpeerinfo", &[])
+    }
+
+    /// Get txids of all transactions in a memory pool.
+    fn get_raw_mempool(&self) -> Result<Vec<TxHash>> {
+        self.call("getrawmempool", &[])
+    }
+
+    /// Get details for the transactions in a memory pool.
+    fn get_raw_mempool_verbose(
+        &self,
+    ) -> Result<HashMap<TxHash, json::GetMempoolEntryResult>> {
+        self.call("getrawmempool", &[into_json(true)?])
     }
 
     fn get_raw_transaction(
@@ -282,115 +407,18 @@ pub trait RpcApi: Sized {
         Ok(FromHex::from_hex(&hex)?)
     }
 
-    fn create_raw_transaction_hex(
+    /// Returns statistics about the unspent transaction output (UTXO) set.
+    /// Note this call may take a considerable amount of time.
+    // todo: this will possibly overrun any RPC timeouts that are set.
+    fn get_tx_out_set_info(
         &self,
-        utxos: &[json::CreateRawTransactionInput],
-        outs: &HashMap<String, Amount>,
-        locktime: Option<i64>,
-        replaceable: Option<bool>,
-    ) -> Result<String> {
-        let outs_converted = serde_json::Map::from_iter(
-            outs.iter().map(|(k, v)| (k.clone(), serde_json::Value::from(v.to_string()))),
-        );
-        let mut args = [
-            into_json(utxos)?,
-            into_json(outs_converted)?,
-            opt_into_json(locktime)?,
-            opt_into_json(replaceable)?,
-        ];
-        let defaults = [into_json(0i64)?, null()];
-        self.call("createrawtransaction", handle_defaults(&mut args, &defaults))
-    }
-
-    fn create_raw_transaction(
-        &self,
-        utxos: &[json::CreateRawTransactionInput],
-        outs: &HashMap<String, Amount>,
-        locktime: Option<i64>,
-        replaceable: Option<bool>,
-    ) -> Result<Tx> {
-        let hex: String = self.create_raw_transaction_hex(utxos, outs, locktime, replaceable)?;
-        Ok(Tx::from_hex(&hex)?)
-    }
-
-    fn decode_raw_transaction(&self, tx: Tx) -> Result<json::DecodeRawTransactionResult> {
-        self.call("decoderawtransaction", &[into_json(tx.encode_hex::<String>())?])
-    }
-
-    fn stop(&self) -> Result<String> {
-        self.call("stop", &[])
-    }
-
-    /// Mark a block as invalid by `block_hash`
-    fn invalidate_block(&self, block_hash: &BlockHash) -> Result<()> {
-        self.call("invalidateblock", &[into_json(block_hash)?])
-    }
-
-    /// Mark a block as valid by `block_hash`
-    fn reconsider_block(&self, block_hash: &BlockHash) -> Result<()> {
-        self.call("reconsiderblock", &[into_json(block_hash)?])
-    }
-
-    /// Returns details on the active state of the TX memory pool
-    fn get_mempool_info(&self) -> Result<json::GetMempoolInfoResult> {
-        self.call("getmempoolinfo", &[])
-    }
-
-    /// Get txids of all transactions in a memory pool
-    fn get_raw_mempool(&self) -> Result<Vec<TxHash>> {
-        self.call("getrawmempool", &[])
-    }
-
-    /// Get details for the transactions in a memory pool
-    fn get_raw_mempool_verbose(
-        &self,
-    ) -> Result<HashMap<TxHash, json::GetMempoolEntryResult>> {
-        self.call("getrawmempool", &[into_json(true)?])
-    }
-
-    /// Get mempool data for given transaction
-    fn get_mempool_entry(&self, tx_hash: &TxHash) -> Result<json::GetMempoolEntryResult> {
-        self.call("getmempoolentry", &[into_json(tx_hash)?])
-    }
-
-    /// Get information about all known tips in the block tree, including the
-    /// main chain as well as stale branches.
-    fn get_chain_tips(&self) -> Result<json::GetChainTipsResult> {
-        self.call("getchaintips", &[])
-    }
-
-    /// Attempts to add a node to the addnode list.
-    /// Nodes added using addnode (or -connect) are protected from DoS disconnection and are not required to be full nodes/support SegWit as other outbound peers are (though such peers will not be synced from).
-    fn add_node(&self, addr: &str) -> Result<()> {
-        self.call("addnode", &[into_json(&addr)?, into_json("add")?])
-    }
-
-    /// Attempts to remove a node from the addnode list.
-    fn remove_node(&self, addr: &str) -> Result<()> {
-        self.call("addnode", &[into_json(&addr)?, into_json("remove")?])
-    }
-
-    /// Attempts to connect to a node without permanently adding it to the addnode list.
-    fn onetry_node(&self, addr: &str) -> Result<()> {
-        self.call("addnode", &[into_json(&addr)?, into_json("onetry")?])
-    }
-
-    /// Immediately disconnects from the specified peer node.
-    fn disconnect_node(&self, addr: &str) -> Result<()> {
-        self.call("disconnectnode", &[into_json(&addr)?])
-    }
-
-    fn disconnect_node_by_id(&self, node_id: u32) -> Result<()> {
-        self.call("disconnectnode", &[into_json("")?, into_json(node_id)?])
-    }
-
-    /// Returns information about the given added node, or all added nodes (note that onetry addnodes are not listed here)
-    fn get_added_node_info(&self, node: Option<&str>) -> Result<Vec<json::GetAddedNodeInfoResult>> {
-        if let Some(addr) = node {
-            self.call("getaddednodeinfo", &[into_json(&addr)?])
-        } else {
-            self.call("getaddednodeinfo", &[])
-        }
+        hash_type: Option<json::TxOutSetHashType>,
+        hash_or_height: Option<json::HashOrHeight>,
+        use_index: Option<bool>,
+    ) -> Result<json::GetTxOutSetInfoResult> {
+        let mut args =
+            [opt_into_json(hash_type)?, opt_into_json(hash_or_height)?, opt_into_json(use_index)?];
+        self.call("gettxoutsetinfo", handle_defaults(&mut args, &[null(), null(), null()]))
     }
 
     /// List all banned IPs/Subnets.
@@ -398,35 +426,16 @@ pub trait RpcApi: Sized {
         self.call("listbanned", &[])
     }
 
-    /// Clear all banned IPs.
-    fn clear_banned(&self) -> Result<()> {
-        self.call("clearbanned", &[])
+    /// Mark a block as invalid. This will prevent this block and all blocks derived from this block
+    /// from being considered as a valid branch of the chain.
+    fn invalidate_block(&self, block_hash: &BlockHash) -> Result<()> {
+        self.call("invalidateblock", &[into_json(block_hash)?])
     }
 
-    /// Attempts to add an IP/Subnet to the banned list.
-    fn add_ban(&self, subnet: &str, bantime: u64, absolute: bool) -> Result<()> {
-        self.call(
-            "setban",
-            &[into_json(&subnet)?, into_json("add")?, into_json(&bantime)?, into_json(&absolute)?],
-        )
-    }
-
-    /// Attempts to remove an IP/Subnet from the banned list.
-    fn remove_ban(&self, subnet: &str) -> Result<()> {
-        self.call("setban", &[into_json(&subnet)?, into_json("remove")?])
-    }
-
-    /// Disable/enable all p2p network activity.
-    fn set_network_active(&self, state: bool) -> Result<bool> {
-        self.call("setnetworkactive", &[into_json(&state)?])
-    }
-
-    /// Returns data about each connected network node as an array of
-    /// [`PeerInfo`][]
-    ///
-    /// [`PeerInfo`]: net/struct.PeerInfo.html
-    fn get_peer_info(&self) -> Result<Vec<json::GetPeerInfoResult>> {
-        self.call("getpeerinfo", &[])
+    /// Attempts to connect to a peer once without adding it to the list of peers that the node will
+    /// continually try to connect to. See also add_node() and remove_node().
+    fn onetry_node(&self, addr: &str) -> Result<()> {
+        self.call("addnode", &[into_json(&addr)?, into_json("onetry")?])
     }
 
     /// Requests that a ping be sent to all other nodes, to measure ping
@@ -441,38 +450,46 @@ pub trait RpcApi: Sized {
         self.call("ping", &[])
     }
 
+    /// Mark a block as valid. This will enable this block, and potentially all blocks derived from
+    /// this block, to be considered as a valid branch of the chain. Note that the node will not
+    /// switch to this chain if it is already on a better one. This cancels the effect of
+    /// invalidate_block().
+    fn reconsider_block(&self, block_hash: &BlockHash) -> Result<()> {
+        self.call("reconsiderblock", &[into_json(block_hash)?])
+    }
+
+    /// Remove an IP/Subnet from the banned list.
+    fn remove_ban(&self, subnet: &str) -> Result<()> {
+        self.call("setban", &[into_json(&subnet)?, into_json("remove")?])
+    }
+
+    /// Removes an address from the list of peers that the node will attempt to connect to.
+    fn remove_node(&self, addr: &str) -> Result<()> {
+        self.call("addnode", &[into_json(&addr)?, into_json("remove")?])
+    }
+
     fn send_raw_transaction(&self, tx: Tx) -> Result<TxHash> {
         self.call("sendrawtransaction", &[into_json(tx.encode_hex::<String>())?])
     }
 
-    /// Returns statistics about the unspent transaction output set.
-    /// Note this call may take some time if you are not using coinstatsindex.
-    fn get_tx_out_set_info(
-        &self,
-        hash_type: Option<json::TxOutSetHashType>,
-        hash_or_height: Option<json::HashOrHeight>,
-        use_index: Option<bool>,
-    ) -> Result<json::GetTxOutSetInfoResult> {
-        let mut args =
-            [opt_into_json(hash_type)?, opt_into_json(hash_or_height)?, opt_into_json(use_index)?];
-        self.call("gettxoutsetinfo", handle_defaults(&mut args, &[null(), null(), null()]))
+    /// Disable/enable all p2p network activity.
+    fn set_network_active(&self, state: bool) -> Result<bool> {
+        self.call("setnetworkactive", &[into_json(&state)?])
     }
 
-    /// Returns information about network traffic, including bytes in, bytes out,
-    /// and current time.
-    fn get_net_totals(&self) -> Result<json::GetNetTotalsResult> {
-        self.call("getnettotals", &[])
-    }
-
-    /// Returns the estimated network hashes per second based on the last n blocks.
-    fn get_network_hash_ps(&self, nblocks: Option<u64>, height: Option<u64>) -> Result<f64> {
-        let mut args = [opt_into_json(nblocks)?, opt_into_json(height)?];
-        self.call("getnetworkhashps", handle_defaults(&mut args, &[null(), null()]))
+    /// Stop the node.
+    fn stop(&self) -> Result<String> {
+        self.call("stop", &[])
     }
 
     /// Returns the total uptime of the server in seconds
     fn uptime(&self) -> Result<u64> {
         self.call("uptime", &[])
+    }
+
+    fn version(&self) -> Result<u32> {
+        let res: GetNetworkInfoResult = self.call("getnetworkinfo", &[])?;
+        Ok(res.version)
     }
 }
 
