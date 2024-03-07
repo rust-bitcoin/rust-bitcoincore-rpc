@@ -1,5 +1,11 @@
+# 0.19.2
+- Updated to use bitcoinsv crate v0.2.2.
+- Using verbosity level 2 for get_block_header_info to provide more information.
+- Re-organized list of functions in RpcApi to put them in alphabetical order.
+- Added example to client library main page.
+
 # 0.19.1
-- Updated to use bitcoinsv crate v0.2.1
+- Updated to use bitcoinsv crate v0.2.1.
 
 # 0.19.0
 

@@ -2,6 +2,8 @@
 //!
 //! This is a client library for the Bitcoin SV JSON-RPC API.
 //!
+//! This library is not expected to be used directly, it is a sub-component of the bitcoinsv-rpc crate.
+//! You probably want the bitcoinsv-rpc crate.
 
 #![crate_name = "bitcoinsv_rpc_json"]
 #![crate_type = "rlib"]
