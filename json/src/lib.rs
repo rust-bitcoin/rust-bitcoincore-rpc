@@ -339,7 +339,7 @@ pub struct GetBlockHeaderResult {
     pub next_block_hash: Option<BlockHash>,
     pub status: GetBlockResultStatus,
     #[serde(rename = "tx")]
-    pub coinbase_tx: GetRawTransactionResult,
+    pub coinbase_tx: Vec<GetRawTransactionResult>,  /// its a vector but it only has one value
     #[serde(rename = "merkleproof")]
     pub coinbase_merkle_proof: Vec<Hash>,
 }
