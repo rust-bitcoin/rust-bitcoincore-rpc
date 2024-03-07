@@ -259,7 +259,7 @@ pub trait RpcApi: Sized {
 
     /// Returns the block header as a BlockHeader struct.
     fn get_block_header(&self, hash: &BlockHash) -> Result<BlockHeader> {
-        let hex: String = self.call("getblockheader", &[into_json(hash)?, false.into()])?;
+        let hex: String = self.call("getblockheader", &[into_json(hash)?, 0.into()])?;
         Ok(BlockHeader::from_hex(hex)?)
     }
 
@@ -268,7 +268,7 @@ pub trait RpcApi: Sized {
         &self,
         hash: &BlockHash,
     ) -> Result<json::GetBlockHeaderResult> {
-        self.call("getblockheader", &[into_json(hash)?, true.into()])
+        self.call("getblockheader", &[into_json(hash)?, 2.into()])
     }
 
     /// Compute per block statistics for a given window.

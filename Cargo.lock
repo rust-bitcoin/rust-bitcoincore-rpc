@@ -45,9 +45,9 @@ checksum = "9e1b586273c5702936fe7b7d6896644d8be71e6314cfe09d3167c95f712589e8"
 
 [[package]]
 name = "bitcoinsv"
-version = "0.2.1"
+version = "0.2.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b24ef5ce841998ba1416a91bc87d82e7683578bf30cfe86a84b9530ea2e287a2"
+checksum = "1885e366e5aea4713630e533d14ee871951307abed5d4eb771d900cb67e95403"
 dependencies = [
  "async-trait",
  "futures",

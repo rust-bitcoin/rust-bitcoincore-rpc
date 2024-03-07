@@ -13,7 +13,7 @@ use std::collections::HashMap;
 use serde::{Deserialize, Serialize};
 use std::fmt;
 pub use bitcoinsv::Error;
-pub use bitcoinsv::bitcoin::{BlockchainId, BlockHash, Encodable, MerkleRoot, Tx, TxHash};
+pub use bitcoinsv::bitcoin::{BlockchainId, BlockHash, Encodable, Hash, MerkleRoot, Tx, TxHash};
 pub use bitcoinsv::util::Amount;
 
 /// A module used for serde serialization of bytes in hexadecimal format.
@@ -338,6 +338,10 @@ pub struct GetBlockHeaderResult {
     #[serde(rename = "nextblockhash")]
     pub next_block_hash: Option<BlockHash>,
     pub status: GetBlockResultStatus,
+    #[serde(rename = "tx")]
+    pub coinbase_tx: GetRawTransactionResult,
+    #[serde(rename = "merkleproof")]
+    pub coinbase_merkle_proof: Vec<Hash>,
 }
 
 #[derive(Clone, PartialEq, Debug, Deserialize, Serialize)]
