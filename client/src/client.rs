@@ -19,6 +19,8 @@ use bitcoinsv_rpc_json::GetNetworkInfoResult;
 use crate::error::*;
 use crate::json;
 
+const DEFAULT_TIMEOUT_SECONDS: u64 = 300;
+
 /// Crate-specific Result type, shorthand for `std::result::Result` with our
 /// crate-specific Error type;
 pub type Result<T> = result::Result<T, Error>;
@@ -511,6 +513,7 @@ impl Client {
     /// Can only return [Err] when using cookie authentication.
     pub fn new(url: &str, auth: Auth) -> Result<Self> {
         let b = jsonrpc::minreq_http::MinreqHttpTransport::builder()
+            .timeout(std::time::Duration::from_secs(DEFAULT_TIMEOUT_SECONDS))
             .url(url)?;
         let b = match auth {
             Auth::None => b,

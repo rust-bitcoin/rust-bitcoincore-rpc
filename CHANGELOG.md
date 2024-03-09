@@ -1,3 +1,6 @@
+# 0.19.4
+- increase timeout to 300 seconds
+
 # 0.19.3
 - correct exposure of types from dependency
 - bitcoinsv v0.2.4
