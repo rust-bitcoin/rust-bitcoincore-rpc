@@ -317,7 +317,7 @@ mod getblock_tests {
 
 #[derive(Clone, PartialEq, Debug, Deserialize, Serialize)]
 pub struct GetBlockHeaderResult {
-    pub hash: TxHash,
+    pub hash: BlockHash,
     pub confirmations: i32,
     pub size: u64,
     pub height: u64,
