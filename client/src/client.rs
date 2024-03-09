@@ -12,8 +12,9 @@ use serde;
 use serde_json;
 
 use log::Level::{Debug, Trace, Warn};
-use bitcoinsv::bitcoin::{BlockHeader, FullBlockStream};
-use bitcoinsv_rpc_json::{Tx, TxHash, BlockHash, Amount, GetNetworkInfoResult};
+use bitcoinsv::bitcoin::{BlockHeader, FullBlockStream, Tx, TxHash, BlockHash};
+use bitcoinsv::util::Amount;
+use bitcoinsv_rpc_json::GetNetworkInfoResult;
 
 use crate::error::*;
 use crate::json;

@@ -1,3 +1,8 @@
+# 0.19.3
+- correct exposure of types from dependency
+- bitcoinsv v0.2.4
+- cargo update
+
 # 0.19.2
 - Updated to use bitcoinsv crate v0.2.2.
 - Using verbosity level 2 for get_block_header_info to provide more information.

@@ -15,9 +15,8 @@ pub enum Error {
     UnexpectedStructure,
     /// The daemon returned an error string.
     ReturnedError(String),
-    // BitcoinSVError(bitcoinsv::Error),
     MinReqError(jsonrpc::minreq_http::Error),
-    SVJsonError(bitcoinsv_rpc_json::Error),
+    SVJsonError(bitcoinsv::Error),
 }
 
 impl From<jsonrpc::error::Error> for Error {
@@ -56,8 +55,8 @@ impl From<jsonrpc::minreq_http::Error> for Error {
     }
 }
 
-impl From<bitcoinsv_rpc_json::Error> for Error {
-    fn from(e: bitcoinsv_rpc_json::Error) -> Error {
+impl From<bitcoinsv::Error> for Error {
+    fn from(e: bitcoinsv::Error) -> Error {
         Error::SVJsonError(e)
     }
 }

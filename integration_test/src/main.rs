@@ -13,7 +13,8 @@
 
 use tokio_stream::StreamExt;
 use bitcoinsv_rpc::jsonrpc::error::Error as JsonRpcError;
-use bitcoinsv_rpc::{Auth, BlockchainId, Client, Error, RpcApi};
+use bitcoinsv_rpc::{Auth, Client, Error, RpcApi};
+use bitcoinsv::bitcoin::BlockchainId;
 
 
 /// Assert that the call returns the specified error message.

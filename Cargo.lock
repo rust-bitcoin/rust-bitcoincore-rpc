@@ -75,9 +75,9 @@ checksum = "9e1b586273c5702936fe7b7d6896644d8be71e6314cfe09d3167c95f712589e8"
 
 [[package]]
 name = "bitcoinsv"
-version = "0.2.2"
+version = "0.2.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1885e366e5aea4713630e533d14ee871951307abed5d4eb771d900cb67e95403"
+checksum = "ddf3816a57c3d6b0db0035c56640302877e63234b1bd297a58c24d2b13c14e0b"
 dependencies = [
  "async-trait",
  "futures",
@@ -91,7 +91,7 @@ dependencies = [
 
 [[package]]
 name = "bitcoinsv-rpc"
-version = "0.19.2"
+version = "0.19.3"
 dependencies = [
  "async-trait",
  "bitcoinsv",
@@ -106,7 +106,7 @@ dependencies = [
 
 [[package]]
 name = "bitcoinsv-rpc-json"
-version = "0.19.2"
+version = "0.19.3"
 dependencies = [
  "approx",
  "bitcoinsv",
@@ -302,6 +302,7 @@ checksum = "9a3a5bfb195931eeb336b2a7b4d761daec841b97f947d34394601737a7bba5e4"
 name = "integration_test"
 version = "0.1.0"
 dependencies = [
+ "bitcoinsv",
  "bitcoinsv-rpc",
  "env_logger",
  "lazy_static",

@@ -14,9 +14,8 @@ extern crate alloc;
 use std::collections::HashMap;
 use serde::{Deserialize, Serialize};
 use std::fmt;
-pub use bitcoinsv::Error;
-pub use bitcoinsv::bitcoin::{BlockchainId, BlockHash, Encodable, Hash, MerkleRoot, Tx, TxHash};
-pub use bitcoinsv::util::Amount;
+use bitcoinsv::bitcoin::{BlockchainId, BlockHash, Encodable, Hash, MerkleRoot, Tx, TxHash};
+use bitcoinsv::util::Amount;
 
 /// A module used for serde serialization of bytes in hexadecimal format.
 ///
