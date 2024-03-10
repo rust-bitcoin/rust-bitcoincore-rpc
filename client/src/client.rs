@@ -271,6 +271,14 @@ pub trait RpcApi: Sized {
         &self,
         hash: &BlockHash,
     ) -> Result<json::GetBlockHeaderResult> {
+        self.call("getblockheader", &[into_json(hash)?, 1.into()])
+    }
+
+    /// Returns information about the block header, including merkle-root and coinbase tx.
+    fn get_block_header_info_full(
+        &self,
+        hash: &BlockHash,
+    ) -> Result<json::GetBlockHeaderResult> {
         self.call("getblockheader", &[into_json(hash)?, 2.into()])
     }
 
