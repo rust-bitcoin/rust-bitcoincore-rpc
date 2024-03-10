@@ -91,7 +91,7 @@ dependencies = [
 
 [[package]]
 name = "bitcoinsv-rpc"
-version = "0.19.4"
+version = "0.19.5"
 dependencies = [
  "async-trait",
  "bitcoinsv",
@@ -106,7 +106,7 @@ dependencies = [
 
 [[package]]
 name = "bitcoinsv-rpc-json"
-version = "0.19.4"
+version = "0.19.5"
 dependencies = [
  "approx",
  "bitcoinsv",

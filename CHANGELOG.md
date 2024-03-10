@@ -1,3 +1,7 @@
+# 0.19.5
+- get_block_header_info() back to verbosity 1, verbosity 2 is very substantially slower
+- new function get_block_header_info_full() to use verbosity 2
+
 # 0.19.4
 - increase timeout to 300 seconds
 
