@@ -610,7 +610,7 @@ fn test_sign_raw_transaction_with_send_raw_transaction(cl: &Client) {
     };
     let res = cl.sign_raw_transaction_with_wallet(&tx, Some(&[input]), None).unwrap();
     assert!(res.complete);
-    let txid = cl.send_raw_transaction(&res.transaction().unwrap()).unwrap();
+    let txid = cl.send_raw_transaction(&res.transaction().unwrap(), None, None, None).unwrap();
 
     let tx = Transaction {
         version: transaction::Version::ONE,
@@ -634,7 +634,7 @@ fn test_sign_raw_transaction_with_send_raw_transaction(cl: &Client) {
         .sign_raw_transaction_with_key(&tx, &[sk], None, Some(sighash::EcdsaSighashType::All.into()))
         .unwrap();
     assert!(res.complete);
-    let _ = cl.send_raw_transaction(&res.transaction().unwrap()).unwrap();
+    let _ = cl.send_raw_transaction(&res.transaction().unwrap(), None, None, None).unwrap();
 }
 
 fn test_invalidate_block_reconsider_block(cl: &Client) {

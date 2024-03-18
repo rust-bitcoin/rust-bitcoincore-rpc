@@ -1074,9 +1074,28 @@ pub trait RpcApi: Sized {
     fn ping(&self) -> Result<()> {
         self.call("ping", &[])
     }
-
-    fn send_raw_transaction<R: RawTx>(&self, tx: R) -> Result<bitcoin::Txid> {
-        self.call("sendrawtransaction", &[tx.raw_hex().into()])
+    
+    /// Place a raw transaction into the nodes mempool
+    fn send_raw_transaction<R: RawTx>(
+        &self, 
+        tx: R,
+        max_fee_rate: Option<f64>,
+        max_burn_amount: Option<Amount>,
+        broadcast: Option<bool>
+    ) -> Result<bitcoin::Txid> {
+        let mut args = [
+            tx.raw_hex().into(),
+            opt_into_json(max_fee_rate)?,
+            opt_into_json(max_burn_amount)?,
+            opt_into_json(broadcast)?,
+        ];
+        self.call(
+            "sendrawtransaction",
+            handle_defaults(
+                    &mut args,
+                    &["".into(), "".into(), false.into()],
+            ),
+        )
     }
 
     /// Submit a package of raw transactions to the node. The package will be
@@ -1376,10 +1395,10 @@ mod tests {
         let client = Client::new("http://localhost/".into(), Auth::None).unwrap();
         let tx: bitcoin::Transaction = encode::deserialize(&Vec::<u8>::from_hex("0200000001586bd02815cf5faabfec986a4e50d25dbee089bd2758621e61c5fab06c334af0000000006b483045022100e85425f6d7c589972ee061413bcf08dc8c8e589ce37b217535a42af924f0e4d602205c9ba9cb14ef15513c9d946fa1c4b797883e748e8c32171bdf6166583946e35c012103dae30a4d7870cd87b45dd53e6012f71318fdd059c1c2623b8cc73f8af287bb2dfeffffff021dc4260c010000001976a914f602e88b2b5901d8aab15ebe4a97cf92ec6e03b388ac00e1f505000000001976a914687ffeffe8cf4e4c038da46a9b1d37db385a472d88acfd211500").unwrap()).unwrap();
 
-        assert!(client.send_raw_transaction(&tx).is_err());
-        assert!(client.send_raw_transaction(&encode::serialize(&tx)).is_err());
-        assert!(client.send_raw_transaction("deadbeef").is_err());
-        assert!(client.send_raw_transaction("deadbeef".to_owned()).is_err());
+        assert!(client.send_raw_transaction(&tx, None, None, None).is_err());
+        assert!(client.send_raw_transaction(&encode::serialize(&tx), None, None, None).is_err());
+        assert!(client.send_raw_transaction("deadbeef", None, None, None).is_err());
+        assert!(client.send_raw_transaction("deadbeef".to_owned(), None, None, None).is_err());
     }
 
     fn test_handle_defaults_inner() -> Result<()> {
