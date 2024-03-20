@@ -28,7 +28,7 @@ use bitcoin::hashes::hex::FromHex;
 use bitcoin::hashes::Hash;
 use bitcoin::{secp256k1, ScriptBuf, sighash};
 use bitcoin::{
-    transaction, Address, Amount, Network, OutPoint, PrivateKey, Sequence, SignedAmount,
+    transaction, Address, Amount, CompressedPublicKey, Network, OutPoint, PrivateKey, Sequence, SignedAmount,
     Transaction, TxIn, TxOut, Txid, Witness,
 };
 use bitcoincore_rpc::bitcoincore_rpc_json::{
@@ -267,7 +267,8 @@ fn test_get_raw_change_address(cl: &Client) {
 fn test_dump_private_key(cl: &Client) {
     let addr = cl.get_new_address(None, Some(json::AddressType::Bech32)).unwrap().assume_checked();
     let sk = cl.dump_private_key(&addr).unwrap();
-    assert_eq!(addr, Address::p2wpkh(&sk.public_key(&SECP), *NET).unwrap());
+    let pk = CompressedPublicKey::from_private_key(&SECP, &sk).unwrap();
+    assert_eq!(addr, Address::p2wpkh(&pk, *NET));
 }
 
 fn test_generate(cl: &Client) {
@@ -570,11 +571,12 @@ fn test_get_block_filter(cl: &Client) {
 
 fn test_sign_raw_transaction_with_send_raw_transaction(cl: &Client) {
     let sk = PrivateKey {
-        network: Network::Regtest,
+        network: Network::Regtest.into(),
         inner: secp256k1::SecretKey::new(&mut secp256k1::rand::thread_rng()),
         compressed: true,
     };
-    let addr = Address::p2wpkh(&sk.public_key(&SECP), Network::Regtest).unwrap();
+    let pk = CompressedPublicKey::from_private_key(&SECP, &sk).unwrap();
+    let addr = Address::p2wpkh(&pk, Network::Regtest);
 
     let options = json::ListUnspentQueryOptions {
         minimum_amount: Some(btc(2)),
@@ -693,7 +695,7 @@ fn test_decode_raw_transaction(cl: &Client) {
 
     let decoded_transaction = cl.decode_raw_transaction(hex, None).unwrap();
 
-    assert_eq!(tx.txid(), decoded_transaction.txid);
+    assert_eq!(tx.compute_txid(), decoded_transaction.txid);
     assert_eq!(500_000, decoded_transaction.locktime);
 
     assert_eq!(decoded_transaction.vin[0].txid.unwrap(), unspent.txid);
@@ -983,7 +985,7 @@ fn test_list_received_by_address(cl: &Client) {
 
 fn test_import_public_key(cl: &Client) {
     let sk = PrivateKey {
-        network: Network::Regtest,
+        network: Network::Regtest.into(),
         inner: secp256k1::SecretKey::new(&mut secp256k1::rand::thread_rng()),
         compressed: true,
     };
@@ -994,7 +996,7 @@ fn test_import_public_key(cl: &Client) {
 
 fn test_import_priv_key(cl: &Client) {
     let sk = PrivateKey {
-        network: Network::Regtest,
+        network: Network::Regtest.into(),
         inner: secp256k1::SecretKey::new(&mut secp256k1::rand::thread_rng()),
         compressed: true,
     };
@@ -1005,7 +1007,7 @@ fn test_import_priv_key(cl: &Client) {
 
 fn test_import_address(cl: &Client) {
     let sk = PrivateKey {
-        network: Network::Regtest,
+        network: Network::Regtest.into(),
         inner: secp256k1::SecretKey::new(&mut secp256k1::rand::thread_rng()),
         compressed: true,
     };
@@ -1017,7 +1019,7 @@ fn test_import_address(cl: &Client) {
 
 fn test_import_address_script(cl: &Client) {
     let sk = PrivateKey {
-        network: Network::Regtest,
+        network: Network::Regtest.into(),
         inner: secp256k1::SecretKey::new(&mut secp256k1::rand::thread_rng()),
         compressed: true,
     };

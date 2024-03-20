@@ -5,3 +5,9 @@ members = [
     "client",
     "integration_test",
 ]
+resolver = "2"
+
+
+[patch.crates-io.bitcoin]
+git = "https://github.com/rust-bitcoin/rust-bitcoin"
+branch = "rc1-fixes"
