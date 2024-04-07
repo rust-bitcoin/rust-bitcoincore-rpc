@@ -47,4 +47,4 @@ The following versions are officially supported and automatically tested:
 * 0.21.0
 
 # Minimum Supported Rust Version (MSRV)
-This library should always compile with any combination of features on **Rust 1.48.0**.
+This library should always compile with any combination of features on **Rust 1.56.1**.
