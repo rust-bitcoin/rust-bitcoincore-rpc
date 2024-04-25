@@ -1,7 +1,7 @@
 
 set -xe
 
-MSRV="1\.48"
+MSRV="1\.56"
 
 # Just echo all the relevant env vars to help debug Travis.
 echo "RUSTFMTCHECK: \"$RUSTFMTCHECK\""
@@ -13,14 +13,10 @@ if [ -n "$RUSTFMTCHECK" ]; then
   cargo fmt --all -- --check
 fi
 
-# Test pinned versions (these are from rust-bitcoin pinning for 1.48).
+# Test pinned versions.
 if cargo --version | grep ${MSRV}; then
     cargo update -p tempfile --precise 3.3.0
     cargo update -p log --precise 0.4.18
-    cargo update -p serde_json --precise 1.0.99
-    cargo update -p serde --precise 1.0.156
-    cargo update -p quote --precise 1.0.30
-    cargo update -p proc-macro2 --precise 1.0.63
 fi
 
 # Integration test.

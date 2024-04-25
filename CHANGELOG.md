@@ -1,3 +1,7 @@
+# Unreleased
+
+- MSRV changed from 1.48.0 to 1.56.1
+
 # 0.18.0
 
 - MSRV changed from 1.41.1 to 1.48.0
