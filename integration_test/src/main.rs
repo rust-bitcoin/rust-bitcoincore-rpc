@@ -32,7 +32,7 @@ use bitcoin::{
     Transaction, TxIn, TxOut, Txid, Witness,
 };
 use bitcoincore_rpc::bitcoincore_rpc_json::{
-    GetBlockTemplateModes, GetBlockTemplateRules, ScanTxOutRequest,
+    GetBlockTemplateModes, GetBlockTemplateRules, GetZmqNotificationsResult, ScanTxOutRequest,
 };
 
 lazy_static! {
@@ -226,6 +226,7 @@ fn main() {
     test_add_ban(&cl);
     test_set_network_active(&cl);
     test_get_index_info(&cl);
+    test_get_zmq_notifications(&cl);
     test_stop(cl);
 }
 
@@ -1424,6 +1425,36 @@ fn test_get_index_info(cl: &Client) {
         assert!(gii.coinstatsindex.is_none());
         assert!(gii.basic_block_filter_index.is_some());
     }
+}
+
+fn test_get_zmq_notifications(cl: &Client) {
+    let mut zmq_info = cl.get_zmq_notifications().unwrap();
+
+    // it doesn't matter in which order Bitcoin Core returns the result,
+    // but checking it is easier if it has a known order
+
+    // sort_by_key does not allow returning references to parameters of the compare function
+    // (removing the lifetime from the return type mimics this behavior, but we don't want it)
+    fn compare_fn(result: &GetZmqNotificationsResult) -> impl Ord + '_ {
+        (&result.address, &result.notification_type, result.hwm)
+    }
+    zmq_info.sort_by(|a, b| compare_fn(a).cmp(&compare_fn(b)));
+
+    assert!(
+        zmq_info
+            == [
+                GetZmqNotificationsResult {
+                    notification_type: "pubrawblock".to_owned(),
+                    address: "tcp://0.0.0.0:28332".to_owned(),
+                    hwm: 1000
+                },
+                GetZmqNotificationsResult {
+                    notification_type: "pubrawtx".to_owned(),
+                    address: "tcp://0.0.0.0:28333".to_owned(),
+                    hwm: 1000
+                },
+            ]
+    );
 }
 
 fn test_stop(cl: Client) {
