@@ -23,7 +23,7 @@ path = "src/lib.rs"
 verifymessage = ["bitcoin/base64"]
 
 [dependencies]
-serde = { version = "1", features = [ "derive" ] }
-serde_json = "1"
+serde = { version = "1.0.156", features = [ "derive" ] }
+serde_json = "1.0.96"
 
 bitcoin = { version = "0.31.0", features = ["serde", "rand-std"]}
