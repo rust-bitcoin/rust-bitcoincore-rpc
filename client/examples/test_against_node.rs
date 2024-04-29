@@ -37,8 +37,9 @@ fn main_result() -> Result<(), Error> {
 
     let bitcoin_block: bitcoin::Block = rpc.get_by_id(&best_block_hash)?;
     println!("best block hash by `get`: {}", bitcoin_block.header.prev_blockhash);
-    let bitcoin_tx: bitcoin::Transaction = rpc.get_by_id(&bitcoin_block.txdata[0].txid())?;
-    println!("tx by `get`: {}", bitcoin_tx.txid());
+    let bitcoin_tx: bitcoin::Transaction =
+        rpc.get_by_id(&bitcoin_block.txdata[0].compute_txid())?;
+    println!("tx by `get`: {}", bitcoin_tx.compute_txid());
 
     Ok(())
 }
