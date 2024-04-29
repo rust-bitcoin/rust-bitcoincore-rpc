@@ -1,62 +1,87 @@
-on: [push, pull_request]
+on:
+  push:
+    branches:
+      - master
+      - 'test-ci/**'
+  pull_request:
 
 name: Continuous integration
 
 jobs:
-    tests:
-        name: Tests
-        runs-on: ubuntu-latest
-        strategy:
-            matrix:
-                include:
-                    - rust: stable
-                      env:
-                          RUSTFMTCHK: true
-                    - rust: nightly
-                      env:
-                          RUSTFMTCHK: false
-                    - rust: 1.56.1
-                      env:
-                          RUSTFMTCHK: false
-        steps:
-            - name: Checkout Crate
-              uses: actions/checkout@v2
-            - name: Checkout Toolchain
-              uses: actions-rs/toolchain@v1
-              with:
-                  profile: minimal
-                  toolchain: ${{ matrix.rust }}
-                  override: true
-            - name: Running test script
-              env: ${{ matrix.env }}
-              run: ./contrib/test.sh
+  Stable:
+    name: Test - stable toolchain
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+    steps:
+      - name: "Checkout repo"
+        uses: actions/checkout@v4
+      - name: "Select toolchain"
+        uses: dtolnay/rust-toolchain@stable
+      - name: "Run test script"
+        run: ./contrib/run_task.sh stable
 
-    integrations-tests:
-        name: Integration Tests
-        runs-on: ubuntu-latest
-        strategy:
-            matrix:
-                rust: [stable]
-                bitcoinversion:
-                    [
-                        "0.18.0",
-                        "0.18.1",
-                        "0.19.0.1",
-                        "0.19.1",
-                        "0.20.0",
-                        "0.20.1",
-                        "0.21.0",
-                    ]
-        steps:
-            - name: Checkout Crate
-              uses: actions/checkout@v2
-            - name: Checkout Toolchain
-              uses: actions-rs/toolchain@v1
-              with:
-                  profile: minimal
-                  toolchain: ${{ matrix.rust }}
-                  override: true
-            - name: Running test script
-              env:
-                  BITCOINVERSION: ${{ matrix.bitcoinversion }}
-              run: ./contrib/test.sh
+  Nightly:
+    name: Test - nightly toolchain
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+    steps:
+      - name: "Checkout repo"
+        uses: actions/checkout@v4
+      - name: "Select toolchain"
+        uses: dtolnay/rust-toolchain@nightly
+      - name: "Run test script"
+        run: ./contrib/run_task.sh nightly
+
+  MSRV:
+    name: Test - 1.56.1 toolchain
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+    steps:
+      - name: "Checkout repo"
+        uses: actions/checkout@v4
+      - name: "Select toolchain"
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: "1.56.1"
+      - name: "Run test script"
+        run: ./contrib/run_task.sh msrv
+
+  Format:
+    name: Format - nightly toolchain
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+    steps:
+      - name: "Checkout repo"
+        uses: actions/checkout@v4
+      - name: "Select toolchain"
+        uses: dtolnay/rust-toolchain@stable
+      - name: "Check formatting"
+        run: cargo fmt --all -- --check
+
+  Integration:
+    name: Integration Tests - stable toolchain
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        bitcoin_version:
+          [
+            "0.18.0",
+            "0.18.1",
+            "0.19.0.1",
+            "0.19.1",
+            "0.20.0",
+            "0.20.1",
+            "0.21.0",
+          ]
+    steps:
+      - name: "Checkout repo"
+        uses: actions/checkout@v4
+      - name: "Select toolchain"
+        uses: dtolnay/rust-toolchain@stable
+      - name: Running test script
+        run: ./contrib/run_task.sh integration ${{ matrix.bitcoin_version }}
