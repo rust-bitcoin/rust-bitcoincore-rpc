@@ -667,7 +667,7 @@ pub enum GetTransactionResultDetailCategory {
     Orphan,
 }
 
-#[derive(Clone, PartialEq, Eq, Debug, Deserialize)]
+#[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
 pub struct GetTransactionResultDetail {
     pub address: Option<Address<NetworkUnchecked>>,
     pub category: GetTransactionResultDetailCategory,
@@ -680,7 +680,7 @@ pub struct GetTransactionResultDetail {
     pub abandoned: Option<bool>,
 }
 
-#[derive(Clone, PartialEq, Eq, Debug, Deserialize)]
+#[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
 pub struct WalletTxInfo {
     pub confirmations: i32,
     pub blockhash: Option<bitcoin::BlockHash>,
@@ -697,7 +697,7 @@ pub struct WalletTxInfo {
     pub wallet_conflicts: Vec<bitcoin::Txid>,
 }
 
-#[derive(Clone, PartialEq, Eq, Debug, Deserialize)]
+#[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
 pub struct GetTransactionResult {
     #[serde(flatten)]
     pub info: WalletTxInfo,
@@ -716,7 +716,7 @@ impl GetTransactionResult {
     }
 }
 
-#[derive(Clone, PartialEq, Eq, Debug, Deserialize)]
+#[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
 pub struct ListTransactionResult {
     #[serde(flatten)]
     pub info: WalletTxInfo,
@@ -727,7 +727,7 @@ pub struct ListTransactionResult {
     pub comment: Option<String>,
 }
 
-#[derive(Clone, PartialEq, Eq, Debug, Deserialize)]
+#[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
 pub struct ListSinceBlockResult {
     pub transactions: Vec<ListTransactionResult>,
     #[serde(default)]
@@ -1851,7 +1851,7 @@ impl serde::Serialize for SigHashType {
 }
 
 // Used for createrawtransaction argument.
-#[derive(Serialize, Clone, PartialEq, Eq, Debug)]
+#[derive(Serialize, Clone, PartialEq, Eq, Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct CreateRawTransactionInput {
     pub txid: bitcoin::Txid,
@@ -1895,7 +1895,7 @@ pub struct FundRawTransactionOptions {
     pub estimate_mode: Option<EstimateMode>,
 }
 
-#[derive(Deserialize, Clone, PartialEq, Eq, Debug)]
+#[derive(Deserialize, Clone, PartialEq, Eq, Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct FundRawTransactionResult {
     #[serde(with = "crate::serde_hex")]
@@ -1906,7 +1906,7 @@ pub struct FundRawTransactionResult {
     pub change_position: i32,
 }
 
-#[derive(Deserialize, Clone, PartialEq, Eq, Debug)]
+#[derive(Deserialize, Clone, PartialEq, Eq, Debug, Serialize)]
 pub struct GetBalancesResultEntry {
     #[serde(with = "bitcoin::amount::serde::as_btc")]
     pub trusted: Amount,
@@ -1916,7 +1916,7 @@ pub struct GetBalancesResultEntry {
     pub immature: Amount,
 }
 
-#[derive(Deserialize, Clone, PartialEq, Eq, Debug)]
+#[derive(Deserialize, Clone, PartialEq, Eq, Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct GetBalancesResult {
     pub mine: GetBalancesResultEntry,
@@ -1930,7 +1930,7 @@ impl FundRawTransactionResult {
 }
 
 // Used for signrawtransaction argument.
-#[derive(Serialize, Clone, PartialEq, Debug)]
+#[derive(Serialize, Clone, PartialEq, Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct SignRawTransactionInput {
     pub txid: bitcoin::Txid,
@@ -1947,7 +1947,7 @@ pub struct SignRawTransactionInput {
 }
 
 /// Used to represent UTXO set hash type
-#[derive(Clone, Serialize, PartialEq, Eq, Debug)]
+#[derive(Clone, Serialize, PartialEq, Eq, Debug, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum TxOutSetHashType {
     HashSerialized2,
@@ -1956,7 +1956,7 @@ pub enum TxOutSetHashType {
 }
 
 /// Used to specify a block hash or a height
-#[derive(Clone, Serialize, PartialEq, Eq, Debug)]
+#[derive(Clone, Serialize, PartialEq, Eq, Debug, Deserialize)]
 #[serde(untagged)]
 pub enum HashOrHeight {
     BlockHash(bitcoin::BlockHash),
