@@ -1321,15 +1321,8 @@ impl RpcApi for Client {
         cmd: &str,
         args: &[serde_json::Value],
     ) -> Result<T> {
-        let raw_args: Vec<_> = args
-            .iter()
-            .map(|a| {
-                let json_string = serde_json::to_string(a)?;
-                serde_json::value::RawValue::from_string(json_string) // we can't use to_raw_value here due to compat with Rust 1.29
-            })
-            .map(|a| a.map_err(|e| Error::Json(e)))
-            .collect::<Result<Vec<_>>>()?;
-        let req = self.client.build_request(&cmd, &raw_args);
+        let raw = serde_json::value::to_raw_value(args)?;
+        let req = self.client.build_request(&cmd, Some(&*raw));
         if log_enabled!(Debug) {
             debug!(target: "bitcoincore_rpc", "JSON-RPC request: {} {}", cmd, serde_json::Value::from(args));
         }
