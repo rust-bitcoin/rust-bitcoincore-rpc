@@ -1250,7 +1250,7 @@ pub trait RpcApi: Sized {
         match self.call("submitblock", &[into_json(&block_hex)?]) {
             Ok(serde_json::Value::Null) => Ok(()),
             Ok(res) => Err(Error::ReturnedError(res.to_string())),
-            Err(err) => Err(err.into()),
+            Err(err) => Err(err),
         }
     }
 
