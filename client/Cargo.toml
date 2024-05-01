@@ -14,6 +14,7 @@ description = "RPC client library for the Bitcoin Core JSON-RPC API."
 keywords = ["crypto", "bitcoin", "bitcoin-core", "rpc"]
 readme = "README.md"
 edition = "2018"
+exclude = ["integration_test"]
 
 [features]
 verifymessage = ["bitcoincore-rpc-json/verifymessage"]
