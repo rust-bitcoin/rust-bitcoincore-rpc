@@ -2,7 +2,8 @@
 name = "integration_test"
 version = "0.1.0"
 authors = ["Steven Roose <steven@stevenroose.org>", "Tobin C. Harding <me@tobin.cc>"]
-edition = "2018"
+edition = "2021"
+rust-version = "1.56.1"
 
 [dependencies]
 bitcoincore-rpc = { path = "../client", features = ["verifymessage", "rand"] }
