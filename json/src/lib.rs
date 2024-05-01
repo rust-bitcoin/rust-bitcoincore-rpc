@@ -9,7 +9,6 @@
 #![allow(clippy::needless_question_mark)] // https://github.com/rust-bitcoin/rust-bitcoin/pull/2134
 #![allow(clippy::manual_range_contains)] // More readable than clippy's format.
 #![allow(clippy::needless_borrows_for_generic_args)] // https://github.com/rust-lang/rust-clippy/issues/12454
-
 #![allow(deprecated)] // Because of `GetPeerInfoResultNetwork::Unroutable`.
 
 /// Re-export the `bitcoin` crate.
@@ -19,6 +18,7 @@ extern crate serde;
 extern crate serde_json;
 
 use std::collections::HashMap;
+use std::fmt;
 
 use bitcoin::address::NetworkUnchecked;
 use bitcoin::block::Version;
@@ -29,9 +29,9 @@ use bitcoin::{
     bip158, bip32, Address, Amount, Network, PrivateKey, PublicKey, Script, ScriptBuf,
     SignedAmount, Transaction,
 };
+
 use serde::de::Error as SerdeError;
 use serde::{Deserialize, Serialize};
-use std::fmt;
 
 //TODO(stevenroose) consider using a Time type
 

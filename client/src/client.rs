@@ -7,22 +7,17 @@ use std::iter::FromIterator;
 use std::path::PathBuf;
 use std::{fmt, result};
 
-use crate::bitcoin;
-use crate::bitcoin::consensus::encode;
-use bitcoin::hex::DisplayHex;
-
-use crate::bitcoin::address::{NetworkChecked, NetworkUnchecked};
-use crate::bitcoin::hashes::hex::FromHex;
+use bitcoin::address::{NetworkChecked, NetworkUnchecked};
+use bitcoin::consensus::encode;
+use bitcoin::hex::{DisplayHex, FromHex};
 #[cfg(feature = "verifymessage")]
 use bitcoin::sign_message::MessageSignature;
-use crate::bitcoin::{
-    Address, Amount, Block, OutPoint, PrivateKey, PublicKey, Script, Transaction,
-};
+use bitcoin::{Address, Amount, Block, OutPoint, PrivateKey, PublicKey, Script, Transaction};
+
 use log::Level::{Debug, Trace, Warn};
 
 use crate::error::*;
-use crate::json;
-use crate::queryable;
+use crate::{bitcoin, json, queryable};
 
 /// Crate-specific Result type, shorthand for `std::result::Result` with our
 /// crate-specific Error type;
@@ -105,7 +100,7 @@ fn empty_obj() -> serde_json::Value {
 /// be substituted, because they are required.
 fn handle_defaults<'a>(
     args: &'a mut [serde_json::Value],
-    defaults: & [serde_json::Value],
+    defaults: &[serde_json::Value],
 ) -> &'a [serde_json::Value] {
     assert!(args.len() >= defaults.len());
 
@@ -693,18 +688,14 @@ pub trait RpcApi: Sized {
 
     /// To unlock, use [unlock_unspent].
     fn lock_unspent(&self, outputs: &[OutPoint]) -> Result<bool> {
-        let outputs: Vec<_> = outputs
-            .iter()
-            .map(|o| serde_json::to_value(JsonOutPoint::from(*o)).unwrap())
-            .collect();
+        let outputs: Vec<_> =
+            outputs.iter().map(|o| serde_json::to_value(JsonOutPoint::from(*o)).unwrap()).collect();
         self.call("lockunspent", &[false.into(), outputs.into()])
     }
 
     fn unlock_unspent(&self, outputs: &[OutPoint]) -> Result<bool> {
-        let outputs: Vec<_> = outputs
-            .iter()
-            .map(|o| serde_json::to_value(JsonOutPoint::from(*o)).unwrap())
-            .collect();
+        let outputs: Vec<_> =
+            outputs.iter().map(|o| serde_json::to_value(JsonOutPoint::from(*o)).unwrap()).collect();
         self.call("lockunspent", &[true.into(), outputs.into()])
     }
 

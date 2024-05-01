@@ -1,9 +1,7 @@
 // SPDX-License-Identifier: CC0-1.0
 
 use crate::bitcoin;
-
-use crate::client::Result;
-use crate::client::RpcApi;
+use crate::client::{Result, RpcApi};
 
 /// A type that can be queried from Bitcoin Core.
 pub trait Queryable<C: RpcApi>: Sized {
