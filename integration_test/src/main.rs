@@ -27,7 +27,7 @@ use bitcoin::consensus::encode::{deserialize, serialize_hex};
 use bitcoin::hashes::hex::FromHex;
 use bitcoin::hashes::Hash;
 use bitcoin::sign_message::MessageSignature;
-use bitcoin::{secp256k1, ScriptBuf, sighash};
+use bitcoin::{secp256k1, sighash, ScriptBuf};
 use bitcoin::{
     transaction, Address, Amount, Network, OutPoint, PrivateKey, Sequence, SignedAmount,
     Transaction, TxIn, TxOut, Txid, Witness,
@@ -252,7 +252,8 @@ fn test_get_new_address(cl: &Client) {
     let addr = cl.get_new_address(None, Some(json::AddressType::Bech32)).unwrap().assume_checked();
     assert_eq!(addr.address_type(), Some(bitcoin::AddressType::P2wpkh));
 
-    let addr = cl.get_new_address(None, Some(json::AddressType::P2shSegwit)).unwrap().assume_checked();
+    let addr =
+        cl.get_new_address(None, Some(json::AddressType::P2shSegwit)).unwrap().assume_checked();
     assert_eq!(addr.address_type(), Some(bitcoin::AddressType::P2sh));
 }
 
@@ -263,7 +264,8 @@ fn test_get_raw_change_address(cl: &Client) {
     let addr = cl.get_raw_change_address(Some(json::AddressType::Bech32)).unwrap().assume_checked();
     assert_eq!(addr.address_type(), Some(bitcoin::AddressType::P2wpkh));
 
-    let addr = cl.get_raw_change_address(Some(json::AddressType::P2shSegwit)).unwrap().assume_checked();
+    let addr =
+        cl.get_raw_change_address(Some(json::AddressType::P2shSegwit)).unwrap().assume_checked();
     assert_eq!(addr.address_type(), Some(bitcoin::AddressType::P2sh));
 }
 
@@ -293,7 +295,9 @@ fn test_generate(cl: &Client) {
 fn test_get_balance_generate_to_address(cl: &Client) {
     let initial = cl.get_balance(None, None).unwrap();
 
-    let blocks = cl.generate_to_address(500, &cl.get_new_address(None, None).unwrap().assume_checked()).unwrap();
+    let blocks = cl
+        .generate_to_address(500, &cl.get_new_address(None, None).unwrap().assume_checked())
+        .unwrap();
     assert_eq!(blocks.len(), 500);
     assert_ne!(cl.get_balance(None, None).unwrap(), initial);
 }
@@ -302,7 +306,9 @@ fn test_get_balances_generate_to_address(cl: &Client) {
     if version() >= 190000 {
         let initial = cl.get_balances().unwrap();
 
-        let blocks = cl.generate_to_address(500, &cl.get_new_address(None, None).unwrap().assume_checked()).unwrap();
+        let blocks = cl
+            .generate_to_address(500, &cl.get_new_address(None, None).unwrap().assume_checked())
+            .unwrap();
         assert_eq!(blocks.len(), 500);
         assert_ne!(cl.get_balances().unwrap(), initial);
     }
@@ -378,7 +384,8 @@ fn test_get_address_info(cl: &Client) {
     let info = cl.get_address_info(&addr).unwrap();
     assert!(!info.witness_program.unwrap().is_empty());
 
-    let addr = cl.get_new_address(None, Some(json::AddressType::P2shSegwit)).unwrap().assume_checked();
+    let addr =
+        cl.get_new_address(None, Some(json::AddressType::P2shSegwit)).unwrap().assume_checked();
     let info = cl.get_address_info(&addr).unwrap();
     assert!(!info.hex.unwrap().is_empty());
 }
@@ -434,7 +441,9 @@ fn test_get_received_by_address(cl: &Client) {
     let _ = cl.send_to_address(&addr, btc(1), None, None, None, None, None, None).unwrap();
     assert_eq!(cl.get_received_by_address(&addr, Some(0)).unwrap(), btc(1));
     assert_eq!(cl.get_received_by_address(&addr, Some(1)).unwrap(), btc(0));
-    let _ = cl.generate_to_address(7, &cl.get_new_address(None, None).unwrap().assume_checked()).unwrap();
+    let _ = cl
+        .generate_to_address(7, &cl.get_new_address(None, None).unwrap().assume_checked())
+        .unwrap();
     assert_eq!(cl.get_received_by_address(&addr, Some(6)).unwrap(), btc(1));
     assert_eq!(cl.get_received_by_address(&addr, None).unwrap(), btc(1));
 }
@@ -442,19 +451,23 @@ fn test_get_received_by_address(cl: &Client) {
 fn test_list_unspent(cl: &Client) {
     let addr = cl.get_new_address(None, None).unwrap();
     let addr_checked = addr.clone().assume_checked();
-    let txid = cl.send_to_address(&addr.clone().assume_checked(), btc(1), None, None, None, None, None, None).unwrap();
-    let unspent = cl.list_unspent(Some(0), None, Some(&[ &addr_checked]), None, None).unwrap();
+    let txid = cl
+        .send_to_address(&addr.clone().assume_checked(), btc(1), None, None, None, None, None, None)
+        .unwrap();
+    let unspent = cl.list_unspent(Some(0), None, Some(&[&addr_checked]), None, None).unwrap();
     assert_eq!(unspent[0].txid, txid);
     assert_eq!(unspent[0].address.as_ref(), Some(&addr));
     assert_eq!(unspent[0].amount, btc(1));
 
-    let txid = cl.send_to_address(&addr_checked, btc(7), None, None, None, None, None, None).unwrap();
+    let txid =
+        cl.send_to_address(&addr_checked, btc(7), None, None, None, None, None, None).unwrap();
     let options = json::ListUnspentQueryOptions {
         minimum_amount: Some(btc(7)),
         maximum_amount: Some(btc(7)),
         ..Default::default()
     };
-    let unspent = cl.list_unspent(Some(0), None, Some(&[&addr_checked]), None, Some(options)).unwrap();
+    let unspent =
+        cl.list_unspent(Some(0), None, Some(&[&addr_checked]), None, Some(options)).unwrap();
     assert_eq!(unspent.len(), 1);
     assert_eq!(unspent[0].txid, txid);
     assert_eq!(unspent[0].address.as_ref(), Some(&addr));
@@ -480,7 +493,9 @@ fn test_get_raw_transaction(cl: &Client) {
     let info = cl.get_raw_transaction_info(&txid, None).unwrap();
     assert_eq!(info.txid, txid);
 
-    let blocks = cl.generate_to_address(7, &cl.get_new_address(None, None).unwrap().assume_checked()).unwrap();
+    let blocks = cl
+        .generate_to_address(7, &cl.get_new_address(None, None).unwrap().assume_checked())
+        .unwrap();
     let _ = cl.get_raw_transaction_info(&txid, Some(&blocks[0])).unwrap();
 }
 
@@ -536,7 +551,9 @@ fn test_get_tx_out_proof(cl: &Client) {
         cl.send_to_address(&RANDOM_ADDRESS, btc(1), None, None, None, None, None, None).unwrap();
     let txid2 =
         cl.send_to_address(&RANDOM_ADDRESS, btc(1), None, None, None, None, None, None).unwrap();
-    let blocks = cl.generate_to_address(7, &cl.get_new_address(None, None).unwrap().assume_checked()).unwrap();
+    let blocks = cl
+        .generate_to_address(7, &cl.get_new_address(None, None).unwrap().assume_checked())
+        .unwrap();
     let proof = cl.get_tx_out_proof(&[txid1, txid2], Some(&blocks[0])).unwrap();
     assert!(!proof.is_empty());
 }
@@ -563,7 +580,9 @@ fn test_lock_unspent_unlock_unspent(cl: &Client) {
 }
 
 fn test_get_block_filter(cl: &Client) {
-    let blocks = cl.generate_to_address(7, &cl.get_new_address(None, None).unwrap().assume_checked()).unwrap();
+    let blocks = cl
+        .generate_to_address(7, &cl.get_new_address(None, None).unwrap().assume_checked())
+        .unwrap();
     if version() >= 190000 {
         let _ = cl.get_block_filter(&blocks[0]).unwrap();
     } else {
@@ -634,7 +653,12 @@ fn test_sign_raw_transaction_with_send_raw_transaction(cl: &Client) {
     };
 
     let res = cl
-        .sign_raw_transaction_with_key(&tx, &[sk], None, Some(sighash::EcdsaSighashType::All.into()))
+        .sign_raw_transaction_with_key(
+            &tx,
+            &[sk],
+            None,
+            Some(sighash::EcdsaSighashType::All.into()),
+        )
         .unwrap();
     assert!(res.complete);
     let _ = cl.send_raw_transaction(&res.transaction().unwrap()).unwrap();
@@ -1283,9 +1307,7 @@ fn test_getblocktemplate(cl: &Client) {
 fn test_unloadwallet(cl: &Client) {
     cl.create_wallet("testunloadwallet", None, None, None, None).unwrap();
 
-    let res = new_wallet_client("testunloadwallet")
-        .unload_wallet(None)
-        .unwrap();
+    let res = new_wallet_client("testunloadwallet").unload_wallet(None).unwrap();
 
     if version() >= 210000 {
         assert!(res.is_some());
@@ -1324,7 +1346,13 @@ fn test_wait_for_new_block(cl: &Client) {
     let hash = cl.get_block_hash(height).unwrap();
 
     assert!(cl.wait_for_new_block(std::u64::MAX).is_err()); // JSON integer out of range
-    assert_eq!(cl.wait_for_new_block(100).unwrap(), json::BlockRef{hash, height});
+    assert_eq!(
+        cl.wait_for_new_block(100).unwrap(),
+        json::BlockRef {
+            hash,
+            height
+        }
+    );
 }
 
 fn test_wait_for_block(cl: &Client) {
@@ -1332,12 +1360,23 @@ fn test_wait_for_block(cl: &Client) {
     let hash = cl.get_block_hash(height).unwrap();
 
     assert!(cl.wait_for_block(&hash, std::u64::MAX).is_err()); // JSON integer out of range
-    assert_eq!(cl.wait_for_block(&hash, 0).unwrap(), json::BlockRef{hash, height});
+    assert_eq!(
+        cl.wait_for_block(&hash, 0).unwrap(),
+        json::BlockRef {
+            hash,
+            height
+        }
+    );
 }
 
 fn test_get_descriptor_info(cl: &Client) {
-    let res = cl.get_descriptor_info(r"pkh(cSQPHDBwXGjVzWRqAHm6zfvQhaTuj1f2bFH58h55ghbjtFwvmeXR)").unwrap();
-    assert_eq!(res.descriptor, r"pkh(02e96fe52ef0e22d2f131dd425ce1893073a3c6ad20e8cac36726393dfb4856a4c)#62k9sn4x");
+    let res = cl
+        .get_descriptor_info(r"pkh(cSQPHDBwXGjVzWRqAHm6zfvQhaTuj1f2bFH58h55ghbjtFwvmeXR)")
+        .unwrap();
+    assert_eq!(
+        res.descriptor,
+        r"pkh(02e96fe52ef0e22d2f131dd425ce1893073a3c6ad20e8cac36726393dfb4856a4c)#62k9sn4x"
+    );
     assert_eq!(res.is_range, false);
     assert_eq!(res.is_solvable, true);
     assert_eq!(res.has_private_keys, true);
@@ -1355,29 +1394,40 @@ fn test_get_descriptor_info(cl: &Client) {
 fn test_add_multisig_address(cl: &Client) {
     let addr1 = cl.get_new_address(None, Some(json::AddressType::Bech32)).unwrap().assume_checked();
     let addr2 = cl.get_new_address(None, Some(json::AddressType::Bech32)).unwrap().assume_checked();
-    let addresses = [
-        json::PubKeyOrAddress::Address(&addr1),
-        json::PubKeyOrAddress::Address(&addr2),
-    ];
+    let addresses =
+        [json::PubKeyOrAddress::Address(&addr1), json::PubKeyOrAddress::Address(&addr2)];
 
     assert!(cl.add_multisig_address(addresses.len(), &addresses, None, None).is_ok());
     assert!(cl.add_multisig_address(addresses.len() - 1, &addresses, None, None).is_ok());
     assert!(cl.add_multisig_address(addresses.len() + 1, &addresses, None, None).is_err());
     assert!(cl.add_multisig_address(0, &addresses, None, None).is_err());
     assert!(cl.add_multisig_address(addresses.len(), &addresses, Some("test_label"), None).is_ok());
-    assert!(cl.add_multisig_address(addresses.len(), &addresses, None, Some(json::AddressType::Legacy)).is_ok());
-    assert!(cl.add_multisig_address(addresses.len(), &addresses, None, Some(json::AddressType::P2shSegwit)).is_ok());
-    assert!(cl.add_multisig_address(addresses.len(), &addresses, None, Some(json::AddressType::Bech32)).is_ok());
+    assert!(cl
+        .add_multisig_address(addresses.len(), &addresses, None, Some(json::AddressType::Legacy))
+        .is_ok());
+    assert!(cl
+        .add_multisig_address(
+            addresses.len(),
+            &addresses,
+            None,
+            Some(json::AddressType::P2shSegwit)
+        )
+        .is_ok());
+    assert!(cl
+        .add_multisig_address(addresses.len(), &addresses, None, Some(json::AddressType::Bech32))
+        .is_ok());
 }
 
 fn test_verify_message_with_messagesignature(cl: &Client) {
-    let addr: Address = Address::from_str("mm68FdwbpxkVcqjU3fu7iiBGEwrsC6Hk66").unwrap().assume_checked();  
+    let addr: Address =
+        Address::from_str("mm68FdwbpxkVcqjU3fu7iiBGEwrsC6Hk66").unwrap().assume_checked();
     let signature = MessageSignature::from_base64(
-        "H3X+ic7axKtHGIsKiqDq0TmP9HIAkONwunln17ROlvB4SOVVUoG5e79EwAz94x2eERPwqcGJ5rLuWRhIu85pEwE=",)
-        .expect("a valid signature");
+        "H3X+ic7axKtHGIsKiqDq0TmP9HIAkONwunln17ROlvB4SOVVUoG5e79EwAz94x2eERPwqcGJ5rLuWRhIu85pEwE=",
+    )
+    .expect("a valid signature");
     let message = "The Times 03/Jan/2009 Chancellor on brink of second bailout for banks";
 
-    assert!(cl.verify_message(&addr, &signature, message).expect("a valid signature")); 
+    assert!(cl.verify_message(&addr, &signature, message).expect("a valid signature"));
 }
 
 #[rustfmt::skip]
