@@ -1,5 +1,4 @@
-bitcoincore-rpc
-===============
+# bitcoincore-rpc
 
 Rust client library for the Bitcoin Core daemon's JSON-RPC API.
 
@@ -11,6 +10,6 @@ in the interface of this crate.
 
 please see the parent README for the current MSRV.
 
-# License
+## License
 
 All code is licensed using the CC0 license, as per the LICENSE file.
