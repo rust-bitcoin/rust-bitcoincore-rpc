@@ -949,6 +949,7 @@ pub trait RpcApi: Sized {
         self.call("getchaintips", &[])
     }
 
+    #[allow(clippy::too_many_arguments)] // TODO: Remove this.
     fn send_to_address(
         &self,
         address: &Address<NetworkChecked>,
