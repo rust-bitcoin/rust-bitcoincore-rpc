@@ -16,10 +16,6 @@ readme = "README.md"
 edition = "2021"
 rust-version = "1.56.1"
 
-[lib]
-name = "bitcoincore_rpc_json"
-path = "src/lib.rs"
-
 [features]
 verifymessage = ["bitcoin/base64"]
 rand = ["bitcoin/rand-std"]

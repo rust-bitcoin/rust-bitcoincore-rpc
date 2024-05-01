@@ -15,10 +15,6 @@ keywords = ["crypto", "bitcoin", "bitcoin-core", "rpc"]
 readme = "README.md"
 edition = "2018"
 
-[lib]
-name = "bitcoincore_rpc"
-path = "src/lib.rs"
-
 [features]
 verifymessage = ["bitcoincore-rpc-json/verifymessage"]
 rand = ["bitcoincore-rpc-json/rand"]

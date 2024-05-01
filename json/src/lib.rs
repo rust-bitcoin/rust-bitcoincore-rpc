@@ -5,8 +5,6 @@
 //! This is a client library for the Bitcoin Core JSON-RPC API.
 //!
 
-#![crate_name = "bitcoincore_rpc_json"]
-#![crate_type = "rlib"]
 #![allow(deprecated)] // Because of `GetPeerInfoResultNetwork::Unroutable`.
 
 pub extern crate bitcoin;
