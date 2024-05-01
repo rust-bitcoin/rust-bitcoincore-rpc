@@ -871,6 +871,7 @@ pub trait RpcApi: Sized {
         self.call("stop", &[])
     }
 
+    #[cfg(feature = "verifymessage")]
     fn verify_message(
         &self,
         address: &Address,
