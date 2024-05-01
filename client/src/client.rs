@@ -37,19 +37,19 @@ pub struct JsonOutPoint {
 }
 
 impl From<OutPoint> for JsonOutPoint {
-    fn from(o: OutPoint) -> JsonOutPoint {
+    fn from(out: OutPoint) -> Self {
         JsonOutPoint {
-            txid: o.txid,
-            vout: o.vout,
+            txid: out.txid,
+            vout: out.vout,
         }
     }
 }
 
-impl Into<OutPoint> for JsonOutPoint {
-    fn into(self) -> OutPoint {
-        OutPoint {
-            txid: self.txid,
-            vout: self.vout,
+impl From<JsonOutPoint> for OutPoint {
+    fn from(json: JsonOutPoint) -> Self {
+        Self {
+            txid: json.txid,
+            vout: json.vout,
         }
     }
 }
