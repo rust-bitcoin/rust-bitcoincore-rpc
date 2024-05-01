@@ -12,7 +12,6 @@
 
 #[macro_use]
 extern crate log;
-#[allow(unused)]
 #[macro_use]
 extern crate serde;
 
