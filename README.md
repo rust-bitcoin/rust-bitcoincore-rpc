@@ -13,7 +13,7 @@ This git package compiles into two crates.
 2. `core-rpc-json` -  contains rust data structures that represent the json responses from the
    Bitcoin Core JSON-RPC APIs. bitcoincore-rpc depends on this.
 
-# Usage
+## Usage
 
 Given below is an example of how to connect to the Bitcoin Core JSON-RPC for a Bitcoin Core node running on `localhost`
 and print out the hash of the latest block.
@@ -38,7 +38,7 @@ fn main() {
 
 See `client/examples/` for more usage examples. 
 
-# Supported Bitcoin Core Versions
+## Supported Bitcoin Core Versions
 
 The following versions are officially supported and automatically tested:
 * 0.18.0
@@ -49,7 +49,7 @@ The following versions are officially supported and automatically tested:
 * 0.20.1
 * 0.21.0
 
-# Minimum Supported Rust Version (MSRV)
+## Minimum Supported Rust Version (MSRV)
 
 This library should always compile with any combination of features on **Rust 1.56.1**.
 
