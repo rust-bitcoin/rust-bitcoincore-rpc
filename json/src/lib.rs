@@ -7,7 +7,9 @@
 
 #![allow(deprecated)] // Because of `GetPeerInfoResultNetwork::Unroutable`.
 
+/// Re-export the `bitcoin` crate.
 pub extern crate bitcoin;
+
 #[allow(unused)]
 #[macro_use]
 extern crate serde;

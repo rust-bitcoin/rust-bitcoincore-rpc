@@ -33,7 +33,7 @@ use bitcoin::{
 
 use jsonrpc::error::Error as JsonRpcError;
 
-use bitcoincore_rpc::bitcoincore_rpc_json::{
+use json::{
     GetBlockTemplateModes, GetBlockTemplateRules, GetZmqNotificationsResult, ScanTxOutRequest,
 };
 

@@ -11,10 +11,12 @@ extern crate log;
 #[macro_use]
 extern crate serde;
 
+/// Re-export the `jsonrpc` crate.
 pub extern crate jsonrpc;
 
-pub extern crate bitcoincore_rpc_json;
+/// Re-export the `bitcoin` crate.
 pub use crate::json::bitcoin;
+/// Re-export the `bitcoin-rpc-json` crate.
 pub use bitcoincore_rpc_json as json;
 
 mod client;
