@@ -103,9 +103,9 @@ fn empty_obj() -> serde_json::Value {
 ///
 /// Elements of `args` without corresponding `defaults` value, won't
 /// be substituted, because they are required.
-fn handle_defaults<'a, 'b>(
+fn handle_defaults<'a>(
     args: &'a mut [serde_json::Value],
-    defaults: &'b [serde_json::Value],
+    defaults: & [serde_json::Value],
 ) -> &'a [serde_json::Value] {
     assert!(args.len() >= defaults.len());
 
