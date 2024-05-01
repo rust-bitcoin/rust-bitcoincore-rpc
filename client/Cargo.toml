@@ -24,7 +24,7 @@ verifymessage = ["bitcoincore-rpc-json/verifymessage"]
 rand = ["bitcoincore-rpc-json/rand"]
 
 [dependencies]
-bitcoincore-rpc-json = { version = "0.18.0", path = "../json" }
+bitcoincore-rpc-json = { path = "../json" }
 
 log = "0.4.5"
 jsonrpc = { version = "0.18.0", features = ["minreq_http"] }
