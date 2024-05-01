@@ -694,7 +694,7 @@ pub trait RpcApi: Sized {
     /// To unlock, use [unlock_unspent].
     fn lock_unspent(&self, outputs: &[OutPoint]) -> Result<bool> {
         let outputs: Vec<_> = outputs
-            .into_iter()
+            .iter()
             .map(|o| serde_json::to_value(JsonOutPoint::from(*o)).unwrap())
             .collect();
         self.call("lockunspent", &[false.into(), outputs.into()])
@@ -702,7 +702,7 @@ pub trait RpcApi: Sized {
 
     fn unlock_unspent(&self, outputs: &[OutPoint]) -> Result<bool> {
         let outputs: Vec<_> = outputs
-            .into_iter()
+            .iter()
             .map(|o| serde_json::to_value(JsonOutPoint::from(*o)).unwrap())
             .collect();
         self.call("lockunspent", &[true.into(), outputs.into()])
