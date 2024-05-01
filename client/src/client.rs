@@ -23,6 +23,7 @@ use serde_json;
 
 use crate::bitcoin::address::{NetworkUnchecked, NetworkChecked};
 use crate::bitcoin::hashes::hex::FromHex;
+#[cfg(feature = "verifymessage")]
 use bitcoin::sign_message::MessageSignature;
 use crate::bitcoin::{
     Address, Amount, Block, OutPoint, PrivateKey, PublicKey, Script, Transaction,
@@ -871,6 +872,7 @@ pub trait RpcApi: Sized {
         self.call("stop", &[])
     }
 
+    #[cfg(feature = "verifymessage")]
     fn verify_message(
         &self,
         address: &Address,
