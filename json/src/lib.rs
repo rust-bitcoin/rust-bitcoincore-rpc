@@ -10,8 +10,6 @@
 /// Re-export the `bitcoin` crate.
 pub extern crate bitcoin;
 
-#[allow(unused)]
-#[macro_use]
 extern crate serde;
 extern crate serde_json;
 
