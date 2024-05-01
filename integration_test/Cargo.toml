@@ -1,7 +1,7 @@
 [package]
 name = "integration_test"
 version = "0.1.0"
-authors = ["Steven Roose <steven@stevenroose.org>"]
+authors = ["Steven Roose <steven@stevenroose.org>", "Tobin C. Harding <me@tobin.cc>"]
 edition = "2018"
 
 [dependencies]

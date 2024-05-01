@@ -4,7 +4,8 @@ version = "0.18.0"
 authors = [
     "Steven Roose <steven@stevenroose.org>",
     "Jean Pierre Dudey <jeandudey@hotmail.com>",
-    "Dawid Ciężarkiewicz <dpc@dpc.pw>"
+    "Dawid Ciężarkiewicz <dpc@dpc.pw>",
+    "Tobin C. Harding <me@tobin.cc>",
 ]
 license = "CC0-1.0"
 homepage = "https://github.com/rust-bitcoin/rust-bitcoincore-rpc/"
