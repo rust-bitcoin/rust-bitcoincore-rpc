@@ -16,7 +16,10 @@ fi
 # Test pinned versions.
 if cargo --version | grep ${MSRV}; then
     cargo update -p tempfile --precise 3.3.0
+    cargo update -p cc --precise 1.0.79
     cargo update -p log --precise 0.4.18
+    cargo update -p serde_json --precise 1.0.96
+    cargo update -p serde --precise 1.0.156
 fi
 
 # Integration test.
