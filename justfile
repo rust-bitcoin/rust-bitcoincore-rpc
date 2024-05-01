@@ -15,11 +15,11 @@ lint:
 
 # Run the formatter.
 fmt:
-  cargo fmt --all
+  cargo +nightly fmt --all
 
 # Check the formatting.
 format:
-  cargo fmt --all --check
+  cargo +nightly fmt --all --check
 
 # Test the workspace.
 test:

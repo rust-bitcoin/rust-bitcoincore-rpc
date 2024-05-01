@@ -58,9 +58,9 @@ jobs:
       - name: "Checkout repo"
         uses: actions/checkout@v4
       - name: "Select toolchain"
-        uses: dtolnay/rust-toolchain@stable
+        uses: dtolnay/rust-toolchain@nightly
       - name: "Check formatting"
-        run: cargo fmt --all -- --check
+        run: cargo +nightly fmt --all -- --check
 
   Integration:
     name: Integration Tests - stable toolchain
