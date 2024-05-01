@@ -8,7 +8,7 @@
 #[macro_use]
 extern crate log;
 #[allow(unused)]
-#[macro_use] // `macro_use` is needed for v1.24.0 compilation.
+#[macro_use]
 extern crate serde;
 
 pub extern crate jsonrpc;
