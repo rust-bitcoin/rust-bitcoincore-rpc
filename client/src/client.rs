@@ -13,10 +13,11 @@ use bitcoin::hex::DisplayHex;
 
 use crate::bitcoin::address::{NetworkChecked, NetworkUnchecked};
 use crate::bitcoin::hashes::hex::FromHex;
+#[cfg(feature = "verifymessage")]
+use bitcoin::sign_message::MessageSignature;
 use crate::bitcoin::{
     Address, Amount, Block, OutPoint, PrivateKey, PublicKey, Script, Transaction,
 };
-use bitcoin::sign_message::MessageSignature;
 use log::Level::{Debug, Trace, Warn};
 
 use crate::error::*;
