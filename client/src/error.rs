@@ -5,8 +5,6 @@ use std::{error, fmt, io};
 use crate::bitcoin;
 use crate::bitcoin::hashes::hex;
 use crate::bitcoin::secp256k1;
-use jsonrpc;
-use serde_json;
 
 /// The error type for errors produced in this library.
 #[derive(Debug)]

@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: CC0-1.0
 
 use crate::bitcoin;
-use serde_json;
 
 use crate::client::Result;
 use crate::client::RpcApi;

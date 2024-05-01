@@ -10,9 +10,6 @@ use std::{fmt, result};
 use crate::bitcoin;
 use crate::bitcoin::consensus::encode;
 use bitcoin::hex::DisplayHex;
-use jsonrpc;
-use serde;
-use serde_json;
 
 use crate::bitcoin::address::{NetworkChecked, NetworkUnchecked};
 use crate::bitcoin::hashes::hex::FromHex;
