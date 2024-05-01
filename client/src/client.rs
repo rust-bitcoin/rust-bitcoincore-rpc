@@ -223,7 +223,7 @@ pub trait RpcApi: Sized {
         &self,
         id: &<T as queryable::Queryable<Self>>::Id,
     ) -> Result<T> {
-        T::query(&self, &id)
+        T::query(self, id)
     }
 
     fn get_network_info(&self) -> Result<json::GetNetworkInfoResult> {
@@ -1314,7 +1314,7 @@ impl RpcApi for Client {
         args: &[serde_json::Value],
     ) -> Result<T> {
         let raw = serde_json::value::to_raw_value(args)?;
-        let req = self.client.build_request(&cmd, Some(&*raw));
+        let req = self.client.build_request(cmd, Some(&*raw));
         if log_enabled!(Debug) {
             debug!(target: "bitcoincore_rpc", "JSON-RPC request: {} {}", cmd, serde_json::Value::from(args));
         }
