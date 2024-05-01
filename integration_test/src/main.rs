@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: CC0-1.0
+
 //! # rust-bitcoincore-rpc integration test
 //!
 //! The test methods are named to mention the methods tested.
