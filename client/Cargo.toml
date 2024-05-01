@@ -19,6 +19,9 @@ edition = "2018"
 name = "bitcoincore_rpc"
 path = "src/lib.rs"
 
+[features]
+verifymessage = ["bitcoincore-rpc-json/verifymessage"]
+
 [dependencies]
 bitcoincore-rpc-json = { version = "0.18.0", path = "../json" }
 
@@ -32,3 +35,10 @@ serde_json = "1"
 [dev-dependencies]
 tempfile = "3.3.0"
 
+[[example]]
+name = "retry_client"
+required-features = ["verifymessage"]
+
+[[example]]
+name = "test_against_node"
+required-features = []
