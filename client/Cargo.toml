@@ -21,6 +21,7 @@ path = "src/lib.rs"
 
 [features]
 verifymessage = ["bitcoincore-rpc-json/verifymessage"]
+rand = ["bitcoincore-rpc-json/rand"]
 
 [dependencies]
 bitcoincore-rpc-json = { version = "0.18.0", path = "../json" }
