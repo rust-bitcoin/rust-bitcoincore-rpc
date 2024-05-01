@@ -5,6 +5,11 @@
 //! This is a client library for the Bitcoin Core JSON-RPC API.
 //!
 
+// Exclude lints we don't think are valuable.
+#![allow(clippy::needless_question_mark)] // https://github.com/rust-bitcoin/rust-bitcoin/pull/2134
+#![allow(clippy::manual_range_contains)] // More readable than clippy's format.
+#![allow(clippy::needless_borrows_for_generic_args)] // https://github.com/rust-lang/rust-clippy/issues/12454
+
 #![allow(deprecated)] // Because of `GetPeerInfoResultNetwork::Unroutable`.
 
 /// Re-export the `bitcoin` crate.
