@@ -16,25 +16,28 @@ extern crate lazy_static;
 use std::collections::HashMap;
 use std::str::FromStr;
 
-use bitcoin::absolute::LockTime;
-use bitcoin::address::{NetworkChecked, NetworkUnchecked};
-use bitcoincore_rpc::json;
-use bitcoincore_rpc::jsonrpc::error::Error as JsonRpcError;
-use bitcoincore_rpc::{Auth, Client, Error, RpcApi};
+use bitcoincore_rpc::{bitcoin, json, jsonrpc}; // Kludge so we can refer to crates below.
 
-use crate::json::BlockStatsFields as BsFields;
+use bitcoin::address::{NetworkChecked, NetworkUnchecked};
 use bitcoin::consensus::encode::{deserialize, serialize_hex};
-use bitcoin::hashes::hex::FromHex;
 use bitcoin::hashes::Hash;
+use bitcoin::hex::FromHex;
 use bitcoin::sign_message::MessageSignature;
-use bitcoin::{secp256k1, sighash, ScriptBuf};
 use bitcoin::{
-    transaction, Address, Amount, CompressedPublicKey, Network, OutPoint, PrivateKey, Sequence,
-    SignedAmount, Transaction, TxIn, TxOut, Txid, Witness,
+    absolute, secp256k1, sighash, transaction, Address, Amount, CompressedPublicKey, Network,
+    OutPoint, PrivateKey, ScriptBuf, Sequence, SignedAmount, Transaction, TxIn, TxOut, Txid,
+    Witness,
 };
+
+use jsonrpc::error::Error as JsonRpcError;
+
 use bitcoincore_rpc::bitcoincore_rpc_json::{
     GetBlockTemplateModes, GetBlockTemplateRules, GetZmqNotificationsResult, ScanTxOutRequest,
 };
+
+use bitcoincore_rpc::{Auth, Client, Error, RpcApi};
+
+use crate::json::BlockStatsFields as BsFields;
 
 lazy_static! {
     static ref SECP: secp256k1::Secp256k1<secp256k1::All> = secp256k1::Secp256k1::new();
@@ -609,7 +612,7 @@ fn test_sign_raw_transaction_with_send_raw_transaction(cl: &Client) {
 
     let tx = Transaction {
         version: transaction::Version::ONE,
-        lock_time: LockTime::ZERO,
+        lock_time: absolute::LockTime::ZERO,
         input: vec![TxIn {
             previous_output: OutPoint {
                 txid: unspent.txid,
@@ -638,7 +641,7 @@ fn test_sign_raw_transaction_with_send_raw_transaction(cl: &Client) {
 
     let tx = Transaction {
         version: transaction::Version::ONE,
-        lock_time: LockTime::ZERO,
+        lock_time: absolute::LockTime::ZERO,
         input: vec![TxIn {
             previous_output: OutPoint {
                 txid: txid,

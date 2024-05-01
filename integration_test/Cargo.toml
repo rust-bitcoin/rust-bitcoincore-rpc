@@ -6,6 +6,5 @@ edition = "2018"
 
 [dependencies]
 bitcoincore-rpc = { path = "../client", features = ["verifymessage", "rand"] }
-bitcoin = { version = "0.32.0", features = ["serde", "rand", "base64"]}
 lazy_static = "1.4.0"
 log = "0.4"
