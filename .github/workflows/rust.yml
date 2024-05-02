@@ -3,60 +3,60 @@ on: [push, pull_request]
 name: Continuous integration
 
 jobs:
-    tests:
-        name: Tests
-        runs-on: ubuntu-latest
-        strategy:
-            matrix:
-                include:
-                    - rust: stable
-                      env:
-                          RUSTFMTCHK: true
-                    - rust: nightly
-                      env:
-                          RUSTFMTCHK: false
-                    - rust: 1.56.1
-                      env:
-                          RUSTFMTCHK: false
-        steps:
-            - name: Checkout Crate
-              uses: actions/checkout@v2
-            - name: Checkout Toolchain
-              uses: actions-rs/toolchain@v1
-              with:
-                  profile: minimal
-                  toolchain: ${{ matrix.rust }}
-                  override: true
-            - name: Running test script
-              env: ${{ matrix.env }}
-              run: ./contrib/test.sh
+  tests:
+    name: Tests
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - rust: stable
+            env:
+              RUSTFMTCHK: true
+          - rust: nightly
+            env:
+              RUSTFMTCHK: false
+          - rust: 1.56.1
+            env:
+              RUSTFMTCHK: false
+    steps:
+      - name: Checkout Crate
+        uses: actions/checkout@v2
+      - name: Checkout Toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: ${{ matrix.rust }}
+          override: true
+      - name: Running test script
+        env: ${{ matrix.env }}
+        run: ./contrib/test.sh
 
-    integrations-tests:
-        name: Integration Tests
-        runs-on: ubuntu-latest
-        strategy:
-            matrix:
-                rust: [stable]
-                bitcoinversion:
-                    [
-                        "0.18.0",
-                        "0.18.1",
-                        "0.19.0.1",
-                        "0.19.1",
-                        "0.20.0",
-                        "0.20.1",
-                        "0.21.0",
-                    ]
-        steps:
-            - name: Checkout Crate
-              uses: actions/checkout@v2
-            - name: Checkout Toolchain
-              uses: actions-rs/toolchain@v1
-              with:
-                  profile: minimal
-                  toolchain: ${{ matrix.rust }}
-                  override: true
-            - name: Running test script
-              env:
-                  BITCOINVERSION: ${{ matrix.bitcoinversion }}
-              run: ./contrib/test.sh
+  integrations-tests:
+    name: Integration Tests
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        rust: [stable]
+        bitcoinversion:
+          [
+            "0.18.0",
+            "0.18.1",
+            "0.19.0.1",
+            "0.19.1",
+            "0.20.0",
+            "0.20.1",
+            "0.21.0",
+          ]
+    steps:
+      - name: Checkout Crate
+        uses: actions/checkout@v2
+      - name: Checkout Toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: ${{ matrix.rust }}
+          override: true
+      - name: Running test script
+        env:
+          BITCOINVERSION: ${{ matrix.bitcoinversion }}
+        run: ./contrib/test.sh
