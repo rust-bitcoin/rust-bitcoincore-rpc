@@ -23,7 +23,7 @@ use serde_json;
 
 use crate::bitcoin::address::{NetworkUnchecked, NetworkChecked};
 use crate::bitcoin::hashes::hex::FromHex;
-use bitcoin::sign_message::MessageSignature;
+use crate::bitcoin::secp256k1::ecdsa::Signature;
 use crate::bitcoin::{
     Address, Amount, Block, OutPoint, PrivateKey, PublicKey, Script, Transaction,
 };
@@ -874,7 +874,7 @@ pub trait RpcApi: Sized {
     fn verify_message(
         &self,
         address: &Address,
-        signature: &MessageSignature,
+        signature: &Signature,
         message: &str,
     ) -> Result<bool> {
         let args = [address.to_string().into(), signature.to_string().into(), into_json(message)?];
