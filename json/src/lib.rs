@@ -1004,6 +1004,14 @@ pub struct GetAddressInfoResult {
     pub label: Option<String>,
 }
 
+/// Used to represent values that can either be a string or a string array.
+#[derive(Clone, Debug, Deserialize, Serialize)]
+#[serde(untagged)]
+pub enum StringOrStringArray {
+	String(String),
+	StringArray(Vec<String>),
+}
+
 /// Models the result of "getblockchaininfo"
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct GetBlockchainInfoResult {
@@ -1045,8 +1053,8 @@ pub struct GetBlockchainInfoResult {
     /// Status of softforks in progress
     #[serde(default)]
     pub softforks: HashMap<String, Softfork>,
-    /// Any network and blockchain warnings.
-    pub warnings: String,
+    /// Any network and blockchain warnings. In later versions of bitcoind, it's an array of strings.
+    pub warnings: StringOrStringArray,
 }
 
 #[derive(Clone, PartialEq, Eq, Debug)]
