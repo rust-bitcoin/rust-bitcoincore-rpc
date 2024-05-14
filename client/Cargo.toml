@@ -18,6 +18,10 @@ edition = "2018"
 name = "bitcoincore_rpc"
 path = "src/lib.rs"
 
+[features]
+default = ["rand"]
+rand = ["bitcoincore-rpc-json/rand"]
+
 [dependencies]
 bitcoincore-rpc-json = { version = "0.18.0", path = "../json" }
 
