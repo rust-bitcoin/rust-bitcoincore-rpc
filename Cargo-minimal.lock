@@ -92,7 +92,7 @@ dependencies = [
 
 [[package]]
 name = "bitcoincore-rpc"
-version = "0.18.0"
+version = "0.19.0"
 dependencies = [
  "bitcoincore-rpc-json",
  "jsonrpc",
@@ -104,7 +104,7 @@ dependencies = [
 
 [[package]]
 name = "bitcoincore-rpc-json"
-version = "0.18.0"
+version = "0.19.0"
 dependencies = [
  "bitcoin",
  "serde",

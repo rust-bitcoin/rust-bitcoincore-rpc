@@ -1,6 +1,13 @@
-# Unreleased
+# 0.19.0
 
-- MSRV changed from 1.48.0 to 1.56.1
+- Change MSRV from 1.48.0 to 1.56.1 [#334](https://github.com/rust-bitcoin/rust-bitcoincore-rpc/pull/334)
+- Implement `verifymessage` RCP call (and add "verifymessage" feature)
+   - [#326](https://github.com/rust-bitcoin/rust-bitcoincore-rpc/pull/326)
+   - [#343](https://github.com/rust-bitcoin/rust-bitcoincore-rpc/pull/343)
+- Upgrade `bitcoin` dependency to `v0.32.0` [#337](https://github.com/rust-bitcoin/rust-bitcoincore-rpc/pull/337)
+- Upgrade `jsonrpc` dependency to `v0.18.0` [#339](https://github.com/rust-bitcoin/rust-bitcoincore-rpc/pull/339)
+- Use `jsonrpc` "minreq_http" feature [#341](https://github.com/rust-bitcoin/rust-bitcoincore-rpc/pull/341)
+- Add "rand" feature [#342](https://github.com/rust-bitcoin/rust-bitcoincore-rpc/pull/342)
 
 # 0.18.0
 
