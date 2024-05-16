@@ -17,7 +17,7 @@ name = "bitcoinsv_rpc"
 path = "src/lib.rs"
 
 [dependencies]
-bitcoinsv-rpc-json = { version = "0.19.2", path = "../json" }
+bitcoinsv-rpc-json = { version = "0.19.6", path = "../json" }
 log = "0.4.5"
 jsonrpc = { version = "0.16.0", features = ["minreq_http"]}
 serde = "1"
