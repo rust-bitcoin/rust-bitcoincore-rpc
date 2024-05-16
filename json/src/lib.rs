@@ -14,8 +14,9 @@ extern crate alloc;
 use std::collections::HashMap;
 use serde::{Deserialize, Serialize};
 use std::fmt;
-use bitcoinsv::bitcoin::{BlockchainId, BlockHash, Encodable, Hash, MerkleRoot, Tx, TxHash};
+use bitcoinsv::bitcoin::{BlockchainId, BlockHash, MerkleRoot, Tx, TxHash};
 use bitcoinsv::util::Amount;
+use hex::FromHex;
 
 /// A module used for serde serialization of bytes in hexadecimal format.
 ///
@@ -342,7 +343,7 @@ pub struct GetBlockHeaderResult {
     #[serde(rename = "tx")]
     pub coinbase_tx: Option<Vec<GetRawTransactionResult>>,  // its a vector but it only has one value
     #[serde(rename = "merkleproof")]
-    pub coinbase_merkle_proof: Option<Vec<Hash>>,
+    pub coinbase_merkle_proof: Option<Vec<MerkleRoot>>,
 }
 
 #[derive(Clone, PartialEq, Debug, Deserialize, Serialize)]
@@ -644,7 +645,7 @@ impl GetRawTransactionResult {
     }
 
     pub fn transaction(&self) -> Result<Tx, bitcoinsv::Error> {
-        let tx = Tx::read_from_buf(&self.hex)?;
+        let tx = Tx::from_hex(&self.hex)?;
         Ok(tx)
     }
 }

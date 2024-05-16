@@ -6,11 +6,9 @@ use std::path::PathBuf;
 use std::{fmt, result};
 use async_trait::async_trait;
 use hex::{FromHex, ToHex};
-
 use jsonrpc;
 use serde;
 use serde_json;
-
 use log::Level::{Debug, Trace, Warn};
 use bitcoinsv::bitcoin::{BlockHeader, FullBlockStream, Tx, TxHash, BlockHash};
 use bitcoinsv::util::Amount;
@@ -229,14 +227,15 @@ pub trait RpcApi: Sized {
     }
 
 
-    /// Using getblock over the RPC interface is a terrible way to get blocks.
-    /// This method will use at least three times the size of the block in RAM on the client machine.
+    /// Fetch a complete block from the node.
+    ///
+    /// todo: This method of using getblock over the RPC interface is a terrible way to get blocks.
+    /// It will use at least three times the size of the block in RAM on the client machine.
     /// Twice to retrieve the hex representation of the block and once to deserialize that to binary.
-    async fn get_block(&self, hash: &BlockHash) -> Result<FullBlockStream<Cursor<Vec<u8>>>> {
+    async fn get_block(&self, hash: &BlockHash) -> Result<FullBlockStream> {
         let hex: String = self.call("getblock", &[into_json(hash)?, 0.into()])?;
         let buf = hex::decode(hex)?;
-        let c = Cursor::new(buf);
-        let f = FullBlockStream::new(c).await?;
+        let f = FullBlockStream::new(Box::new(Cursor::new(buf))).await?;
         Ok(f)
     }
 
