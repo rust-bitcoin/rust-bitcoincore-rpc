@@ -330,8 +330,8 @@ fn test_get_block(cl: &Client) {
 
     let tip = cl.get_best_block_hash().unwrap();
     let info = cl.get_block_info(&tip).unwrap();
-    assert_eq!(info.hash, tip);
-    assert_eq!(info.confirmations, 1);
+    assert_eq!(info.common.hash, tip);
+    assert_eq!(info.common.confirmations, 1);
 }
 
 fn test_get_block_header_get_block_header_info(cl: &Client) {

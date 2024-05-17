@@ -25,15 +25,17 @@ extern crate serde_json;
 
 use std::collections::HashMap;
 
-
 use bitcoin::address::NetworkUnchecked;
 use bitcoin::block::Version;
 use bitcoin::consensus::encode;
 use bitcoin::hashes::hex::FromHex;
 use bitcoin::hashes::sha256;
-use bitcoin::{Address, Amount, PrivateKey, PublicKey, SignedAmount, Transaction, ScriptBuf, Script, bip158, bip32, Network};
+use bitcoin::{
+    bip158, bip32, Address, Amount, Network, PrivateKey, PublicKey, Script, ScriptBuf,
+    SignedAmount, Transaction,
+};
 use serde::de::Error as SerdeError;
-use serde::{Deserialize, Serialize};
+use serde::{Deserialize, Deserializer, Serialize};
 use std::fmt;
 
 //TODO(stevenroose) consider using a Time type
@@ -194,7 +196,7 @@ impl Eq for ScanningDetails {}
 
 #[derive(Clone, PartialEq, Debug, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
-pub struct GetBlockResult {
+pub struct BlockData {
     pub hash: bitcoin::BlockHash,
     pub confirmations: i32,
     pub size: usize,
@@ -205,7 +207,6 @@ pub struct GetBlockResult {
     #[serde(default, with = "crate::serde_hex::opt")]
     pub version_hex: Option<Vec<u8>>,
     pub merkleroot: bitcoin::hash_types::TxMerkleNode,
-    pub tx: Vec<bitcoin::Txid>,
     pub time: usize,
     pub mediantime: Option<usize>,
     pub nonce: u32,
@@ -216,6 +217,44 @@ pub struct GetBlockResult {
     pub n_tx: usize,
     pub previousblockhash: Option<bitcoin::BlockHash>,
     pub nextblockhash: Option<bitcoin::BlockHash>,
+}
+
+#[derive(Clone, PartialEq, Debug, Deserialize, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct GetBlockResult {
+    #[serde(flatten)]
+    pub common: BlockData,
+    pub tx: Vec<bitcoin::Txid>,
+}
+
+#[derive(Clone, PartialEq, Debug, Deserialize, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct GetBlockTxResult {
+    #[serde(flatten)]
+    pub common: BlockData,
+    #[serde(deserialize_with = "deserialize_tx")]
+    pub tx: Vec<Transaction>,
+}
+
+fn deserialize_tx<'de, D>(deserializer: D) -> Result<Vec<Transaction>, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    #[derive(Debug, Deserialize)]
+    struct TxWrapper {
+        pub hex: String,
+    }
+
+    let tx_wrappers: Vec<TxWrapper> = Deserialize::deserialize(deserializer)?;
+    let transactions: Result<Vec<Transaction>, _> = tx_wrappers
+        .into_iter()
+        .map(|wrapper| {
+            let bytes: Vec<u8> = FromHex::from_hex(&wrapper.hex).unwrap();
+            Ok(bitcoin::consensus::encode::deserialize(&bytes).unwrap())
+        })
+        .collect();
+
+    transactions
 }
 
 #[derive(Clone, PartialEq, Debug, Deserialize, Serialize)]
