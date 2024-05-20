@@ -13,7 +13,7 @@ use log::Level::{Debug, Trace, Warn};
 use bitcoinsv::bitcoin::{BlockHeader, FullBlockStream, Tx, TxHash, BlockHash};
 use bitcoinsv::util::Amount;
 use bitcoinsv_rpc_json::GetNetworkInfoResult;
-
+use tokio::io::{AsyncRead};
 use crate::error::*;
 use crate::json;
 
@@ -226,16 +226,20 @@ pub trait RpcApi: Sized {
         self.call("getbestblockhash", &[])
     }
 
-
-    /// Fetch a complete block from the node.
+    /// Fetch a complete block from the node, returning a binary reader.
     ///
     /// todo: This method of using getblock over the RPC interface is a terrible way to get blocks.
     /// It will use at least three times the size of the block in RAM on the client machine.
     /// Twice to retrieve the hex representation of the block and once to deserialize that to binary.
-    async fn get_block(&self, hash: &BlockHash) -> Result<FullBlockStream> {
+    async fn get_block_binary(&self, hash: &BlockHash) -> Result<Box<dyn AsyncRead + Unpin + Send>> {
         let hex: String = self.call("getblock", &[into_json(hash)?, 0.into()])?;
         let buf = hex::decode(hex)?;
-        let f = FullBlockStream::new(Box::new(Cursor::new(buf))).await?;
+        return Ok(Box::new(Cursor::new(buf)));
+    }
+
+    /// Fetch a complete block from the node, returning a FullBlockStream.
+    async fn get_block(&self, hash: &BlockHash) -> Result<FullBlockStream> {
+        let f = FullBlockStream::new(Box::new(self.get_block_binary(hash).await.unwrap())).await?;
         Ok(f)
     }
 
