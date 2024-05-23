@@ -262,6 +262,7 @@ pub struct GetBlockResult {
     pub chain_work: Vec<u8>,
     #[serde(rename = "previousblockhash")]
     pub previous_block_hash: Option<BlockHash>,
+    // todo: isnt this a problem? couldn't there be multiple next blocks in the case of a fork?
     #[serde(rename = "nextblockhash")]
     pub next_block_hash: Option<BlockHash>,
     pub status: GetBlockResultStatus,
@@ -337,6 +338,7 @@ pub struct GetBlockHeaderResult {
     pub chainwork: Vec<u8>,
     #[serde(rename = "previousblockhash")]
     pub previous_block_hash: Option<BlockHash>,
+    // todo: is this a problem? won't it return multiple hashe's if there is a fork?
     #[serde(rename = "nextblockhash")]
     pub next_block_hash: Option<BlockHash>,
     pub status: GetBlockResultStatus,
