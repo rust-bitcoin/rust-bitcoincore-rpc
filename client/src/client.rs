@@ -267,8 +267,13 @@ pub trait RpcApi: Sized {
         self.call("addmultisigaddress", handle_defaults(&mut args, &[into_json("")?, null()]))
     }
 
-    fn load_wallet(&self, wallet: &str) -> Result<json::LoadWalletResult> {
-        self.call("loadwallet", &[wallet.into()])
+    fn load_wallet(
+        &self,
+        wallet: &str,
+        load_on_startup: Option<bool>,
+    ) -> Result<json::LoadWalletResult> {
+        let mut args = [wallet.into(), opt_into_json(load_on_startup)?];
+        self.call("loadwallet", handle_defaults(&mut args, &[null()]))
     }
 
     fn unload_wallet(&self, wallet: Option<&str>) -> Result<Option<json::UnloadWalletResult>> {
