@@ -2160,6 +2160,24 @@ pub struct GetZmqNotificationsResult {
     pub hwm: u64,
 }
 
+#[derive(Serialize, Deserialize, Clone, PartialEq, Eq, Debug)]
+pub struct DumpTxOutSetResult {
+    /// The number of coins written in the snapshot
+    pub coins_written: u64,
+    /// The hash of the base of the snapshot
+    pub base_hash: bitcoin::BlockHash,
+    /// The height of the base of the snapshot
+    pub base_height: u64,
+    /// The absolute path that the snapshot was written to
+    pub path: String,
+    /// The hash of the UTXO set contents
+    #[serde(rename = "txoutset_hash")]
+    pub tx_out_set_hash: sha256::Hash,
+    /// The number of transactions in the chain up to and including the base block
+    #[serde(rename = "nchaintx")]
+    pub number_chain_tx: u64,
+}
+
 impl<'a> serde::Serialize for PubKeyOrAddress<'a> {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where

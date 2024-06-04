@@ -14,6 +14,7 @@
 extern crate lazy_static;
 
 use std::collections::HashMap;
+use std::path::PathBuf;
 use std::str::FromStr;
 
 use bitcoin::absolute::LockTime;
@@ -227,6 +228,7 @@ fn main() {
     test_set_network_active(&cl);
     test_get_index_info(&cl);
     test_get_zmq_notifications(&cl);
+    test_dump_tx_out_set(&cl);
     test_stop(cl);
 }
 
@@ -1457,6 +1459,12 @@ fn test_get_zmq_notifications(cl: &Client) {
                 },
             ]
     );
+}
+
+fn test_dump_tx_out_set(cl: &Client) {
+    let dump_file_path = format!("{}/utxo_dump.dat", get_testdir());
+    let _dump_result = cl.dump_tx_out_set(&dump_file_path).unwrap();
+    assert!(PathBuf::from_str(&dump_file_path).unwrap().exists())
 }
 
 fn test_stop(cl: Client) {

@@ -1267,6 +1267,16 @@ pub trait RpcApi: Sized {
     fn get_zmq_notifications(&self) -> Result<Vec<json::GetZmqNotificationsResult>> {
         self.call("getzmqnotifications", &[])
     }
+
+    /// Write the serialized UTXO set to a file.
+    /// If used to dump the UTXO set of the mainnet, make sure you create a client through
+    /// bitcoincore_rpc::jsonrpc::simple_http::Builder, so that the timeout can be set to a 
+    /// higher level compared to the default value. Since it takes a considerable time for 
+    /// bitcoincore to dump the UTXO set, if bitcoincore_rpc::Client::new is used, you will 
+    /// encounter a timeout error.
+    fn dump_tx_out_set(&self, path: &str) -> Result<json::DumpTxOutSetResult> {
+        self.call("dumptxoutset", &[path.into()])
+    }
 }
 
 /// Client implements a JSON-RPC client for the Bitcoin Core daemon or compatible APIs.
