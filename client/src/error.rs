@@ -93,11 +93,7 @@ impl fmt::Display for Error {
 }
 
 impl error::Error for Error {
-    fn description(&self) -> &str {
-        "bitcoincore-rpc error"
-    }
-
-    fn cause(&self) -> Option<&dyn error::Error> {
+    fn source(&self) -> Option<&(dyn error::Error + 'static)> {
         match *self {
             Error::JsonRpc(ref e) => Some(e),
             Error::Hex(ref e) => Some(e),
