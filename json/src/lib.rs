@@ -15,7 +15,7 @@
 
 #![crate_name = "bitcoincore_rpc_json"]
 #![crate_type = "rlib"]
-#![allow(deprecated)]           // Because of `GetPeerInfoResultNetwork::Unroutable`.
+#![allow(deprecated)] // Because of `GetPeerInfoResultNetwork::Unroutable`.
 
 pub extern crate bitcoin;
 #[allow(unused)]
@@ -25,13 +25,15 @@ extern crate serde_json;
 
 use std::collections::HashMap;
 
-
 use bitcoin::address::NetworkUnchecked;
 use bitcoin::block::Version;
 use bitcoin::consensus::encode;
 use bitcoin::hashes::hex::FromHex;
 use bitcoin::hashes::sha256;
-use bitcoin::{Address, Amount, PrivateKey, PublicKey, SignedAmount, Transaction, ScriptBuf, Script, bip158, bip32, Network};
+use bitcoin::{
+    bip158, bip32, Address, Amount, Network, PrivateKey, PublicKey, Script, ScriptBuf,
+    SignedAmount, Transaction,
+};
 use serde::de::Error as SerdeError;
 use serde::{Deserialize, Serialize};
 use std::fmt;
@@ -1008,8 +1010,8 @@ pub struct GetAddressInfoResult {
 #[derive(Clone, Debug, Deserialize, PartialEq, Eq, Serialize)]
 #[serde(untagged)]
 pub enum StringOrStringArray {
-	String(String),
-	StringArray(Vec<String>),
+    String(String),
+    StringArray(Vec<String>),
 }
 
 /// Models the result of "getblockchaininfo"
@@ -1556,6 +1558,52 @@ pub enum GetBlockTemplateModes {
     // side.
 }
 
+/// Models the result of "getblock "blockhash" [verbosity=3]"
+#[derive(Clone, PartialEq, Debug, Deserialize, Serialize)]
+pub struct GetBlockVerboseResult {
+    /// The current block hash
+    pub hash: bitcoin::BlockHash,
+    /// The number of confirmations, or -1 if the block is not on the main chain
+    pub confirmations: i64,
+    /// The block size
+    pub size: u64,
+    /// The block size excluding witness data
+    pub strippedsize: u64,
+    /// The block weight as defined in BIP 141
+    pub weight: u64,
+    /// The block height or index
+    pub height: u64,
+    /// The block version
+    pub version: u32,
+    /// The block version formatted in hexadecimal
+    #[serde(rename = "versionHex", with = "crate::serde_hex")]
+    pub version_hex: Vec<u8>,
+    /// The merkle root
+    pub merkleroot: bitcoin::hash_types::TxMerkleNode,
+    /// The transaction ids
+    pub tx: Vec<GetBlockVerboseTransactionResult>,
+    /// The block time
+    pub time: usize,
+    /// The median block time expressed in UNIX epoch time
+    pub mediantime: Option<usize>,
+    /// The nonce
+    pub nonce: u32,
+    /// The bits
+    pub bits: String,
+    /// The difficulty
+    pub difficulty: f64,
+    /// Expected number of hashes required to produce the chain up to this block
+    #[serde(with = "crate::serde_hex")]
+    pub chainwork: Vec<u8>,
+    /// The number of transactions in the block
+    #[serde(rename = "nTx")]
+    pub n_tx: usize,
+    /// The hash of the previous block (if available)
+    pub previousblockhash: Option<bitcoin::BlockHash>,
+    /// The hash of the next block (if available)
+    pub nextblockhash: Option<bitcoin::BlockHash>,
+}
+
 /// Models the result of "getblocktemplate"
 #[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
 pub struct GetBlockTemplateResult {
@@ -1782,6 +1830,28 @@ pub struct DecodeRawTransactionResult {
     pub vout: Vec<GetRawTransactionResultVout>,
 }
 
+/// Model for Getblock tx verbosity 2
+#[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
+pub struct GetBlockVerboseTransactionResult {
+    pub txid: bitcoin::Txid,
+    pub hash: bitcoin::Wtxid,
+    pub size: u32,
+    pub vsize: u32,
+    pub weight: u32,
+    pub version: u32,
+    pub locktime: u32,
+    pub vin: Vec<GetRawTransactionResultVin>,
+    pub vout: Vec<GetRawTransactionResultVout>,
+    #[serde(
+        default,
+        with = "bitcoin::amount::serde::as_btc::opt",
+        skip_serializing_if = "Option::is_none"
+    )]
+    pub fee: Option<Amount>,
+    #[serde(default, with = "crate::serde_hex")]
+    pub hex: Vec<u8>,
+}
+
 /// Models the result of "getchaintips"
 pub type GetChainTipsResult = Vec<GetChainTipsResultTip>;
 
@@ -1889,10 +1959,7 @@ pub struct FundRawTransactionOptions {
     /// The fee rate to pay per kvB. NB. This field is converted to camelCase
     /// when serialized, so it is receeived by fundrawtransaction as `feeRate`,
     /// which fee rate per kvB, and *not* `fee_rate`, which is per vB.
-    #[serde(
-        with = "bitcoin::amount::serde::as_btc::opt",
-        skip_serializing_if = "Option::is_none"
-    )]
+    #[serde(with = "bitcoin::amount::serde::as_btc::opt", skip_serializing_if = "Option::is_none")]
     pub fee_rate: Option<Amount>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub subtract_fee_from_outputs: Option<Vec<u32>>,
@@ -2192,7 +2259,7 @@ where
 
 /// deserialize_bip70_network deserializes a Bitcoin Core network according to BIP70
 /// The accepted input variants are: {"main", "test", "signet", "regtest"}
-fn deserialize_bip70_network<'de, D>(deserializer: D) -> Result<Network, D::Error> 
+fn deserialize_bip70_network<'de, D>(deserializer: D) -> Result<Network, D::Error>
 where
     D: serde::Deserializer<'de>,
 {
@@ -2201,8 +2268,12 @@ where
         type Value = Network;
 
         fn visit_str<E: serde::de::Error>(self, s: &str) -> Result<Self::Value, E> {
-            Network::from_core_arg(s)
-                .map_err(|_| E::invalid_value(serde::de::Unexpected::Str(s), &"bitcoin network encoded as a string"))
+            Network::from_core_arg(s).map_err(|_| {
+                E::invalid_value(
+                    serde::de::Unexpected::Str(s),
+                    &"bitcoin network encoded as a string",
+                )
+            })
         }
 
         fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
