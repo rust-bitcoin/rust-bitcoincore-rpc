@@ -44,7 +44,7 @@ fn get_auth() -> bitcoinsv_rpc::Auth {
 
 fn new_client() -> Client {
     let url = get_rpc_url();
-    Client::new(&url, get_auth()).unwrap()
+    Client::new(&url, get_auth(), None).unwrap()
 }
 
 #[tokio::main]

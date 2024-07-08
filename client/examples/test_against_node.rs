@@ -13,7 +13,7 @@ fn main_result() -> Result<(), Error> {
     let user = args.next().expect("no user given");
     let pass = args.next().expect("no pass given");
 
-    let rpc = Client::new(&url, Auth::UserPass(user, pass)).unwrap();
+    let rpc = Client::new(&url, Auth::UserPass(user, pass), None).unwrap();
 
     let _blockchain_info = rpc.get_blockchain_info()?;
 

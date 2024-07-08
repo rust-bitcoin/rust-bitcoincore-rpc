@@ -519,12 +519,10 @@ impl fmt::Debug for Client {
 }
 
 impl Client {
-    /// Creates a client to a bitcoind JSON-RPC server.
-    ///
-    /// Can only return [Err] when using cookie authentication.
-    pub fn new(url: &str, auth: Auth) -> Result<Self> {
+    pub fn new(url: &str, auth: Auth, timeout: Option<std::time::Duration>) -> Result<Self> {
+        let t = timeout.unwrap_or(std::time::Duration::from_secs(DEFAULT_TIMEOUT_SECONDS));
         let b = jsonrpc::minreq_http::MinreqHttpTransport::builder()
-            .timeout(std::time::Duration::from_secs(DEFAULT_TIMEOUT_SECONDS))
+            .timeout(t)
             .url(url)?;
         let b = match auth {
             Auth::None => b,

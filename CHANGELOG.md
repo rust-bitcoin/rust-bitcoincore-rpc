@@ -1,3 +1,7 @@
+# 1.0.0
+- cargo update
+- add timeout parameter for Client
+
 # 0.19.6
 - cargo update
 - changes to accommodate create bitcoinsv v0.2.5
