@@ -4,6 +4,7 @@ use std::io::{BufRead, BufReader, Cursor};
 use std::iter::FromIterator;
 use std::path::PathBuf;
 use std::{fmt, result};
+use url::Url;
 use async_trait::async_trait;
 use hex::{FromHex, ToHex};
 use jsonrpc;
@@ -537,6 +538,24 @@ impl Client {
             }
         };
         Ok(Client {client: jsonrpc::client::Client::with_transport(b.build())})
+    }
+
+    pub fn new_from_uri(uri: &str, timeout: Option<std::time::Duration>) -> Result<Self>  {
+        let url;
+        let username;
+        let password;
+        match Url::parse(&*uri) {
+            Err(_e) => {
+                println!("could not parse RPC URI");
+                return Err(Error::InvalidUri);
+            }
+            Ok(result) => {
+                url = format!("{}://{}:{}/", result.scheme(), result.host_str().unwrap(), result.port().unwrap());
+                username = String::from(result.username());
+                password = String::from(result.password().unwrap());
+            }
+        }
+        Client::new(&url, Auth::UserPass(username, password), timeout)
     }
 }
 

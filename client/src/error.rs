@@ -15,6 +15,8 @@ pub enum Error {
     UnexpectedStructure,
     /// The daemon returned an error string.
     ReturnedError(String),
+    /// The URI could not be parsed.
+    InvalidUri,
     MinReqError(jsonrpc::minreq_http::Error),
     SVJsonError(bitcoinsv::Error),
 }
@@ -43,12 +45,6 @@ impl From<io::Error> for Error {
     }
 }
 
-// impl From<bitcoinsv::Error> for Error {
-//     fn from(e: bitcoinsv::Error) -> Error {
-//         Error::BitcoinSVError(e)
-//     }
-// }
-//
 impl From<jsonrpc::minreq_http::Error> for Error {
     fn from(e: jsonrpc::minreq_http::Error) -> Error {
         Error::MinReqError(e)
@@ -71,7 +67,7 @@ impl fmt::Display for Error {
             Error::InvalidCookieFile => write!(f, "invalid cookie file"),
             Error::UnexpectedStructure => write!(f, "the JSON result had an unexpected structure"),
             Error::ReturnedError(ref s) => write!(f, "the daemon returned an error string: {}", s),
-            // Error::BitcoinSVError(ref e) => write!(f, "BSV error: {}", e),
+            Error::InvalidUri => write!(f, "the URI could not be parsed"),
             Error::MinReqError(ref e) => write!(f, "HTTPMinReq: {}", e),
             Error::SVJsonError(ref e) => write!(f, "SVJson: {}", e),
         }

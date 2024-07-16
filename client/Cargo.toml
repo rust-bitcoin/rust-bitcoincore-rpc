@@ -1,6 +1,6 @@
 [package]
 name = "bitcoinsv-rpc"
-version = "1.0.0"
+version = "1.0.1"
 authors = [
     "Daniel Connolly <daniel@dconnolly.com>"
 ]
@@ -26,6 +26,7 @@ serde_json = "1"
 hex = "0.4.3"
 bitcoinsv = "0.2.5"
 async-trait = "0.1.75"
+url = "2.5.0"
 
 [dev-dependencies]
 tempfile = "3.3.0"

@@ -1,3 +1,6 @@
+# 1.0.1
+- only bitcoinsv-rpc - added new() method for Client which accepts a URI with username and password included
+
 # 1.0.0
 - cargo update
 - add timeout parameter for Client
