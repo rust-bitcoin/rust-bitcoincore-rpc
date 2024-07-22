@@ -6,6 +6,6 @@ edition = "2018"
 
 [dependencies]
 bitcoincore-rpc = { path = "../client", features = ["rand"] }
-bitcoin = { version = "0.32.0", features = ["serde", "rand"] }
+bitcoin = { git = "https://github.com/rust-bitcoin/rust-bitcoin", branch = "bitvm", features = ["rand", "serde"] }
 lazy_static = "1.4.0"
 log = "0.4"
