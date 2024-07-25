@@ -14,6 +14,7 @@ use std::io::{BufRead, BufReader};
 use std::iter::FromIterator;
 use std::path::PathBuf;
 use std::{fmt, result};
+use std::time::Duration;
 
 use crate::bitcoin;
 use crate::bitcoin::consensus::encode;
@@ -1291,6 +1292,28 @@ impl Client {
                 client,
             })
             .map_err(|e| super::error::Error::JsonRpc(e.into()))
+    }
+
+    /// Creates a client to a bitcoind JSON-RPC server with a custom timeout value, in seconds.
+    /// Useful when making an RPC that can take a long time e.g. scantxoutset
+    pub fn new_with_custom_timeout(url: &str, auth: Auth, timeout: u64) -> result::Result<Self, Error> {
+        let (user, pass) = auth.get_user_pass()?;
+
+        let user = user.unwrap();
+        let pass = pass.unwrap();
+
+        let transport =
+            jsonrpc::simple_http::Builder::new()
+            .timeout(Duration::from_secs(timeout))
+            .url(url)
+            .unwrap()
+            .auth(user, Some(pass))
+            .build();
+
+        let client = jsonrpc::client::Client::with_transport(transport);
+
+        Ok(Client{ client })
+
     }
 
     /// Create a new Client using the given [jsonrpc::Client].
