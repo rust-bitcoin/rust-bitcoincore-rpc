@@ -2136,6 +2136,8 @@ pub struct Utxo {
     #[serde(with = "bitcoin::amount::serde::as_btc")]
     pub amount: bitcoin::Amount,
     pub height: u64,
+    pub blockhash: Option<bitcoin::BlockHash>,
+    pub confirmations: Option<u64>,
 }
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, Eq, Debug)]
