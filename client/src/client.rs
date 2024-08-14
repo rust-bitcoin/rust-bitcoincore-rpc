@@ -1272,6 +1272,11 @@ pub trait RpcApi: Sized {
             Err(e) => Err(e),
         }
     }
+
+    // Abort a UTXO set scan
+    fn scan_tx_out_set_abort(&self) -> Result<bool> {
+        self.call("scantxoutset", &["abort".into()])
+    }
     
     fn scan_tx_out_set_blocking(
         &self,
