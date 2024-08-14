@@ -2097,6 +2097,12 @@ pub enum PubKeyOrAddress<'a> {
     PubKey(&'a PublicKey),
 }
 
+/// Used to represent the status of a UTXO set scan.
+#[derive(Serialize, Deserialize, Clone, PartialEq, Eq, Debug)]
+pub struct ScanTxOutStatusResult {
+    pub progress: u8,
+}
+
 #[derive(Serialize, Deserialize, Clone, PartialEq, Eq, Debug)]
 #[serde(untagged)]
 /// Start a scan of the UTXO set for an [output descriptor](https://github.com/bitcoin/bitcoin/blob/master/doc/descriptors.md).

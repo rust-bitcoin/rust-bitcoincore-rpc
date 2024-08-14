@@ -1257,6 +1257,22 @@ pub trait RpcApi: Sized {
         }
     }
 
+    // Return the status of a UTXO set scan
+    fn scan_tx_out_set_status(&self) -> Result<Option<json::ScanTxOutStatusResult>> {
+        match self.call("scantxoutset", &["status".into()]) {
+            Ok(response) => {
+                let response: serde_json::Value = response;
+                if response.is_null() {
+                    Ok(None)
+                } else {
+                    let result: json::ScanTxOutStatusResult = serde_json::from_value(response)?;
+                    Ok(Some(result))
+                }
+            }
+            Err(e) => Err(e),
+        }
+    }
+    
     fn scan_tx_out_set_blocking(
         &self,
         descriptors: &[json::ScanTxOutRequest],
