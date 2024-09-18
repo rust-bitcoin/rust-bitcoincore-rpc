@@ -862,10 +862,13 @@ pub trait RpcApi: Sized {
     fn test_mempool_accept<R: RawTx>(
         &self,
         rawtxs: &[R],
+        maxfeerate: Option<f64>,
     ) -> Result<Vec<json::TestMempoolAcceptResult>> {
         let hexes: Vec<serde_json::Value> =
             rawtxs.to_vec().into_iter().map(|r| r.raw_hex().into()).collect();
-        self.call("testmempoolaccept", &[hexes.into()])
+        let mut args = [hexes.into(), opt_into_json(maxfeerate)?];
+        let defaults = [null()];
+        self.call("testmempoolaccept", handle_defaults(&mut args, &defaults))
     }
 
     fn stop(&self) -> Result<String> {

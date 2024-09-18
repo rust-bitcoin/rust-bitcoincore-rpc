@@ -761,13 +761,13 @@ fn test_test_mempool_accept(cl: &Client) {
 
     let tx =
         cl.create_raw_transaction(&[input.clone()], &output, Some(500_000), Some(false)).unwrap();
-    let res = cl.test_mempool_accept(&[&tx]).unwrap();
-    assert!(!res[0].allowed);
+    let res = cl.test_mempool_accept(&[&tx], None).unwrap();
+    assert!(res[0].allowed.is_some() && !res[0].allowed.unwrap());
     assert!(res[0].reject_reason.is_some());
     let signed =
         cl.sign_raw_transaction_with_wallet(&tx, None, None).unwrap().transaction().unwrap();
-    let res = cl.test_mempool_accept(&[&signed]).unwrap();
-    assert!(res[0].allowed, "not allowed: {:?}", res[0].reject_reason);
+    let res = cl.test_mempool_accept(&[&signed], None).unwrap();
+    assert!(res[0].allowed.unwrap(), "not allowed: {:?}", res[0].reject_reason);
 }
 
 fn test_wallet_create_funded_psbt(cl: &Client) {
