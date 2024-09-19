@@ -182,6 +182,7 @@ fn main() {
     test_decode_raw_transaction(&cl);
     test_fund_raw_transaction(&cl);
     test_test_mempool_accept(&cl);
+    test_submit_package(&cl);
     test_wallet_create_funded_psbt(&cl);
     test_wallet_process_psbt(&cl);
     test_join_psbt(&cl);
@@ -768,6 +769,95 @@ fn test_test_mempool_accept(cl: &Client) {
         cl.sign_raw_transaction_with_wallet(&tx, None, None).unwrap().transaction().unwrap();
     let res = cl.test_mempool_accept(&[&signed]).unwrap();
     assert!(res[0].allowed, "not allowed: {:?}", res[0].reject_reason);
+}
+
+fn test_submit_package(cl: &Client) {
+    let sk = PrivateKey {
+        network: Network::Regtest.into(),
+        inner: secp256k1::SecretKey::new(&mut secp256k1::rand::thread_rng()),
+        compressed: true,
+    };
+    let pk = CompressedPublicKey::from_private_key(&SECP, &sk).unwrap();
+    let addr = Address::p2wpkh(&pk, Network::Regtest);
+
+    let options = json::ListUnspentQueryOptions {
+        minimum_amount: Some(btc(2)),
+        ..Default::default()
+    };
+    let unspent = cl.list_unspent(Some(6), None, None, None, Some(options)).unwrap();
+    let unspent = unspent.into_iter().nth(0).unwrap();
+
+    let tx = Transaction {
+        version: transaction::Version::ONE,
+        lock_time: LockTime::ZERO,
+        input: vec![TxIn {
+            previous_output: OutPoint {
+                txid: unspent.txid,
+                vout: unspent.vout,
+            },
+            sequence: Sequence::MAX,
+            script_sig: ScriptBuf::new(),
+            witness: Witness::new(),
+        }],
+        output: vec![TxOut {
+            value: (unspent.amount - *FEE),
+            script_pubkey: addr.script_pubkey(),
+        }],
+    };
+
+    let input = json::SignRawTransactionInput {
+        txid: unspent.txid,
+        vout: unspent.vout,
+        script_pub_key: unspent.script_pub_key,
+        redeem_script: None,
+        amount: Some(unspent.amount),
+    };
+    let res1 = cl.sign_raw_transaction_with_wallet(&tx, Some(&[input]), None).unwrap();
+    assert!(res1.complete);
+    let tx1 = res1.transaction().unwrap();
+    let txid1 = tx1.compute_txid();
+
+    let tx = Transaction {
+        version: transaction::Version::ONE,
+        lock_time: LockTime::ZERO,
+        input: vec![TxIn {
+            previous_output: OutPoint {
+                txid: txid1,
+                vout: 0,
+            },
+            script_sig: ScriptBuf::new(),
+            sequence: Sequence::MAX,
+            witness: Witness::new(),
+        }],
+        output: vec![TxOut {
+            value: (unspent.amount - *FEE - *FEE),
+            script_pubkey: RANDOM_ADDRESS.script_pubkey(),
+        }],
+    };
+
+    let input = json::SignRawTransactionInput {
+        txid: txid1,
+        vout: 0,
+        script_pub_key: tx1.output[0].script_pubkey.clone(),
+        redeem_script: None,
+        amount: Some(tx1.output[0].value),
+    };
+
+    let res2 = cl
+        .sign_raw_transaction_with_key(&tx, &[sk], Some(&[input]), Some(sighash::EcdsaSighashType::All.into()))
+        .unwrap();
+    assert!(res2.complete);
+
+    let tx2 = res2.transaction().unwrap();
+
+    let signed_transactions = vec![tx1, tx2];
+
+    let signed_refs: Vec<&Transaction> = signed_transactions.iter().map(|s| s).collect();
+    let signed_refs = signed_refs.as_slice();
+
+    let res = cl.submit_package(signed_refs, None, None).unwrap();
+
+    assert!(res.package_msg == "success");
 }
 
 fn test_wallet_create_funded_psbt(cl: &Client) {
