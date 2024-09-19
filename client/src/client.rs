@@ -868,6 +868,22 @@ pub trait RpcApi: Sized {
         self.call("testmempoolaccept", &[hexes.into()])
     }
 
+    /// Submit a package of raw transactions to the node. The package will be
+    /// validated according to consensus and mempool policy rules. If all
+    /// transactions pass, they will be accepted to mempool.
+    fn submit_package<R: RawTx>(
+        &self,
+        rawtxs: &[R],
+        maxfeerate: Option<f64>,
+        maxburnamount: Option<f64>,
+    ) -> Result<json::SubmitPackageResult> {
+        let hexes: Vec<serde_json::Value> =
+            rawtxs.to_vec().into_iter().map(|r| r.raw_hex().into()).collect();
+        let mut args = [hexes.into(), opt_into_json(maxfeerate)?, opt_into_json(maxburnamount)?];
+        let defaults = [null(), null()];
+        self.call("submitpackage", handle_defaults(&mut args, &defaults))
+    }
+
     fn stop(&self) -> Result<String> {
         self.call("stop", &[])
     }
