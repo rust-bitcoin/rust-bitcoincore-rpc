@@ -646,7 +646,7 @@ impl GetRawTransactionResult {
         self.vin.len() == 1 && self.vin[0].is_coinbase()
     }
 
-    pub fn transaction(&self) -> Result<Tx, bitcoinsv::Error> {
+    pub fn transaction(&self) -> Result<Tx, bitcoinsv::BsvError> {
         let tx = Tx::from_hex(&self.hex)?;
         Ok(tx)
     }
