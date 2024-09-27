@@ -1,3 +1,6 @@
+# 1.0.2
+- update for bitcoinsv dependency version 0.2.7
+
 # 1.0.1
 - only bitcoinsv-rpc - added new() method for Client which accepts a URI with username and password included
 

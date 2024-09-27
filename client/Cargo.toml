@@ -1,6 +1,6 @@
 [package]
 name = "bitcoinsv-rpc"
-version = "1.0.1"
+version = "1.0.2"
 authors = [
     "Daniel Connolly <daniel@dconnolly.com>"
 ]
@@ -18,7 +18,7 @@ path = "src/lib.rs"
 
 [dependencies]
 tokio = { version = ">=1.23.1", features = ["full"] }
-bitcoinsv-rpc-json = { version = "1.0.0", path = "../json" }
+bitcoinsv-rpc-json = { version = "1.0.2" }
 log = "0.4.5"
 jsonrpc = { version = "0.16.0", features = ["minreq_http"]}
 serde = "1"
