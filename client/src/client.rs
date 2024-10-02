@@ -1273,6 +1273,10 @@ pub trait RpcApi: Sized {
         )
     }
 
+    fn scan_blocks_status(&self) -> Result<Option<json::ScanBlocksStatusResult>> {
+        opt_result(self.call("scanblocks",&["status".into(),],)?)
+    }
+
     fn scan_tx_out_set_blocking(
         &self,
         descriptors: &[json::ScanTxOutRequest],

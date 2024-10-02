@@ -2132,6 +2132,12 @@ pub struct ScanBlocksResult {
 }
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, Eq, Debug)]
+pub struct ScanBlocksStatusResult {
+    pub progress: Option<u64>,
+    pub current_height: Option<u64>,
+}
+
+#[derive(Serialize, Deserialize, Clone, PartialEq, Eq, Debug)]
 #[serde(untagged)]
 /// Start a scan of the UTXO set for an [output descriptor](https://github.com/bitcoin/bitcoin/blob/master/doc/descriptors.md).
 pub enum ScanTxOutRequest {
