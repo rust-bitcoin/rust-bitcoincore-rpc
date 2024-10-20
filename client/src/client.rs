@@ -1080,17 +1080,15 @@ pub trait RpcApi: Sized {
         self.call("sendrawtransaction", &[tx.raw_hex().into()])
     }
 
-    fn send_raw_transaction_with_options<R: RawTx>(&self, tx: R, maxfeerate: Option<f64>, maxburnamount: Option<f64>) -> Result<bitcoin::Txid> {
+    fn send_raw_transaction_advanced<R: RawTx>(&self, tx: R, maxfeerate: Option<f64>, maxburnamount: Option<f64>) -> Result<bitcoin::Txid> {
         let mut params = serde_json::json!({
             "hexstring": tx.raw_hex()
         });
 
-        // Add maxfeerate if it's provided
         if let Some(fee_rate) = maxfeerate {
             params["maxfeerate"] = serde_json::json!(fee_rate);
         }
 
-        // Add maxburnamount if it's provided
         if let Some(burn_amount) = maxburnamount {
             params["maxburnamount"] = serde_json::json!(burn_amount);
         }

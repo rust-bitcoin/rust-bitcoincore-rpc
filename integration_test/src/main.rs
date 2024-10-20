@@ -683,7 +683,7 @@ fn test_send_raw_transaction_with_options(cl: &Client) {
     let tx_hex = serialize_hex(&signed_tx);
 
     let maxfeerate = Some(0.01);
-    let maxburnamount = Some(0.0);
+    let maxburnamount = Some(0.02);
 
     let txid = cl.send_raw_transaction_with_options(tx_hex, maxfeerate, maxburnamount).unwrap();
 
