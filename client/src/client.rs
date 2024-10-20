@@ -1087,9 +1087,9 @@ pub trait RpcApi: Sized {
         maxburnamount: Option<f64>,
     ) -> Result<bitcoin::Txid> {
         let mut params = serde_json::json!({
-        "hexstring": tx.raw_hex()
-    });
-
+            "hexstring": tx.raw_hex()
+        });
+        
         if let Some(fee_rate) = maxfeerate {
             params["maxfeerate"] = serde_json::json!(fee_rate);
         }
@@ -1098,7 +1098,7 @@ pub trait RpcApi: Sized {
             params["maxburnamount"] = serde_json::json!(burn_amount);
         }
 
-        self.call("sendrawtransaction", &[params.into()])
+        self.call("sendrawtransaction", &[serde_json::json!({"-named": true}), params.into()])
     }
 
     fn estimate_smart_fee(
