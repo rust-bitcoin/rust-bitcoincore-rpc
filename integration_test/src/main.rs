@@ -176,7 +176,7 @@ fn main() {
     test_lock_unspent_unlock_unspent(&cl);
     test_get_block_filter(&cl);
     test_sign_raw_transaction_with_send_raw_transaction(&cl);
-    test_send_raw_transaction_with_options(&cl);
+    test_send_raw_transaction_advanced(&cl);
     test_invalidate_block_reconsider_block(&cl);
     test_key_pool_refill(&cl);
     test_create_raw_transaction(&cl);
@@ -641,7 +641,7 @@ fn test_sign_raw_transaction_with_send_raw_transaction(cl: &Client) {
     let _ = cl.send_raw_transaction(&res.transaction().unwrap()).unwrap();
 }
 
-fn test_send_raw_transaction_with_options(cl: &Client) {
+fn test_send_raw_transaction_advanced(cl: &Client) {
     let sk = PrivateKey {
         network: Network::Regtest.into(),
         inner: secp256k1::SecretKey::new(&mut secp256k1::rand::thread_rng()),
@@ -685,7 +685,7 @@ fn test_send_raw_transaction_with_options(cl: &Client) {
     let maxfeerate = Some(0.01);
     let maxburnamount = Some(0.02);
 
-    let txid = cl.send_raw_transaction_with_options(tx_hex, maxfeerate, maxburnamount).unwrap();
+    let txid = cl.send_raw_transaction_advanced(tx_hex, maxfeerate, maxburnamount).unwrap();
 
     assert!(!txid.to_string().is_empty(), "Transaction ID should not be empty");
 
