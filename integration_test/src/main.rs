@@ -176,6 +176,7 @@ fn main() {
     test_lock_unspent_unlock_unspent(&cl);
     test_get_block_filter(&cl);
     test_sign_raw_transaction_with_send_raw_transaction(&cl);
+    test_send_raw_transaction_advanced(&cl);
     test_invalidate_block_reconsider_block(&cl);
     test_key_pool_refill(&cl);
     test_create_raw_transaction(&cl);
@@ -638,6 +639,57 @@ fn test_sign_raw_transaction_with_send_raw_transaction(cl: &Client) {
         .unwrap();
     assert!(res.complete);
     let _ = cl.send_raw_transaction(&res.transaction().unwrap()).unwrap();
+}
+
+fn test_send_raw_transaction_advanced(cl: &Client) {
+    let sk = PrivateKey {
+        network: Network::Regtest.into(),
+        inner: secp256k1::SecretKey::new(&mut secp256k1::rand::thread_rng()),
+        compressed: true,
+    };
+    let pk = CompressedPublicKey::from_private_key(&SECP, &sk).unwrap();
+    let addr = Address::p2wpkh(&pk, Network::Regtest);
+
+    let options = json::ListUnspentQueryOptions {
+        minimum_amount: Some(btc(2)),
+        ..Default::default()
+    };
+    let unspent = cl.list_unspent(Some(6), None, None, None, Some(options)).unwrap();
+    let unspent = unspent.into_iter().nth(0).unwrap();
+
+    let tx = Transaction {
+        version: transaction::Version::ONE,
+        lock_time: LockTime::ZERO,
+        input: vec![TxIn {
+            previous_output: OutPoint {
+                txid: unspent.txid,
+                vout: unspent.vout,
+            },
+            sequence: Sequence::MAX,
+            script_sig: ScriptBuf::new(),
+            witness: Witness::new(),
+        }],
+        output: vec![TxOut {
+            value: (unspent.amount - *FEE),
+            script_pubkey: addr.script_pubkey(),
+        }],
+    };
+
+    let signed_tx = cl.sign_raw_transaction_with_wallet(&tx, None, None)
+      .unwrap()
+      .transaction()
+      .unwrap();
+
+    let tx_hex = serialize_hex(&signed_tx);
+
+    let maxfeerate = Some(0.01);
+    let maxburnamount = Some(0.02);
+
+    let txid = cl.send_raw_transaction_advanced(tx_hex, maxfeerate, maxburnamount).unwrap();
+
+    assert!(!txid.to_string().is_empty(), "Transaction ID should not be empty");
+
+    println!("Transaction sent successfully with txid: {}", txid);
 }
 
 fn test_invalidate_block_reconsider_block(cl: &Client) {
