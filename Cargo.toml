@@ -7,4 +7,5 @@ members = [
 ]
 
 [workspace.dependencies]
-bitcoinsv = "0.2.7"
+bitcoinsv = { git = "https://github.com/Danconnolly/rust-bitcoinsv.git" }
+

@@ -8,5 +8,5 @@ edition = "2021"
 bitcoinsv = { workspace = true }
 bitcoinsv-rpc = { path = "../client" }
 tokio = { version = "1", features = ["full"] }
-tokio-stream = "0.1"
+tokio-stream = "0.1.17"
 

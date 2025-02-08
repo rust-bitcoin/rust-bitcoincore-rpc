@@ -18,7 +18,7 @@ pub enum Error {
     /// The URI could not be parsed.
     InvalidUri,
     MinReqError(jsonrpc::minreq_http::Error),
-    SVJsonError(bitcoinsv::BsvError),
+    SVJsonError(bitcoinsv::Error),
 }
 
 impl From<jsonrpc::error::Error> for Error {
@@ -51,8 +51,8 @@ impl From<jsonrpc::minreq_http::Error> for Error {
     }
 }
 
-impl From<bitcoinsv::BsvError> for Error {
-    fn from(e: bitcoinsv::BsvError) -> Error {
+impl From<bitcoinsv::Error> for Error {
+    fn from(e: bitcoinsv::Error) -> Error {
         Error::SVJsonError(e)
     }
 }
