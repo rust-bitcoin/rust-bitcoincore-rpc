@@ -18,7 +18,7 @@ path = "src/lib.rs"
 
 [dependencies]
 async-trait = "0.1.75"
-bitcoinsv = "0.2.7"
+bitcoinsv = { workspace = true }
 bitcoinsv-rpc-json = { version = "1.0.2" }
 hex = "0.4.3"
 jsonrpc = { version = "0.16.0", features = ["minreq_http"]}

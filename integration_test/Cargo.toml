@@ -5,10 +5,8 @@ authors = ["Daniel Connolly <daniel@dconnolly.com>"]
 edition = "2021"
 
 [dependencies]
+bitcoinsv = { workspace = true }
 bitcoinsv-rpc = { path = "../client" }
-lazy_static = "1.4.0"
-log = "0.4"
-env_logger = "0.10.1"
 tokio = { version = "1", features = ["full"] }
 tokio-stream = "0.1"
-bitcoinsv = "0.2.7"
+

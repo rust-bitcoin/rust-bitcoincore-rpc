@@ -5,3 +5,6 @@ members = [
     "client",
     "integration_test",
 ]
+
+[workspace.dependencies]
+bitcoinsv = "0.2.7"
