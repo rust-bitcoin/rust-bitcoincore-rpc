@@ -5,8 +5,3 @@ members = [
     "client",
     "integration_test",
 ]
-
-[patch.crates-io]
-base58check = { git = "https://github.com/rust-bitcoin/rust-bitcoin", branch = "bitvm"}
-bitcoin_hashes = { git = "https://github.com/rust-bitcoin/rust-bitcoin", branch = "bitvm"}
-bitcoin-internals = { git = "https://github.com/rust-bitcoin/rust-bitcoin", branch = "bitvm"}
