@@ -26,7 +26,7 @@ rand = ["bitcoincore-rpc-json/rand"]
 bitcoincore-rpc-json = { version = "0.19.0", path = "../json" }
 
 log = "0.4.5"
-jsonrpc = { version = "0.18.0", features = ["minreq_http"] }
+jsonrpc = { version = "0.18.0", features = ["simple_http"] }
 
 # Used for deserialization of JSON.
 serde = "1"
