@@ -1,7 +1,5 @@
 use std::{error, fmt, io};
 
-use jsonrpc;
-use serde_json;
 
 /// The error type for errors produced in this library.
 #[derive(Debug)]

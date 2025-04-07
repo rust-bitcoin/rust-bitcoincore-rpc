@@ -26,17 +26,17 @@ macro_rules! assert_error_message {
 }
 
 fn get_rpc_url() -> String {
-    return std::env::var("RPC_URL").expect("RPC_URL must be set");
+    std::env::var("RPC_URL").expect("RPC_URL must be set")
 }
 
 fn get_auth() -> bitcoinsv_rpc::Auth {
     if let Ok(cookie) = std::env::var("RPC_COOKIE") {
-        return Auth::CookieFile(cookie.into());
+        Auth::CookieFile(cookie.into())
     } else if let Ok(user) = std::env::var("RPC_USER") {
         return Auth::UserPass(user, std::env::var("RPC_PASS").unwrap_or_default());
     } else {
         panic!("Either RPC_COOKIE or RPC_USER + RPC_PASS must be set.");
-    };
+    }
 }
 
 fn new_client() -> Client {
@@ -109,8 +109,8 @@ fn test_get_block_hash(cl: &Client) {
 async fn test_get_block(cl: &Client) {
     let tip = cl.get_best_block_hash().unwrap();
     let block = cl.get_block(&tip).await.unwrap();
-    let mut it = block.tx_iter();
-    while let Some(tx) = it.next() {
+    let it = block.tx_iter();
+    for tx in it {
         let _ = tx;
     }
     let info = cl.get_block_info(&tip).unwrap();
@@ -161,7 +161,7 @@ fn test_invalidate_block_reconsider_block(cl: &Client) {
 }
 
 fn test_ping(cl: &Client) {
-    let _ = cl.ping().unwrap();
+    cl.ping().unwrap();
 }
 
 fn test_get_peer_info(cl: &Client) {

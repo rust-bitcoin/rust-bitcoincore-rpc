@@ -6,10 +6,7 @@ use bitcoinsv::util::Amount;
 use bitcoinsv_rpc_json::GetNetworkInfoResult;
 use bytes::Bytes;
 use hex::{FromHex, ToHex};
-use jsonrpc;
 use log::Level::{Debug, Trace, Warn};
-use serde;
-use serde_json;
 use std::collections::HashMap;
 use std::fs::File;
 use std::io::{BufRead, BufReader};
@@ -71,9 +68,9 @@ fn null() -> serde_json::Value {
 ///
 /// Elements of `args` without corresponding `defaults` value, won't
 /// be substituted, because they are required.
-fn handle_defaults<'a, 'b>(
+fn handle_defaults<'a>(
     args: &'a mut [serde_json::Value],
-    defaults: &'b [serde_json::Value],
+    defaults: &[serde_json::Value],
 ) -> &'a [serde_json::Value] {
     assert!(args.len() >= defaults.len());
 
@@ -154,13 +151,13 @@ pub trait RpcApi: Sized {
     fn add_ban(&self, subnet: &str, bantime: u64, absolute: bool) -> Result<()> {
         self.call(
             "setban",
-            &[into_json(&subnet)?, into_json("add")?, into_json(&bantime)?, into_json(&absolute)?],
+            &[into_json(subnet)?, into_json("add")?, into_json(bantime)?, into_json(absolute)?],
         )
     }
 
     /// Adds an address to the list of peers that the node will attempt to connect to.
     fn add_node(&self, addr: &str) -> Result<()> {
-        self.call("addnode", &[into_json(&addr)?, into_json("add")?])
+        self.call("addnode", &[into_json(addr)?, into_json("add")?])
     }
 
     /// Clear all banned IPs.
@@ -205,7 +202,7 @@ pub trait RpcApi: Sized {
 
     /// Disconnect from the specified address.
     fn disconnect_node(&self, addr: &str) -> Result<()> {
-        self.call("disconnectnode", &[into_json(&addr)?])
+        self.call("disconnectnode", &[into_json(addr)?])
     }
 
     /// Disconnect from the specified peer using the peer_id.
@@ -216,7 +213,7 @@ pub trait RpcApi: Sized {
     /// Returns information about the given added peer, or all added peers (note that onetry addnodes are not listed here).
     fn get_added_node_info(&self, node: Option<&str>) -> Result<Vec<json::GetAddedNodeInfoResult>> {
         if let Some(addr) = node {
-            self.call("getaddednodeinfo", &[into_json(&addr)?])
+            self.call("getaddednodeinfo", &[into_json(addr)?])
         } else {
             self.call("getaddednodeinfo", &[])
         }
@@ -432,7 +429,7 @@ pub trait RpcApi: Sized {
     /// Attempts to connect to a peer once without adding it to the list of peers that the node will
     /// continually try to connect to. See also add_node() and remove_node().
     fn onetry_node(&self, addr: &str) -> Result<()> {
-        self.call("addnode", &[into_json(&addr)?, into_json("onetry")?])
+        self.call("addnode", &[into_json(addr)?, into_json("onetry")?])
     }
 
     /// Requests that a ping be sent to all other nodes, to measure ping
@@ -457,12 +454,12 @@ pub trait RpcApi: Sized {
 
     /// Remove an IP/Subnet from the banned list.
     fn remove_ban(&self, subnet: &str) -> Result<()> {
-        self.call("setban", &[into_json(&subnet)?, into_json("remove")?])
+        self.call("setban", &[into_json(subnet)?, into_json("remove")?])
     }
 
     /// Removes an address from the list of peers that the node will attempt to connect to.
     fn remove_node(&self, addr: &str) -> Result<()> {
-        self.call("addnode", &[into_json(&addr)?, into_json("remove")?])
+        self.call("addnode", &[into_json(addr)?, into_json("remove")?])
     }
 
     fn send_raw_transaction(&self, tx: Tx) -> Result<TxHash> {
@@ -471,7 +468,7 @@ pub trait RpcApi: Sized {
 
     /// Disable/enable all p2p network activity.
     fn set_network_active(&self, state: bool) -> Result<bool> {
-        self.call("setnetworkactive", &[into_json(&state)?])
+        self.call("setnetworkactive", &[into_json(state)?])
     }
 
     /// Stop the node.
@@ -515,8 +512,8 @@ impl Client {
                     .ok_or(Error::InvalidCookieFile)??;
                 let colon = line.find(':').ok_or(Error::InvalidCookieFile)?;
                 b.basic_auth(
-                    (&line[..colon]).parse().unwrap(),
-                    Some((&line[colon + 1..]).parse().unwrap()),
+                    line[..colon].parse().unwrap(),
+                    Some(line[colon + 1..].parse().unwrap()),
                 )
             }
         };
@@ -529,7 +526,7 @@ impl Client {
         let url;
         let username;
         let password;
-        match Url::parse(&*uri) {
+        match Url::parse(uri) {
             Err(_e) => {
                 println!("could not parse RPC URI");
                 return Err(Error::InvalidUri);
@@ -562,9 +559,9 @@ impl RpcApi for Client {
                 let json_string = serde_json::to_string(a)?;
                 serde_json::value::RawValue::from_string(json_string) // we can't use to_raw_value here due to compat with Rust 1.29
             })
-            .map(|a| a.map_err(|e| Error::Json(e)))
+            .map(|a| a.map_err(Error::Json))
             .collect::<Result<Vec<_>>>()?;
-        let req = self.client.build_request(&cmd, &raw_args);
+        let req = self.client.build_request(cmd, &raw_args);
         if log_enabled!(Debug) {
             debug!(target: "bitcoinwv_rpc", "JSON-RPC request: {} {}", cmd, serde_json::Value::from(args));
         }
@@ -605,7 +602,7 @@ fn log_response(cmd: &str, resp: &Result<jsonrpc::Response>) {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use serde_json;
+    
 
     fn test_handle_defaults_inner() -> Result<()> {
         {

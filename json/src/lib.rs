@@ -27,12 +27,12 @@ pub mod serde_hex {
     use serde::{Deserializer, Serializer};
 
     pub fn serialize<S: Serializer>(b: &Vec<u8>, s: S) -> Result<S::Ok, S::Error> {
-        s.serialize_str(&*hex::encode(b))
+        s.serialize_str(&hex::encode(b))
     }
 
     pub fn deserialize<'de, D: Deserializer<'de>>(d: D) -> Result<Vec<u8>, D::Error> {
         let hex_str: String = ::serde::Deserialize::deserialize(d)?;
-        Ok(FromHex::from_hex(&hex_str).map_err(D::Error::custom)?)
+        FromHex::from_hex(&hex_str).map_err(D::Error::custom)
     }
 
     pub mod opt {
@@ -43,7 +43,7 @@ pub mod serde_hex {
         pub fn serialize<S: Serializer>(b: &Option<Vec<u8>>, s: S) -> Result<S::Ok, S::Error> {
             match *b {
                 None => s.serialize_none(),
-                Some(ref b) => s.serialize_str(&*hex::encode(b)),
+                Some(ref b) => s.serialize_str(&hex::encode(b)),
             }
         }
 
@@ -66,7 +66,7 @@ pub struct GetNetworkInfoResultNetwork {
 #[cfg(test)]
 mod ninfo_network_tests {
     use super::*;
-    use serde_json;
+    
 
     #[test]
     fn test_deserialize_get_network_info_result_network() {
@@ -83,10 +83,10 @@ mod ninfo_network_tests {
         let result: GetNetworkInfoResultNetwork = serde_json::from_str(json_data).unwrap();
 
         assert_eq!(result.name, "ipv4");
-        assert_eq!(result.limited, false);
-        assert_eq!(result.reachable, true);
+        assert!(!result.limited);
+        assert!(result.reachable);
         assert_eq!(result.proxy, "");
-        assert_eq!(result.proxy_randomize_credentials, false);
+        assert!(!result.proxy_randomize_credentials);
     }
 }
 
@@ -100,7 +100,7 @@ pub struct GetNetworkInfoResultAddress {
 #[cfg(test)]
 mod ninfo_address_tests {
     use super::*;
-    use serde_json;
+    
 
     #[test]
     fn test_deserialize_get_network_info_result_address() {
@@ -164,7 +164,7 @@ pub struct GetNetworkInfoResult {
 #[cfg(test)]
 mod ninfo_tests {
     use super::*;
-    use serde_json;
+    
 
     #[test]
     fn test_deserialize_get_network_info_result() {
