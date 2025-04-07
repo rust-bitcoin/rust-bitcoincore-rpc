@@ -20,6 +20,7 @@ path = "src/lib.rs"
 async-trait = "0.1.75"
 bitcoinsv = { workspace = true }
 bitcoinsv-rpc-json = { path = "../json" }
+bytes = { workspace = true }
 hex = "0.4.3"
 jsonrpc = { version = "0.16.0", features = ["minreq_http"]}
 log = "0.4.5"

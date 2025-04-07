@@ -1,22 +1,22 @@
+use crate::error::*;
+use crate::json;
+use async_trait::async_trait;
+use bitcoinsv::bitcoin::{Block, BlockHash, BlockHeader, Tx, TxHash};
+use bitcoinsv::util::Amount;
+use bitcoinsv_rpc_json::GetNetworkInfoResult;
+use bytes::Bytes;
+use hex::{FromHex, ToHex};
+use jsonrpc;
+use log::Level::{Debug, Trace, Warn};
+use serde;
+use serde_json;
 use std::collections::HashMap;
 use std::fs::File;
-use std::io::{BufRead, BufReader, Cursor};
+use std::io::{BufRead, BufReader};
 use std::iter::FromIterator;
 use std::path::PathBuf;
 use std::{fmt, result};
 use url::Url;
-use async_trait::async_trait;
-use hex::{FromHex, ToHex};
-use jsonrpc;
-use serde;
-use serde_json;
-use log::Level::{Debug, Trace, Warn};
-use bitcoinsv::bitcoin::{BlockHeader, FullBlockStream, Tx, TxHash, BlockHash};
-use bitcoinsv::util::Amount;
-use bitcoinsv_rpc_json::GetNetworkInfoResult;
-use tokio::io::{AsyncRead};
-use crate::error::*;
-use crate::json;
 
 const DEFAULT_TIMEOUT_SECONDS: u64 = 300;
 
@@ -227,21 +227,15 @@ pub trait RpcApi: Sized {
         self.call("getbestblockhash", &[])
     }
 
-    /// Fetch a complete block from the node, returning a binary reader.
+    /// Fetch a complete block from the node.
     ///
     /// todo: This method of using getblock over the RPC interface is a terrible way to get blocks.
     /// It will use at least three times the size of the block in RAM on the client machine.
     /// Twice to retrieve the hex representation of the block and once to deserialize that to binary.
-    async fn get_block_binary(&self, hash: &BlockHash) -> Result<Box<dyn AsyncRead + Unpin + Send>> {
+    async fn get_block(&self, hash: &BlockHash) -> Result<Block> {
         let hex: String = self.call("getblock", &[into_json(hash)?, 0.into()])?;
-        let buf = hex::decode(hex)?;
-        return Ok(Box::new(Cursor::new(buf)));
-    }
-
-    /// Fetch a complete block from the node, returning a FullBlockStream.
-    async fn get_block(&self, hash: &BlockHash) -> Result<FullBlockStream> {
-        let f = FullBlockStream::new(Box::new(self.get_block_binary(hash).await.unwrap())).await?;
-        Ok(f)
+        let buf = Bytes::from(hex::decode(hex)?);
+        Ok(Block::from(buf))
     }
 
     /// Returns the numbers of block in the 'longest" chain (the chain with the most proof of work).
@@ -271,18 +265,12 @@ pub trait RpcApi: Sized {
     }
 
     /// Returns information about the block header.
-    fn get_block_header_info(
-        &self,
-        hash: &BlockHash,
-    ) -> Result<json::GetBlockHeaderResult> {
+    fn get_block_header_info(&self, hash: &BlockHash) -> Result<json::GetBlockHeaderResult> {
         self.call("getblockheader", &[into_json(hash)?, 1.into()])
     }
 
     /// Returns information about the block header, including merkle-root and coinbase tx.
-    fn get_block_header_info_full(
-        &self,
-        hash: &BlockHash,
-    ) -> Result<json::GetBlockHeaderResult> {
+    fn get_block_header_info_full(&self, hash: &BlockHash) -> Result<json::GetBlockHeaderResult> {
         self.call("getblockheader", &[into_json(hash)?, 2.into()])
     }
 
@@ -368,17 +356,11 @@ pub trait RpcApi: Sized {
     }
 
     /// Get details for the transactions in a memory pool.
-    fn get_raw_mempool_verbose(
-        &self,
-    ) -> Result<HashMap<TxHash, json::GetMempoolEntryResult>> {
+    fn get_raw_mempool_verbose(&self) -> Result<HashMap<TxHash, json::GetMempoolEntryResult>> {
         self.call("getrawmempool", &[into_json(true)?])
     }
 
-    fn get_raw_transaction(
-        &self,
-        tx_hash: &TxHash,
-        block_hash: Option<&BlockHash>,
-    ) -> Result<Tx> {
+    fn get_raw_transaction(&self, tx_hash: &TxHash, block_hash: Option<&BlockHash>) -> Result<Tx> {
         let mut args = [into_json(tx_hash)?, into_json(false)?, opt_into_json(block_hash)?];
         let hex: String = self.call("getrawtransaction", handle_defaults(&mut args, &[null()]))?;
         Ok(Tx::from_hex(&hex)?)
@@ -522,9 +504,7 @@ impl fmt::Debug for Client {
 impl Client {
     pub fn new(url: &str, auth: Auth, timeout: Option<std::time::Duration>) -> Result<Self> {
         let t = timeout.unwrap_or(std::time::Duration::from_secs(DEFAULT_TIMEOUT_SECONDS));
-        let b = jsonrpc::minreq_http::MinreqHttpTransport::builder()
-            .timeout(t)
-            .url(url)?;
+        let b = jsonrpc::minreq_http::MinreqHttpTransport::builder().timeout(t).url(url)?;
         let b = match auth {
             Auth::None => b,
             Auth::UserPass(user, pass) => b.basic_auth(user, Some(pass)),
@@ -534,13 +514,18 @@ impl Client {
                     .next()
                     .ok_or(Error::InvalidCookieFile)??;
                 let colon = line.find(':').ok_or(Error::InvalidCookieFile)?;
-                b.basic_auth((&line[..colon]).parse().unwrap(), Some((&line[colon + 1..]).parse().unwrap()))
+                b.basic_auth(
+                    (&line[..colon]).parse().unwrap(),
+                    Some((&line[colon + 1..]).parse().unwrap()),
+                )
             }
         };
-        Ok(Client {client: jsonrpc::client::Client::with_transport(b.build())})
+        Ok(Client {
+            client: jsonrpc::client::Client::with_transport(b.build()),
+        })
     }
 
-    pub fn new_from_uri(uri: &str, timeout: Option<std::time::Duration>) -> Result<Self>  {
+    pub fn new_from_uri(uri: &str, timeout: Option<std::time::Duration>) -> Result<Self> {
         let url;
         let username;
         let password;
@@ -550,7 +535,12 @@ impl Client {
                 return Err(Error::InvalidUri);
             }
             Ok(result) => {
-                url = format!("{}://{}:{}/", result.scheme(), result.host_str().unwrap(), result.port().unwrap());
+                url = format!(
+                    "{}://{}:{}/",
+                    result.scheme(),
+                    result.host_str().unwrap(),
+                    result.port().unwrap()
+                );
                 username = String::from(result.username());
                 password = String::from(result.password().unwrap());
             }

@@ -1,4 +1,3 @@
-
 #![crate_name = "bitcoinsv_rpc"]
 #![crate_type = "rlib"]
 
@@ -31,4 +30,3 @@ mod error;
 
 pub use crate::client::{Auth, Client, RpcApi};
 pub use crate::error::Error;
-

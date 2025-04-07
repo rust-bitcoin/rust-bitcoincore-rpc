@@ -117,6 +117,7 @@ dependencies = [
  "async-trait",
  "bitcoinsv",
  "bitcoinsv-rpc-json",
+ "bytes",
  "hex",
  "jsonrpc",
  "log",

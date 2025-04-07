@@ -10,12 +10,10 @@
 
 #![deny(unused)]
 
-
-use tokio_stream::StreamExt;
+use bitcoinsv::bitcoin::BlockchainId;
 use bitcoinsv_rpc::jsonrpc::error::Error as JsonRpcError;
 use bitcoinsv_rpc::{Auth, Client, Error, RpcApi};
-use bitcoinsv::bitcoin::BlockchainId;
-
+use tokio_stream::StreamExt;
 
 /// Assert that the call returns the specified error message.
 macro_rules! assert_error_message {
@@ -64,7 +62,7 @@ async fn main() {
     test_get_block_stats(&cl);
     test_get_difficulty(&cl);
     test_get_connection_count(&cl);
-    test_get_raw_mempool(&cl);    
+    test_get_raw_mempool(&cl);
     test_invalidate_block_reconsider_block(&cl);
     test_ping(&cl);
     test_get_peer_info(&cl);
