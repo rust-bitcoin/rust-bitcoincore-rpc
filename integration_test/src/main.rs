@@ -13,7 +13,6 @@
 use bitcoinsv::bitcoin::BlockchainId;
 use bitcoinsv_rpc::jsonrpc::error::Error as JsonRpcError;
 use bitcoinsv_rpc::{Auth, Client, Error, RpcApi};
-use tokio_stream::StreamExt;
 
 /// Assert that the call returns the specified error message.
 macro_rules! assert_error_message {
@@ -109,15 +108,17 @@ fn test_get_block_hash(cl: &Client) {
 
 async fn test_get_block(cl: &Client) {
     let tip = cl.get_best_block_hash().unwrap();
-    let mut block = cl.get_block(&tip).await.unwrap();
-    while let Some(tx) = block.next().await {
-        let _ = tx.unwrap();
+    let block = cl.get_block(&tip).await.unwrap();
+    let mut it = block.tx_iter();
+    while let Some(tx) = it.next() {
+        let _ = tx;
     }
     let info = cl.get_block_info(&tip).unwrap();
     assert_eq!(info.hash, tip);
     assert_eq!(info.confirmations, 1);
     assert_eq!(info.num_tx, block.num_tx);
-    assert_eq!(info.hash, block.block_header.hash());
+    let hdr = block.header().unwrap();
+    assert_eq!(info.hash, hdr.hash());
 }
 
 fn test_get_block_header_get_block_header_info(cl: &Client) {
