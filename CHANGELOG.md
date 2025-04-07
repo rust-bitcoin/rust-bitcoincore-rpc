@@ -1,3 +1,6 @@
+# 1.0.3
+- update for bitcoinsv dependency to version 0.3.0
+
 # 1.0.2
 - update for bitcoinsv dependency version 0.2.7
 
