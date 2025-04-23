@@ -906,6 +906,7 @@ pub struct Softfork {
 #[serde(rename_all = "lowercase")]
 pub enum ScriptPubkeyType {
     Nonstandard,
+    Anchor,
     Pubkey,
     PubkeyHash,
     ScriptHash,
