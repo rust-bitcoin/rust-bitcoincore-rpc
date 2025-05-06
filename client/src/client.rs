@@ -19,6 +19,7 @@ use crate::bitcoin;
 use crate::bitcoin::consensus::encode;
 use bitcoin::hex::DisplayHex;
 use jsonrpc;
+use jsonrpc::minreq_http::MinreqHttpTransport;
 use serde;
 use serde_json;
 
@@ -1291,6 +1292,21 @@ impl Client {
                 client,
             })
             .map_err(|e| super::error::Error::JsonRpc(e.into()))
+    }
+
+    pub fn new_with_minreq(url: &str, auth: Auth) -> Result<Self> {
+        let (user, pass) = auth.get_user_pass()?;
+        if user.is_none() {
+            return Err(Error::ReturnedError("User is None".to_string()));
+        }
+        let transport = MinreqHttpTransport::builder()
+            .url(url)
+            .map_err(|e| super::error::Error::JsonRpc(e.into()))?
+            .basic_auth(user.unwrap(), pass)
+            .build();
+        Ok(Client {
+            client: jsonrpc::client::Client::with_transport(transport),
+        })
     }
 
     /// Create a new Client using the given [jsonrpc::Client].

@@ -27,6 +27,7 @@ bitcoincore-rpc-json = { version = "0.19.0", path = "../json" }
 
 log = "0.4.5"
 jsonrpc = { version = "0.18.0", features = ["minreq_http"] }
+minreq = { version = "2.7.0", features = ["json-using-serde", "https"] }
 
 # Used for deserialization of JSON.
 serde = "1"
