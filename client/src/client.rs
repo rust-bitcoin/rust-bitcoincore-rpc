@@ -13,6 +13,7 @@ use std::fs::File;
 use std::io::{BufRead, BufReader};
 use std::iter::FromIterator;
 use std::path::PathBuf;
+use std::time::Duration;
 use std::{fmt, result};
 
 use crate::bitcoin;
@@ -1303,6 +1304,7 @@ impl Client {
             .url(url)
             .map_err(|e| super::error::Error::JsonRpc(e.into()))?
             .basic_auth(user.unwrap(), pass)
+            .timeout(Duration::from_secs(300))
             .build();
         Ok(Client {
             client: jsonrpc::client::Client::with_transport(transport),
