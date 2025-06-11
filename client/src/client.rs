@@ -955,6 +955,12 @@ pub trait RpcApi: Sized {
         self.call("getchaintips", &[])
     }
 
+    /// Compute statistics about the total number and rate of transactions in the chain.
+    fn get_chain_tx_stats(&self, nblocks: Option<u64>, blockhash: Option<&bitcoin::BlockHash>)
+        -> Result<json::GetChainTxStatsResult> {
+        self.call("getchaintxstats", &[opt_into_json(nblocks)?, opt_into_json(blockhash)?])
+    }
+
     fn send_to_address(
         &self,
         address: &Address<NetworkChecked>,
