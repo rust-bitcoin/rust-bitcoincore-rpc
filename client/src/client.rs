@@ -19,10 +19,11 @@ use crate::bitcoin;
 use crate::bitcoin::consensus::encode;
 use bitcoin::hex::DisplayHex;
 use jsonrpc;
+use jsonrpc::minreq_http::MinreqHttpTransport;
 use serde;
 use serde_json;
 
-use crate::bitcoin::address::{NetworkUnchecked, NetworkChecked};
+use crate::bitcoin::address::{NetworkChecked, NetworkUnchecked};
 use crate::bitcoin::hashes::hex::FromHex;
 use crate::bitcoin::secp256k1::ecdsa::Signature;
 use crate::bitcoin::{
@@ -892,7 +893,10 @@ pub trait RpcApi: Sized {
     }
 
     /// Generate new address for receiving change
-    fn get_raw_change_address(&self, address_type: Option<json::AddressType>) -> Result<Address<NetworkUnchecked>> {
+    fn get_raw_change_address(
+        &self,
+        address_type: Option<json::AddressType>,
+    ) -> Result<Address<NetworkUnchecked>> {
         self.call("getrawchangeaddress", &[opt_into_json(address_type)?])
     }
 
@@ -1183,7 +1187,11 @@ pub trait RpcApi: Sized {
         self.call("finalizepsbt", handle_defaults(&mut args, &[true.into()]))
     }
 
-    fn derive_addresses(&self, descriptor: &str, range: Option<[u32; 2]>) -> Result<Vec<Address<NetworkUnchecked>>> {
+    fn derive_addresses(
+        &self,
+        descriptor: &str,
+        range: Option<[u32; 2]>,
+    ) -> Result<Vec<Address<NetworkUnchecked>>> {
         let mut args = [into_json(descriptor)?, opt_into_json(range)?];
         self.call("deriveaddresses", handle_defaults(&mut args, &[null()]))
     }
@@ -1293,6 +1301,22 @@ impl Client {
             .map_err(|e| super::error::Error::JsonRpc(e.into()))
     }
 
+    /// Creates a client using minreq http library
+    pub fn new_with_minreq(url: &str, auth: Auth) -> Result<Self> {
+        let (user, pass) = auth.get_user_pass()?;
+        if user.is_none() {
+            return Err(Error::ReturnedError("User is None".to_string()));
+        }
+        let transport = MinreqHttpTransport::builder()
+            .url(url)
+            .map_err(|e| super::error::Error::JsonRpc(e.into()))?
+            .basic_auth(user.unwrap(), pass)
+            .build();
+        Ok(Client {
+            client: jsonrpc::client::Client::with_transport(transport),
+        })
+    }
+
     /// Create a new Client using the given [jsonrpc::Client].
     pub fn from_jsonrpc(client: jsonrpc::client::Client) -> Client {
         Client {
@@ -1339,7 +1363,8 @@ fn log_response(cmd: &str, resp: &Result<jsonrpc::Response>) {
                         debug!(target: "bitcoincore_rpc", "JSON-RPC error for {}: {:?}", cmd, e);
                     }
                 } else if log_enabled!(Trace) {
-                    let def = serde_json::value::to_raw_value(&serde_json::value::Value::Null).unwrap();
+                    let def =
+                        serde_json::value::to_raw_value(&serde_json::value::Value::Null).unwrap();
                     let result = resp.result.as_ref().unwrap_or(&def);
                     trace!(target: "bitcoincore_rpc", "JSON-RPC response for {}: {}", cmd, result);
                 }
