@@ -1304,16 +1304,17 @@ impl Client {
     /// Creates a client using minreq http library
     pub fn new_with_minreq(url: &str, auth: Auth) -> Result<Self> {
         let (user, pass) = auth.get_user_pass()?;
-        if user.is_none() {
-            return Err(Error::ReturnedError("User is None".to_string()));
-        }
-        let transport = MinreqHttpTransport::builder()
+
+        let mut transport = MinreqHttpTransport::builder()
             .url(url)
-            .map_err(|e| super::error::Error::JsonRpc(e.into()))?
-            .basic_auth(user.unwrap(), pass)
-            .build();
+            .map_err(|e| super::error::Error::JsonRpc(e.into()))?;
+
+        if !user.is_none() {
+            transport = transport.basic_auth(user.unwrap(), pass);
+        }
+
         Ok(Client {
-            client: jsonrpc::client::Client::with_transport(transport),
+            client: jsonrpc::client::Client::with_transport(transport.build()),
         })
     }
 
