@@ -1,3 +1,7 @@
+# Archived
+
+**This repository has been archived as of 2025-11-25, and this crate is no longer mantained.** We recommend users switch to [corepc-client](https://crates.io/crates/corepc-client), which provides a blocking API. Users interested in an async RPC client may want to check the [rust-bitcoin discussion thread](https://github.com/rust-bitcoin/rust-bitcoin/discussions/2777) about this issue.
+
 [![Status](https://travis-ci.org/rust-bitcoin/rust-bitcoincore-rpc.png?branch=master)](https://travis-ci.org/rust-bitcoin/rust-bitcoincore-rpc)
 
 # Rust RPC client for Bitcoin Core JSON-RPC 
